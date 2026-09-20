@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Horario Escolar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        uca: {
+                            dark: '#1e3a8a', // Dark blue from the screenshots
+                            light: '#3b82f6',
+                            accent: '#f97316', // Orange accent for exams or current day
+                            bg: '#f3f4f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for grid view on specific devices if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-uca-bg text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Header / Nav -->
+    <header class="bg-uca-dark text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">Mi Horario</h1>
+                        <p class="text-xs text-blue-200">Luka Santiago</p>
+                    </div>
+                </div>
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex space-x-1">
+                    <button onclick="changeView('today')" id="btn-today" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Día Actual</button>
+                    <button onclick="changeView('week')" id="btn-week" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Semana Completa</button>
+                    <button onclick="changeView('exams')" id="btn-exams" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature"></i> Exámenes
+                    </button>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation (Bottom Bar style or sub-header) -->
+        <div class="md:hidden bg-blue-900 border-t border-blue-800 flex overflow-x-auto">
+            <button onclick="changeView('today')" id="btn-today-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Día Actual</button>
+            <button onclick="changeView('week')" id="btn-week-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Semana</button>
+            <button onclick="changeView('exams')" id="btn-exams-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-red-300 transition-colors whitespace-nowrap px-4">
+                <i class="fa-solid fa-file-signature mr-1"></i> Exámenes
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Dynamic Content Header -->
+        <div class="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
+            <h2 id="view-title" class="text-2xl font-bold text-gray-900">Cargando...</h2>
+            <span id="current-date" class="text-sm text-gray-500 font-medium"></span>
+        </div>
+
+        <!-- Container where JS will inject the layout -->
+        <div id="content-container" class="fade-in">
+            <!-- Content loaded via JS -->
+        </div>
+
+    </main>
+
+    <script>
+        // Data Configuration
+        const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        // Regular Schedule Data based on user prompt
+        const regularSchedule = {
+            1: [ // Lunes
+                { time: '07:00 - 09:00', subject: 'Filosofía', room: '411B', color: 'bg-teal-700' },
+                { time: '09:00 - 10:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '11:00 - 12:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '13:00 - 15:00', subject: 'Cálculo Diferencial', room: '411B', color: 'bg-green-600' }
+            ],
+            2: [ // Martes
+                { time: '07:00 - 09:00', subject: 'Filosofía', room: '411B', color: 'bg-teal-700' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '11:00 - 13:00', subject: 'Fundamentos de la Investigación', room: '411B', color: 'bg-orange-400' },
+                { time: '13:00 - 15:00', subject: 'Francés - Nivel 1 - Básico', room: '409B', color: 'bg-red-600' }
+            ],
+            3: [ // Miércoles
+                { time: '07:00 - 09:00', subject: 'Desarrollo Personal y Profesional', room: '411B', color: 'bg-indigo-900' },
+                { time: '09:00 - 11:00', subject: 'Cálculo Diferencial', room: '411B', color: 'bg-green-600' },
+                { time: '11:00 - 13:00', subject: 'Ecología', room: '411B', color: 'bg-red-500' },
+                { time: '13:00 - 15:00', subject: 'Administración', room: '411B', color: 'bg-blue-600' }
+            ],
+            4: [ // Jueves
+                { time: '07:00 - 09:00', subject: 'Innovación y Creatividad V', room: '411B', color: 'bg-blue-800' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '11:00 - 13:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '13:00 - 15:00', subject: 'Francés - Nivel 1 - Básico', room: '409B', color: 'bg-red-600' }
+            ],
+            5: [ // Viernes
+                { time: '07:00 - 09:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '09:00 - 11:00', subject: 'Ecología', room: '411B', color: 'bg-red-500' },
+                { time: '11:00 - 13:00', subject: 'Administración', room: '411B', color: 'bg-blue-600' },
+                { time: '13:00 - 15:00', subject: 'Paraescolares - Fotografía', room: '409B', color: 'bg-green-700' }
+            ]
+        };
+
+        // Exam Schedule Data based on user prompt
+        const examSchedule = {
+            1: [
+                { time: '07:00 - 09:00', subject: 'Filosofía' },
+                { time: '13:00 - 15:00', subject: 'Cálculo Diferencial' }
+            ],
+            2: [
+                { time: '11:00 - 13:00', subject: 'Fundamentos de la Investigación' },
+                { time: '13:00 - 15:00', subject: 'Lengua Extranjera V' }
+            ],
+            3: [
+                { time: '07:00 - 09:00', subject: 'Desarrollo Personal y Profesional' },
+                { time: '13:00 - 15:00', subject: 'Administración' }
+            ],
+            4: [
+                { time: '07:00 - 09:00', subject: 'Innovación y Creatividad V' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos' },
+                { time: '11:00 - 13:00', subject: 'Redes Computacionales' }
+            ],
+            5: [
+                { time: '09:00 - 11:00', subject: 'Ecología' },
+                { time: '13:00 - 15:00', subject: 'Educación Física y Artística V' }
+            ]
+        };
+
+        let currentView = 'today';
+        const today = new Date();
+        let currentDayIndex = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+
+        // Format date for the header
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = today.toLocaleDateString('es-ES', options);
+
+        function updateNavStyles(activeView) {
+            // Reset all styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-uca-light', 'text-white', 'border-white', 'text-white');
+                if(!btn.id.includes('exams')) {
+                    if(btn.id.includes('mob')) {
+                        btn.classList.add('text-blue-200');
+                    } else {
+                        btn.classList.add('text-gray-300');
+                    }
+                }
+            });
+
+            // Set active styles based on view
+            if (activeView === 'today') {
+                document.getElementById('btn-today').classList.add('bg-uca-light', 'text-white');
+                document.getElementById('btn-today').classList.remove('text-gray-300');
+                document.getElementById('btn-today-mob').classList.add('border-white', 'text-white');
+                document.getElementById('btn-today-mob').classList.remove('text-blue-200');
+            } else if (activeView === 'week') {
+                document.getElementById('btn-week').classList.add('bg-uca-light', 'text-white');
+                document.getElementById('btn-week').classList.remove('text-gray-300');
+                document.getElementById('btn-week-mob').classList.add('border-white', 'text-white');
+                document.getElementById('btn-week-mob').classList.remove('text-blue-200');
+            } else if (activeView === 'exams') {
+                document.getElementById('btn-exams-mob').classList.add('border-red-400', 'text-red-100');
+                document.getElementById('btn-exams-mob').classList.remove('text-red-300');
+            }
+        }
+
+        function changeView(view) {
+            currentView = view;
+            updateNavStyles(view);
+            const container = document.getElementById('content-container');
+            const title = document.getElementById('view-title');
+            
+            // Trigger animation
+            container.classList.remove('fade-in');
+            void container.offsetWidth; // trigger reflow
+            container.classList.add('fade-in');
+
+            container.innerHTML = ''; // Clear current content
+
+            if (view === 'today') {
+                let dayToRender = currentDayIndex;
+                let isWeekend = false;
+                
+                // Handle weekend
+                if (dayToRender === 0 || dayToRender === 6) {
+                    dayToRender = 1; // Default to Monday
+                    isWeekend = true;
+                }
+
+                title.innerHTML = `Horario para hoy: <span class="text-uca-light">${daysOfWeek[dayToRender]}</span>`;
+                
+                if (isWeekend) {
+                    container.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-md">
+                            <div class="flex">
+                                <div class="flex-shrink-0"><i class="fa-solid fa-circle-info text-blue-500"></i></div>
+                                <div class="ml-3"><p class="text-sm text-blue-700">¡Feliz fin de semana! Mostrando el horario del próximo Lunes.</p></div>
+                            </div>
+                        </div>`;
+                }
+
+                const classes = regularSchedule[dayToRender] || [];
+                
+                if (classes.length === 0) {
+                    container.innerHTML += `<p class="text-gray-500 italic">No hay clases registradas para este día.</p>`;
+                } else {
+                    let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+                    classes.forEach(cls => {
+                        cardsHtml += `
+                            <div class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border border-gray-100 overflow-hidden flex flex-col">
+                                <div class="${cls.color} h-2 w-full"></div>
+                                <div class="p-6 flex-grow flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center gap-2 text-gray-500 mb-2">
+                                            <i class="fa-regular fa-clock"></i>
+                                            <span class="font-medium text-sm">${cls.time}</span>
+                                        </div>
+                                        <h3 class="text-xl font-bold text-gray-900 mb-4 leading-tight">${cls.subject}</h3>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <i class="fa-solid fa-door-open text-uca-dark opacity-70"></i>
+                                        <span class="text-sm font-semibold text-gray-700">Aula: ${cls.room}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    cardsHtml += '</div>';
+                    container.innerHTML += cardsHtml;
+                }
+            } 
+            else if (view === 'week') {
+                title.textContent = 'Semana Completa';
+                
+                // Create a CSS grid for desktop, stacking for mobile
+                let gridHtml = '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
+                
+                for (let i = 1; i <= 5; i++) {
+                    gridHtml += `
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-uca-dark text-white p-3 text-center font-semibold border-b border-uca-dark">
+                                ${daysOfWeek[i].toUpperCase()}
+                            </div>
+                            <div class="p-2 space-y-2">
+                    `;
+                    
+                    const classes = regularSchedule[i] || [];
+                    if(classes.length === 0) {
+                        gridHtml += `<div class="p-3 text-center text-sm text-gray-400">Sin clases</div>`;
+                    }
+                    
+                    classes.forEach(cls => {
+                        // Extract start time for compact view
+                        const startTime = cls.time.split('-')[0].trim();
+                        gridHtml += `
+                            <div class="p-3 rounded-md ${cls.color} text-white flex flex-col gap-1 shadow-sm text-sm">
+                                <span class="font-bold opacity-90"><i class="fa-regular fa-clock mr-1"></i>${startTime}</span>
+                                <span class="font-semibold leading-tight line-clamp-2" title="${cls.subject}">${cls.subject}</span>
+                                <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full w-max mt-1 border border-white/30">Aula ${cls.room}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    gridHtml += `</div></div>`;
+                }
+                gridHtml += '</div>';
+                container.innerHTML = gridHtml;
+            }
+            else if (view === 'exams') {
+                title.innerHTML = '<span class="text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Horario de Exámenes</span>';
+                
+                // Special layout for exams based on the first screenshot
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="bg-blue-900 text-white p-4 text-center">
+                            <h3 class="text-xl font-bold">HORARIO DE EXÁMENES — 5A INF y COMPACTADOS</h3>
+                            <p class="text-sm text-blue-200 mt-1 italic">Consulta tus exámenes por día.</p>
+                        </div>
+                        
+                        <div class="divide-y divide-gray-200">
+                `;
+                
+                for (let i = 1; i <= 5; i++) {
+                    const exams = examSchedule[i] || [];
+                    if (exams.length > 0) {
+                        let dayBlock = `
+                            <div>
+                                <div class="bg-indigo-100 text-indigo-900 font-bold px-6 py-2 text-lg uppercase tracking-wide">
+                                    ${daysOfWeek[i]}
+                                </div>
+                                <div class="bg-blue-900 text-white grid grid-cols-3 px-6 py-1 text-sm font-semibold">
+                                    <div class="col-span-1">HORA</div>
+                                    <div class="col-span-2">MATERIA</div>
+                                </div>
+                                <div class="px-6 py-2">
+                        `;
+                        
+                        exams.forEach(exam => {
+                            // Convert "13:00 - 15:00" to "13 A 15" to match design
+                            let formattedTime = exam.time.replace(':00', '').replace(':00', '').replace(' - ', ' A ');
+                            // Fix if leading zero (e.g. 07 A 09 -> 7 A 9)
+                            if(formattedTime.startsWith('0')) formattedTime = formattedTime.substring(1);
+                            formattedTime = formattedTime.replace(' A 0', ' A ');
+
+                            dayBlock += `
+                                <div class="grid grid-cols-3 py-2 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
+                                    <div class="col-span-1 font-bold text-gray-800">${formattedTime}</div>
+                                    <div class="col-span-2 font-semibold text-gray-900">${exam.subject.toUpperCase()}</div>
+                                </div>
+                            `;
+                        });
+                        
+                        dayBlock += `</div></div>`;
+                        container.innerHTML += dayBlock;
+                    }
+                }
+                
+                container.innerHTML += `
+                        </div>
+                        <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-600 flex items-center gap-2">
+                            <i class="fa-solid fa-thumbtack text-gray-400"></i>
+                            <em>Importante: confirma cualquier indicación adicional de docente, aula o Coordinación.</em>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize app on load
+        window.onload = () => {
+            changeView('today');
+        };
+
+    </script>
+</body>
+</html>
