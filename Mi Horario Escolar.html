@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Horario Escolar</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        uca: {
+                            dark: '#1e3a8a', // Dark blue from the screenshots
+                            light: '#3b82f6',
+                            accent: '#f97316', // Orange accent for exams or current day
+                            bg: '#f3f4f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --brand-dark: #1e3a8a;
+            --brand-light: #3b82f6;
+            --brand-bg: #f3f4f6;
+        }
+        /* Custom scrollbar for grid view on specific devices if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-[var(--brand-bg)] text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- Entry / Status Screen -->
+    <div id="entry-screen" class="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-br from-[var(--brand-dark)] to-blue-950 relative">
+        <button onclick="openSettings()" title="Personalizar" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white">
+            <i class="fa-solid fa-gear"></i>
+        </button>
+        <div class="w-full max-w-lg">
+            <div class="text-center mb-6">
+                <i class="fa-solid fa-graduation-cap text-4xl text-white mb-2"></i>
+                <p class="text-blue-200 text-sm font-medium" id="entry-greeting"></p>
+                <p class="text-blue-200 text-sm font-medium" id="entry-date"></p>
+            </div>
+
+            <div id="entry-card" class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
+                <!-- Filled dynamically by JS -->
+                <p class="text-gray-400">Calculando tu horario...</p>
+            </div>
+
+            <!-- Pending Moodle tasks reminder -->
+            <div id="tasks-reminder" class="hidden mt-4 bg-white/95 rounded-xl shadow-lg p-4 flex items-center gap-3 cursor-pointer hover:bg-white transition-colors" onclick="enterApp(false); changeView('moodle');">
+                <!-- Filled dynamically by JS -->
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 mt-6">
+                <button onclick="enterApp(true)" id="btn-go-current" class="flex-1 bg-white text-[var(--brand-dark)] font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-location-arrow"></i> Ir a mi clase actual
+                </button>
+                <button onclick="enterApp(false)" id="btn-go-menu" class="flex-1 bg-blue-800/60 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-800 transition-colors border border-blue-700 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-bars"></i> Ver menú principal
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-sliders mr-2 text-[var(--brand-light)]"></i>Personalizar</h3>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+
+            <label class="block text-sm font-semibold text-gray-600 mb-1">Nombre del alumno</label>
+            <input id="settings-name-input" type="text" placeholder="Tu nombre" maxlength="40"
+                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)]">
+
+            <label class="block text-sm font-semibold text-gray-600 mb-2">Tema de colores</label>
+            <div id="theme-swatches" class="grid grid-cols-5 gap-3 mb-6">
+                <!-- Filled dynamically by JS -->
+            </div>
+
+            <button onclick="saveSettings()" class="w-full bg-[var(--brand-dark)] hover:opacity-90 text-white font-semibold py-2.5 rounded-lg transition-opacity">
+                Guardar
+            </button>
+            <p class="text-xs text-gray-400 text-center mt-3">Se guarda solo en este navegador.</p>
+        </div>
+    </div>
+
+    <!-- Header / Nav -->
+    <header id="app-header" class="bg-[var(--brand-dark)] text-white shadow-md sticky top-0 z-50 hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-graduation-cap text-2xl"></i>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight">Mi Horario</h1>
+                        <p class="text-xs text-blue-200" id="student-name-label">Estudiante</p>
+                    </div>
+                    <button onclick="openSettings()" title="Personalizar" class="ml-1 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
+                        <i class="fa-solid fa-gear text-sm"></i>
+                    </button>
+                </div>
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex space-x-1">
+                    <button onclick="changeView('today')" id="btn-today" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Día Actual</button>
+                    <button onclick="changeView('week')" id="btn-week" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Semana Completa</button>
+                    <button onclick="changeView('moodle')" id="btn-moodle" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check"></i> Tareas Moodle
+                    </button>
+                    <button onclick="changeView('exams')" id="btn-exams" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
+                        <i class="fa-solid fa-file-signature"></i> Exámenes
+                    </button>
+                    <button onclick="changeView('aleks')" id="btn-aleks" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
+                        <i class="fa-solid fa-laptop-code"></i> Tareas ALEKS
+                    </button>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation (Bottom Bar style or sub-header) -->
+        <div class="md:hidden bg-blue-900 border-t border-blue-800 flex overflow-x-auto">
+            <button onclick="changeView('today')" id="btn-today-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Día Actual</button>
+            <button onclick="changeView('week')" id="btn-week-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Semana</button>
+            <button onclick="changeView('moodle')" id="btn-moodle-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-purple-300 transition-colors whitespace-nowrap px-4">
+                <i class="fa-solid fa-list-check mr-1"></i> Moodle
+            </button>
+            <button onclick="changeView('exams')" id="btn-exams-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-red-300 transition-colors whitespace-nowrap px-4">
+                <i class="fa-solid fa-file-signature mr-1"></i> Exámenes
+            </button>
+            <button onclick="changeView('aleks')" id="btn-aleks-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-emerald-300 transition-colors whitespace-nowrap px-4">
+                <i class="fa-solid fa-laptop-code mr-1"></i> ALEKS
+            </button>
+            <button onclick="openSettings()" id="btn-settings-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-blue-200 transition-colors whitespace-nowrap px-4">
+                <i class="fa-solid fa-gear mr-1"></i> Ajustes
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="app-main" class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 hidden">
+        
+        <!-- Dynamic Content Header -->
+        <div class="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
+            <h2 id="view-title" class="text-2xl font-bold text-gray-900">Cargando...</h2>
+            <span id="current-date" class="text-sm text-gray-500 font-medium"></span>
+        </div>
+
+        <!-- Container where JS will inject the layout -->
+        <div id="content-container" class="fade-in">
+            <!-- Content loaded via JS -->
+        </div>
+
+    </main>
+
+    <script>
+        // Data Configuration
+        const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+        
+        // Regular Schedule Data based on user prompt
+        const regularSchedule = {
+            1: [ // Lunes
+                { time: '07:00 - 09:00', subject: 'Filosofía', room: '411B', color: 'bg-teal-700' },
+                { time: '09:00 - 10:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '11:00 - 12:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '13:00 - 15:00', subject: 'Cálculo Diferencial', room: '411B', color: 'bg-green-600' }
+            ],
+            2: [ // Martes
+                { time: '07:00 - 09:00', subject: 'Filosofía', room: '411B', color: 'bg-teal-700' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '11:00 - 13:00', subject: 'Fundamentos de la Investigación', room: '411B', color: 'bg-orange-400' },
+                { time: '13:00 - 15:00', subject: 'Francés - Nivel 1 - Básico', room: '409B', color: 'bg-red-600' }
+            ],
+            3: [ // Miércoles
+                { time: '07:00 - 09:00', subject: 'Desarrollo Personal y Profesional', room: '411B', color: 'bg-indigo-900' },
+                { time: '09:00 - 11:00', subject: 'Cálculo Diferencial', room: '411B', color: 'bg-green-600' },
+                { time: '11:00 - 13:00', subject: 'Ecología', room: '411B', color: 'bg-red-500' },
+                { time: '13:00 - 15:00', subject: 'Administración', room: '411B', color: 'bg-blue-600' }
+            ],
+            4: [ // Jueves
+                { time: '07:00 - 09:00', subject: 'Innovación y Creatividad V', room: '411B', color: 'bg-blue-800' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos', room: '411B', color: 'bg-orange-500' },
+                { time: '11:00 - 13:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '13:00 - 15:00', subject: 'Francés - Nivel 1 - Básico', room: '409B', color: 'bg-red-600' }
+            ],
+            5: [ // Viernes
+                { time: '07:00 - 09:00', subject: 'Redes Computacionales', room: '411B', color: 'bg-pink-500' },
+                { time: '09:00 - 11:00', subject: 'Ecología', room: '411B', color: 'bg-red-500' },
+                { time: '11:00 - 13:00', subject: 'Administración', room: '411B', color: 'bg-blue-600' },
+                { time: '13:00 - 15:00', subject: 'Paraescolares - Fotografía', room: '409B', color: 'bg-green-700' }
+            ]
+        };
+
+        // Exam Schedule Data based on user prompt
+        const examSchedule = {
+            1: [
+                { time: '07:00 - 09:00', subject: 'Filosofía' },
+                { time: '13:00 - 15:00', subject: 'Cálculo Diferencial' }
+            ],
+            2: [
+                { time: '11:00 - 13:00', subject: 'Fundamentos de la Investigación' },
+                { time: '13:00 - 15:00', subject: 'Lengua Extranjera V' }
+            ],
+            3: [
+                { time: '07:00 - 09:00', subject: 'Desarrollo Personal y Profesional' },
+                { time: '13:00 - 15:00', subject: 'Administración' }
+            ],
+            4: [
+                { time: '07:00 - 09:00', subject: 'Innovación y Creatividad V' },
+                { time: '09:00 - 11:00', subject: 'Diseño y Creación de Videojuegos' },
+                { time: '11:00 - 13:00', subject: 'Redes Computacionales' }
+            ],
+            5: [
+                { time: '09:00 - 11:00', subject: 'Ecología' },
+                { time: '13:00 - 15:00', subject: 'Educación Física y Artística V' }
+            ]
+        };
+
+        // ALEKS Assignments Data (2do parcial)
+        const aleksTasks = [
+            { name: 'Tarea 5', opens: '28/09/2026 0:00', closes: '11/10/2026 23:59', finalDue: '18/10/2026 23:59' },
+            { name: 'Tarea 6', opens: '05/10/2026 0:00', closes: '18/10/2026 23:59', finalDue: null },
+            { name: 'Tarea 7', opens: '12/10/2026 0:00', closes: '18/10/2026 23:59', finalDue: null },
+            { name: 'Tarea 8', opens: '26/10/2026 0:00', closes: '08/11/2026 23:59', finalDue: '22/11/2026 23:59' },
+            { name: 'Tarea 9', opens: '02/11/2026 0:00', closes: '15/11/2026 23:59', finalDue: '22/11/2026 23:59' },
+            { name: 'Tarea 10', opens: '09/11/2026 0:00', closes: '22/11/2026 23:59', finalDue: null },
+            { name: 'Tarea 11', opens: '16/11/2026 0:00', closes: '22/11/2026 23:59', finalDue: null }
+        ];
+
+        // Moodle tasks (segundo parcial), grouped by subject with matching brand colors
+        const moodleTasks = [
+            // Administración
+            { id: 'admin-1', subject: 'Administración', color: 'bg-blue-600', title: '2.1 Mapa mental colaborativo sobre teorías administrativas', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'admin-2', subject: 'Administración', color: 'bg-blue-600', title: '2.2 Análisis de caso con propuesta visual interactiva', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
+            { id: 'admin-3', subject: 'Administración', color: 'bg-blue-600', title: '2.3 Análisis de la responsabilidad social, ética y ambiente externo en una organización', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            // Cálculo Diferencial
+            { id: 'calc-1', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.1 Evidencias. Representación gráfica en GeoGebra', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'calc-2', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.2 Evidencia de Actividades Semanales en ALEKS', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            { id: 'calc-3', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.3 Evaluación sumativa de la Unidad II: Ejercicios guía para el examen parcial', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            // Desarrollo Personal Y Profesional
+            { id: 'dpp-1', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.1 Analiza la realidad socioeconómica de tu entorno', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'dpp-2', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.2 Investiga las tendencias del mercado laboral', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
+            { id: 'dpp-3', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.3 Argumenta una decisión vocacional', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            // Ecología
+            { id: 'eco-1', subject: 'Ecología', color: 'bg-red-500', title: '2.1 Investigación y reflexión. Ecosistemas del mundo', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'eco-2', subject: 'Ecología', color: 'bg-red-500', title: '2.2 Diagnóstico ecológico de Aguascalientes', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
+            { id: 'eco-3', subject: 'Ecología', color: 'bg-red-500', title: '2.3 Ciudadanos por la naturaleza: Propuesta para la conservación de la biodiversidad', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            // Filosofía
+            { id: 'filo-1', subject: 'Filosofía', color: 'bg-teal-700', title: '2.1 Infografía: Características de la filosofía medieval', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'filo-2', subject: 'Filosofía', color: 'bg-teal-700', title: '2.2 Mapa mental: Del Renacimiento al surgimiento de la Modernidad', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
+            { id: 'filo-3', subject: 'Filosofía', color: 'bg-teal-700', title: '2.3 Cuadro comparativo: Racionalismo y empirismo', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            // Fundamentos De La Investigación
+            { id: 'fund-1', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.1 La utilidad de investigar', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
+            { id: 'fund-2', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.2 Características de la metodología de la investigación', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
+            { id: 'fund-3', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.3 La investigación como herramienta para resolver problemas', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' }
+        ];
+
+        let currentView = 'today';
+        const today = new Date();
+        let currentDayIndex = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+        let highlightCurrentClass = false;
+
+        // ---------------------------------------------------------------
+        // Personalization: student name, color theme, and task completion
+        // are all saved locally in this browser (localStorage).
+        // ---------------------------------------------------------------
+        const STORAGE_KEYS = { name: 'schedule_studentName', theme: 'schedule_theme', completed: 'schedule_completedTasks' };
+
+        const THEMES = {
+            azul:    { label: 'Azul',    dark: '#1e3a8a', light: '#3b82f6' },
+            verde:   { label: 'Verde',   dark: '#065f46', light: '#10b981' },
+            morado:  { label: 'Morado',  dark: '#4c1d95', light: '#8b5cf6' },
+            rosa:    { label: 'Rosa',    dark: '#9d174d', light: '#ec4899' },
+            naranja: { label: 'Naranja', dark: '#7c2d12', light: '#f97316' }
+        };
+
+        function loadSetting(key, fallback) {
+            try {
+                const v = localStorage.getItem(key);
+                return v === null ? fallback : v;
+            } catch (e) { return fallback; }
+        }
+        function saveSetting(key, value) {
+            try { localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ }
+        }
+        function loadCompletedTasks() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.completed);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) { return []; }
+        }
+        function saveCompletedTasks(arr) {
+            try { localStorage.setItem(STORAGE_KEYS.completed, JSON.stringify(arr)); } catch (e) { /* ignore */ }
+        }
+        function toggleTaskCompleted(taskId) {
+            const list = loadCompletedTasks();
+            const idx = list.indexOf(taskId);
+            if (idx === -1) list.push(taskId); else list.splice(idx, 1);
+            saveCompletedTasks(list);
+            renderView('moodle'); // re-render with updated state, keeping current filters
+        }
+
+        function applyTheme(themeKey) {
+            const t = THEMES[themeKey] || THEMES.azul;
+            document.documentElement.style.setProperty('--brand-dark', t.dark);
+            document.documentElement.style.setProperty('--brand-light', t.light);
+        }
+
+        function applyStudentName(name) {
+            const label = name && name.trim() ? name.trim() : 'Estudiante';
+            const headerLabel = document.getElementById('student-name-label');
+            if (headerLabel) headerLabel.textContent = label;
+            const greeting = document.getElementById('entry-greeting');
+            if (greeting) greeting.textContent = name && name.trim() ? `¡Hola, ${name.trim()}!` : '¡Hola!';
+        }
+
+        function renderThemeSwatches() {
+            const container = document.getElementById('theme-swatches');
+            if (!container) return;
+            const activeTheme = loadSetting(STORAGE_KEYS.theme, 'azul');
+            container.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+                <button type="button" onclick="selectThemeSwatch('${key}')" data-theme-key="${key}"
+                    class="theme-swatch-btn flex flex-col items-center gap-1 group">
+                    <span class="w-9 h-9 rounded-full border-2 ${key === activeTheme ? 'border-gray-800' : 'border-transparent'} flex items-center justify-center transition-all"
+                        style="background: linear-gradient(135deg, ${t.dark}, ${t.light});">
+                        ${key === activeTheme ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ''}
+                    </span>
+                    <span class="text-[10px] text-gray-500">${t.label}</span>
+                </button>
+            `).join('');
+        }
+
+        let pendingThemeSelection = null;
+        function selectThemeSwatch(key) {
+            pendingThemeSelection = key;
+            applyTheme(key); // live preview
+            document.querySelectorAll('.theme-swatch-btn span:first-child').forEach(el => {
+                el.classList.remove('border-gray-800');
+                el.classList.add('border-transparent');
+                el.innerHTML = '';
+            });
+            const btn = document.querySelector(`.theme-swatch-btn[data-theme-key="${key}"] span:first-child`);
+            if (btn) {
+                btn.classList.remove('border-transparent');
+                btn.classList.add('border-gray-800');
+                btn.innerHTML = '<i class="fa-solid fa-check text-white text-xs"></i>';
+            }
+        }
+
+        function openSettings() {
+            document.getElementById('settings-name-input').value = loadSetting(STORAGE_KEYS.name, '');
+            pendingThemeSelection = loadSetting(STORAGE_KEYS.theme, 'azul');
+            renderThemeSwatches();
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettings() {
+            // revert live preview if user didn't save
+            applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul'));
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+        function saveSettings() {
+            const name = document.getElementById('settings-name-input').value;
+            saveSetting(STORAGE_KEYS.name, name);
+            applyStudentName(name);
+            const theme = pendingThemeSelection || 'azul';
+            saveSetting(STORAGE_KEYS.theme, theme);
+            applyTheme(theme);
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        // ---- Pending Moodle task helpers (for the entry-screen reminder) ----
+        function getPendingMoodleTasks() {
+            const completed = loadCompletedTasks();
+            const now = new Date();
+            return moodleTasks
+                .filter(t => !completed.includes(t.id))
+                .map(t => ({ ...t, dueDate: new Date(t.due), overdue: new Date(t.due) < now }))
+                .sort((a, b) => a.dueDate - b.dueDate);
+        }
+
+        // Format date for the header
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        document.getElementById('current-date').textContent = today.toLocaleDateString('es-ES', options);
+        const entryDateEl = document.getElementById('entry-date');
+        if (entryDateEl) entryDateEl.textContent = today.toLocaleDateString('es-ES', options);
+
+        // ---- Recess: every school day, 10:40–11:30, overrides whatever class is "scheduled" ----
+        const RECESS = { start: 10 * 60 + 40, end: 11 * 60 + 30, startStr: '10:40', endStr: '11:30' };
+
+        function timeStrToMinutes(t) {
+            const [h, m] = t.split(':').map(Number);
+            return h * 60 + m;
+        }
+        function parseTimeRange(rangeStr) {
+            const [s, e] = rangeStr.split('-').map(x => x.trim());
+            return { start: timeStrToMinutes(s), end: timeStrToMinutes(e), startStr: s, endStr: e };
+        }
+        function formatMinutes(mins) {
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            if (h > 0 && m > 0) return `${h} h ${m} min`;
+            if (h > 0) return `${h} h`;
+            return `${m} min`;
+        }
+
+        // Finds the first class of the next school day (Mon–Fri) starting from dayIdx.
+        // inclusive=true also checks dayIdx itself.
+        function findNextSchoolDayFirstClass(dayIdx, inclusive) {
+            for (let offset = inclusive ? 0 : 1; offset <= 7; offset++) {
+                const d = (dayIdx + offset) % 7;
+                if (d >= 1 && d <= 5) {
+                    const list = regularSchedule[d] || [];
+                    if (list.length > 0) {
+                        return { dayIdx: d, offsetDays: offset, cls: list[0] };
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Computes what the student should be doing right now.
+        function getScheduleStatus() {
+            const now = new Date();
+            const dayIdx = now.getDay();
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            const classesToday = (dayIdx >= 1 && dayIdx <= 5) ? (regularSchedule[dayIdx] || []) : [];
+
+            function nextClassAfterNow() {
+                for (const c of classesToday) {
+                    const r = parseTimeRange(c.time);
+                    if (r.start > nowMinutes) return { cls: c, range: r, sameDay: true };
+                }
+                const nxt = findNextSchoolDayFirstClass(dayIdx, false);
+                return nxt ? { cls: nxt.cls, dayIdx: nxt.dayIdx, offsetDays: nxt.offsetDays, sameDay: false } : null;
+            }
+
+            // Weekend
+            if (dayIdx === 0 || dayIdx === 6) {
+                return { state: 'weekend', dayIdx, nowMinutes, next: findNextSchoolDayFirstClass(dayIdx, false) ? { ...findNextSchoolDayFirstClass(dayIdx, false), sameDay: false } : null };
+            }
+
+            // Recess always wins, regardless of what's "scheduled"
+            if (nowMinutes >= RECESS.start && nowMinutes < RECESS.end) {
+                return { state: 'recess', dayIdx, nowMinutes, next: nextClassAfterNow() };
+            }
+
+            // Currently inside a class block
+            for (const c of classesToday) {
+                const r = parseTimeRange(c.time);
+                if (nowMinutes >= r.start && nowMinutes < r.end) {
+                    return { state: 'class', dayIdx, nowMinutes, current: { cls: c, range: r }, next: nextClassAfterNow() };
+                }
+            }
+
+            // Gap before/between classes today
+            const next = nextClassAfterNow();
+            if (next && next.sameDay) {
+                return { state: 'gap', dayIdx, nowMinutes, next };
+            }
+
+            // Nothing left today
+            return { state: classesToday.length ? 'after_school' : 'no_classes_today', dayIdx, nowMinutes, next };
+        }
+
+        // Returns minutes remaining until a "next" target ({sameDay, offsetDays, cls}) starts
+        function minutesUntil(next) {
+            if (!next) return null;
+            const now = new Date();
+            const target = new Date(now);
+            if (!next.sameDay) target.setDate(target.getDate() + (next.offsetDays || 0));
+            const r = parseTimeRange(next.cls.time);
+            target.setHours(Math.floor(r.start / 60), r.start % 60, 0, 0);
+            return Math.max(0, Math.round((target - now) / 60000));
+        }
+
+        function nextClassLabel(next) {
+            if (!next) return null;
+            const dayLabel = next.sameDay ? 'hoy' : (next.offsetDays === 1 ? 'mañana' : daysOfWeek[next.dayIdx]);
+            return `${next.cls.subject} — ${dayLabel} a las ${parseTimeRange(next.cls.time).startStr}`;
+        }
+
+        function renderEntryScreen() {
+            const status = getScheduleStatus();
+            const card = document.getElementById('entry-card');
+            const nextInfo = status.next
+                ? `<div class="mt-5 pt-4 border-t border-gray-100">
+                       <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-1">Sigue</p>
+                       <p class="text-gray-800 font-medium">${nextClassLabel(status.next)}</p>
+                       <p class="text-sm text-[var(--brand-light)] font-semibold mt-1">${status.next.sameDay || status.next.offsetDays === 1 ? `Falta ${formatMinutes(minutesUntil(status.next))}` : `Falta ${formatMinutes(minutesUntil(status.next))}`}</p>
+                   </div>`
+                : '';
+
+            let mainBlock = '';
+            if (status.state === 'class') {
+                const c = status.current.cls;
+                const r = status.current.range;
+                mainBlock = `
+                    <i class="fa-solid fa-chalkboard-user text-4xl ${c.color.replace('bg-', 'text-')} mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Debes estar en la clase de:</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">${c.subject}</h2>
+                    <p class="text-sm text-gray-500 mt-2"><i class="fa-regular fa-clock mr-1"></i>${r.startStr} - ${r.endStr} &nbsp;·&nbsp; Aula ${c.room}</p>
+                `;
+            } else if (status.state === 'recess') {
+                mainBlock = `
+                    <i class="fa-solid fa-mug-hot text-4xl text-amber-500 mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Ahorita es tu</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">Receso 🍎</h2>
+                    <p class="text-sm text-gray-500 mt-2"><i class="fa-regular fa-clock mr-1"></i>${RECESS.startStr} - ${RECESS.endStr}</p>
+                `;
+            } else if (status.state === 'gap') {
+                mainBlock = `
+                    <i class="fa-solid fa-hourglass-half text-4xl text-gray-400 mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Ahora mismo</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">No tienes clase</h2>
+                    <p class="text-sm text-gray-500 mt-2">Estás entre clases</p>
+                `;
+            } else if (status.state === 'after_school') {
+                mainBlock = `
+                    <i class="fa-solid fa-house text-4xl text-green-500 mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Hoy</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">Ya terminaron tus clases</h2>
+                    <p class="text-sm text-gray-500 mt-2">¡Buen trabajo hoy!</p>
+                `;
+            } else if (status.state === 'weekend') {
+                mainBlock = `
+                    <i class="fa-solid fa-couch text-4xl text-purple-500 mb-3"></i>
+                    <p class="text-sm text-gray-400 font-medium">Hoy es ${daysOfWeek[status.dayIdx]}</p>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">No tienes clases</h2>
+                    <p class="text-sm text-gray-500 mt-2">¡Disfruta tu fin de semana!</p>
+                `;
+            } else {
+                mainBlock = `
+                    <i class="fa-solid fa-calendar-day text-4xl text-gray-400 mb-3"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mt-1">Sin clases hoy</h2>
+                `;
+            }
+
+            card.innerHTML = mainBlock + nextInfo;
+
+            // "Ir a mi clase actual" only makes sense when there's something happening now
+            const btnCurrent = document.getElementById('btn-go-current');
+            if (status.state === 'weekend' || status.state === 'after_school' || status.state === 'no_classes_today') {
+                btnCurrent.classList.add('hidden');
+            } else {
+                btnCurrent.classList.remove('hidden');
+            }
+
+            // ---- Pending Moodle tasks reminder ----
+            const reminder = document.getElementById('tasks-reminder');
+            const pending = getPendingMoodleTasks();
+            if (pending.length === 0) {
+                reminder.classList.add('hidden');
+            } else {
+                const overdueCount = pending.filter(t => t.overdue).length;
+                const soonCount = pending.filter(t => !t.overdue && (t.dueDate - new Date()) / 3600000 <= 72).length;
+                let icon = 'fa-circle-check', iconColor = 'text-emerald-500', headline = `Tienes ${pending.length} tarea${pending.length === 1 ? '' : 's'} pendiente${pending.length === 1 ? '' : 's'} en Moodle`;
+                if (overdueCount > 0) {
+                    icon = 'fa-triangle-exclamation'; iconColor = 'text-red-500';
+                    headline = `${overdueCount} tarea${overdueCount === 1 ? '' : 's'} vencida${overdueCount === 1 ? '' : 's'} y ${pending.length - overdueCount} más pendiente${(pending.length - overdueCount) === 1 ? '' : 's'}`;
+                } else if (soonCount > 0) {
+                    icon = 'fa-clock'; iconColor = 'text-amber-500';
+                    headline = `${soonCount} tarea${soonCount === 1 ? '' : 's'} vence${soonCount === 1 ? '' : 'n'} pronto`;
+                }
+                const nextOne = pending[0];
+                reminder.innerHTML = `
+                    <i class="fa-solid ${icon} ${iconColor} text-2xl"></i>
+                    <div class="text-left flex-grow">
+                        <p class="font-semibold text-gray-900 text-sm">${headline}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">Próxima: ${nextOne.subject} — ${nextOne.title.length > 40 ? nextOne.title.slice(0, 40) + '…' : nextOne.title}</p>
+                    </div>
+                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
+                `;
+                reminder.classList.remove('hidden');
+            }
+        }
+
+        function enterApp(focusCurrent) {
+            highlightCurrentClass = !!focusCurrent;
+            document.getElementById('entry-screen').classList.add('hidden');
+            document.getElementById('app-header').classList.remove('hidden');
+            document.getElementById('app-main').classList.remove('hidden');
+            changeView('today');
+
+            if (highlightCurrentClass) {
+                setTimeout(() => {
+                    const el = document.getElementById('current-class-card');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 150);
+            }
+        }
+
+        function updateNavStyles(activeView) {
+            // Reset all styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-[var(--brand-light)]', 'text-white', 'border-white', 'text-white');
+                if(!btn.id.includes('exams') && !btn.id.includes('aleks')) {
+                    if(btn.id.includes('mob')) {
+                        btn.classList.add('text-blue-200');
+                    } else {
+                        btn.classList.add('text-gray-300');
+                    }
+                }
+            });
+
+            // Set active styles based on view
+            if (activeView === 'today') {
+                document.getElementById('btn-today').classList.add('bg-[var(--brand-light)]', 'text-white');
+                document.getElementById('btn-today').classList.remove('text-gray-300');
+                document.getElementById('btn-today-mob').classList.add('border-white', 'text-white');
+                document.getElementById('btn-today-mob').classList.remove('text-blue-200');
+            } else if (activeView === 'week') {
+                document.getElementById('btn-week').classList.add('bg-[var(--brand-light)]', 'text-white');
+                document.getElementById('btn-week').classList.remove('text-gray-300');
+                document.getElementById('btn-week-mob').classList.add('border-white', 'text-white');
+                document.getElementById('btn-week-mob').classList.remove('text-blue-200');
+            } else if (activeView === 'exams') {
+                document.getElementById('btn-exams-mob').classList.add('border-red-400', 'text-red-100');
+                document.getElementById('btn-exams-mob').classList.remove('text-red-300');
+            } else if (activeView === 'aleks') {
+                document.getElementById('btn-aleks-mob').classList.add('border-emerald-400', 'text-emerald-100');
+                document.getElementById('btn-aleks-mob').classList.remove('text-emerald-300');
+            } else if (activeView === 'moodle') {
+                document.getElementById('btn-moodle-mob').classList.add('border-purple-400', 'text-purple-100');
+                document.getElementById('btn-moodle-mob').classList.remove('text-purple-300');
+            }
+        }
+
+        function changeView(view) {
+            currentView = view;
+            updateNavStyles(view);
+            const container = document.getElementById('content-container');
+            const title = document.getElementById('view-title');
+            
+            // Trigger animation
+            container.classList.remove('fade-in');
+            void container.offsetWidth; // trigger reflow
+            container.classList.add('fade-in');
+
+            container.innerHTML = ''; // Clear current content
+
+            if (view === 'today') {
+                let dayToRender = currentDayIndex;
+                let isWeekend = false;
+                
+                // Handle weekend
+                if (dayToRender === 0 || dayToRender === 6) {
+                    dayToRender = 1; // Default to Monday
+                    isWeekend = true;
+                }
+
+                title.innerHTML = `Horario para hoy: <span class="text-[var(--brand-light)]">${daysOfWeek[dayToRender]}</span>`;
+                
+                if (isWeekend) {
+                    container.innerHTML = `
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-md">
+                            <div class="flex">
+                                <div class="flex-shrink-0"><i class="fa-solid fa-circle-info text-blue-500"></i></div>
+                                <div class="ml-3"><p class="text-sm text-blue-700">¡Feliz fin de semana! Mostrando el horario del próximo Lunes.</p></div>
+                            </div>
+                        </div>`;
+                }
+
+                const classes = regularSchedule[dayToRender] || [];
+                
+                if (classes.length === 0) {
+                    container.innerHTML += `<p class="text-gray-500 italic">No hay clases registradas para este día.</p>`;
+                } else {
+                    const liveStatus = getScheduleStatus();
+                    const isCurrentDayReal = !isWeekend && liveStatus.dayIdx === dayToRender;
+
+                    let cardsHtml = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">';
+                    classes.forEach(cls => {
+                        const r = parseTimeRange(cls.time);
+                        const isCurrent = isCurrentDayReal && liveStatus.state === 'class' &&
+                            liveStatus.current.cls.subject === cls.subject && liveStatus.current.range.start === r.start;
+
+                        cardsHtml += `
+                            <div id="${isCurrent ? 'current-class-card' : ''}" class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border overflow-hidden flex flex-col ${isCurrent ? 'border-[var(--brand-light)] ring-2 ring-[var(--brand-light)] ring-offset-2' : 'border-gray-100'}">
+                                <div class="${cls.color} h-2 w-full"></div>
+                                <div class="p-6 flex-grow flex flex-col justify-between">
+                                    <div>
+                                        <div class="flex items-center justify-between gap-2 text-gray-500 mb-2">
+                                            <span class="flex items-center gap-2"><i class="fa-regular fa-clock"></i><span class="font-medium text-sm">${cls.time}</span></span>
+                                            ${isCurrent ? '<span class="bg-[var(--brand-light)] text-white text-xs font-bold px-2 py-0.5 rounded-full">AHORA</span>' : ''}
+                                        </div>
+                                        <h3 class="text-xl font-bold text-gray-900 mb-4 leading-tight">${cls.subject}</h3>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                        <i class="fa-solid fa-door-open text-[var(--brand-dark)] opacity-70"></i>
+                                        <span class="text-sm font-semibold text-gray-700">Aula: ${cls.room}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    cardsHtml += '</div>';
+
+                    if (isCurrentDayReal && liveStatus.state === 'recess') {
+                        cardsHtml = `<div class="mb-6 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md flex items-center gap-3">
+                            <i class="fa-solid fa-mug-hot text-amber-500 text-xl"></i>
+                            <p class="text-sm text-amber-800 font-medium">Ahorita es receso (${RECESS.startStr} - ${RECESS.endStr}), sin importar lo que diga el horario.</p>
+                        </div>` + cardsHtml;
+                    }
+
+                    container.innerHTML += cardsHtml;
+                }
+            } 
+            else if (view === 'week') {
+                title.textContent = 'Semana Completa';
+                
+                // Create a CSS grid for desktop, stacking for mobile
+                let gridHtml = '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
+                
+                for (let i = 1; i <= 5; i++) {
+                    gridHtml += `
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-[var(--brand-dark)] text-white p-3 text-center font-semibold border-b border-[var(--brand-dark)]">
+                                ${daysOfWeek[i].toUpperCase()}
+                            </div>
+                            <div class="p-2 space-y-2">
+                    `;
+                    
+                    const classes = regularSchedule[i] || [];
+                    if(classes.length === 0) {
+                        gridHtml += `<div class="p-3 text-center text-sm text-gray-400">Sin clases</div>`;
+                    }
+                    
+                    classes.forEach(cls => {
+                        // Extract start time for compact view
+                        const startTime = cls.time.split('-')[0].trim();
+                        gridHtml += `
+                            <div class="p-3 rounded-md ${cls.color} text-white flex flex-col gap-1 shadow-sm text-sm">
+                                <span class="font-bold opacity-90"><i class="fa-regular fa-clock mr-1"></i>${startTime}</span>
+                                <span class="font-semibold leading-tight line-clamp-2" title="${cls.subject}">${cls.subject}</span>
+                                <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full w-max mt-1 border border-white/30">Aula ${cls.room}</span>
+                            </div>
+                        `;
+                    });
+                    
+                    gridHtml += `</div></div>`;
+                }
+                gridHtml += '</div>';
+                container.innerHTML = gridHtml;
+            }
+            else if (view === 'exams') {
+                title.innerHTML = '<span class="text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Horario de Exámenes</span>';
+
+                // No exam schedule published yet for the second partial
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="bg-blue-900 text-white p-4 text-center">
+                            <h3 class="text-xl font-bold">HORARIO DE EXÁMENES — 5A INF y COMPACTADOS</h3>
+                        </div>
+                        <div class="flex flex-col items-center justify-center text-center gap-3 py-16 px-6">
+                            <i class="fa-solid fa-calendar-xmark text-5xl text-gray-300"></i>
+                            <p class="text-lg font-semibold text-gray-700">Aún no hay calendario de exámenes para el segundo parcial</p>
+                            <p class="text-sm text-gray-500 max-w-md">En cuanto Coordinación publique las fechas, se actualizará esta sección.</p>
+                        </div>
+                    </div>
+                `;
+            }
+            else if (view === 'aleks') {
+                title.innerHTML = '<span class="text-emerald-700"><i class="fa-solid fa-laptop-code mr-2"></i>Tareas ALEKS</span>';
+
+                let html = `
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                        <div class="bg-emerald-700 text-white p-4 text-center">
+                            <h3 class="text-xl font-bold">FECHAS DE APERTURA Y CIERRE — ALEKS</h3>
+                            <p class="text-sm text-emerald-100 mt-1 italic">Consulta cuándo se abren y cierran tus tareas.</p>
+                        </div>
+                        <div class="bg-emerald-900 text-white grid grid-cols-4 px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold">
+                            <div class="col-span-1">TAREA</div>
+                            <div class="col-span-1">ABRE</div>
+                            <div class="col-span-1">CIERRA</div>
+                            <div class="col-span-1">ENTREGA FINAL</div>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                `;
+
+                aleksTasks.forEach(task => {
+                    html += `
+                        <div class="grid grid-cols-4 px-4 sm:px-6 py-3 text-xs sm:text-sm hover:bg-gray-50 transition-colors">
+                            <div class="col-span-1 font-bold text-gray-900">${task.name}</div>
+                            <div class="col-span-1 text-green-700 font-medium">${task.opens}</div>
+                            <div class="col-span-1 text-red-600 font-medium">${task.closes}</div>
+                            <div class="col-span-1 ${task.finalDue ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${task.finalDue ? task.finalDue : '—'}</div>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                        <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-600 flex items-center gap-2">
+                            <i class="fa-solid fa-thumbtack text-gray-400"></i>
+                            <em>Fecha de entrega final aplica solo cuando ALEKS otorga un plazo extra tras el cierre normal.</em>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = html;
+            }
+            else if (view === 'moodle') {
+                title.innerHTML = '<span class="text-purple-700"><i class="fa-solid fa-list-check mr-2"></i>Tareas Moodle</span>';
+                renderMoodleView(container);
+            }
+        }
+
+        // Keeps the currently selected filters so re-renders (e.g. after checking a task) don't reset them
+        let moodleSubjectFilter = 'all';
+        let moodleDateFilter = 'all';
+
+        function renderMoodleView(container) {
+            const subjects = [...new Set(moodleTasks.map(t => t.subject))];
+            const completed = loadCompletedTasks();
+            const now = new Date();
+
+            const filterBar = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5 flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Materia</label>
+                        <select id="moodle-subject-filter" onchange="moodleSubjectFilter=this.value; renderMoodleView(document.getElementById('content-container'))"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="all" ${moodleSubjectFilter === 'all' ? 'selected' : ''}>Todas las materias</option>
+                            ${subjects.map(s => `<option value="${s}" ${moodleSubjectFilter === s ? 'selected' : ''}>${s}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Fecha</label>
+                        <select id="moodle-date-filter" onchange="moodleDateFilter=this.value; renderMoodleView(document.getElementById('content-container'))"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="all" ${moodleDateFilter === 'all' ? 'selected' : ''}>Todas las fechas</option>
+                            <option value="week" ${moodleDateFilter === 'week' ? 'selected' : ''}>Próximos 7 días</option>
+                            <option value="overdue" ${moodleDateFilter === 'overdue' ? 'selected' : ''}>Vencidas</option>
+                            <option value="pending" ${moodleDateFilter === 'pending' ? 'selected' : ''}>Solo pendientes (sin marcar)</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            let filtered = moodleTasks.map(t => ({ ...t, dueDate: new Date(t.due), opensDate: new Date(t.opens), isCompleted: completed.includes(t.id) }));
+
+            if (moodleSubjectFilter !== 'all') filtered = filtered.filter(t => t.subject === moodleSubjectFilter);
+            if (moodleDateFilter === 'week') filtered = filtered.filter(t => !t.isCompleted && (t.dueDate - now) / 3600000 <= 168 && t.dueDate >= now);
+            if (moodleDateFilter === 'overdue') filtered = filtered.filter(t => !t.isCompleted && t.dueDate < now);
+            if (moodleDateFilter === 'pending') filtered = filtered.filter(t => !t.isCompleted);
+
+            filtered.sort((a, b) => a.dueDate - b.dueDate);
+
+            let listHtml = '';
+            if (filtered.length === 0) {
+                listHtml = `<div class="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
+                    <i class="fa-solid fa-clipboard-check text-4xl mb-3"></i>
+                    <p>No hay tareas que coincidan con este filtro.</p>
+                </div>`;
+            } else {
+                listHtml = '<div class="space-y-3">' + filtered.map(t => {
+                    const isOverdue = !t.isCompleted && t.dueDate < now;
+                    const hoursLeft = (t.dueDate - now) / 3600000;
+                    let statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-500">Con tiempo</span>`;
+                    if (t.isCompleted) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Completada</span>`;
+                    else if (isOverdue) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">Vencida</span>`;
+                    else if (hoursLeft <= 24) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">Vence hoy</span>`;
+                    else if (hoursLeft <= 168) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-orange-100 text-orange-700">Esta semana</span>`;
+
+                    const dueLabel = t.dueDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) +
+                        ' · ' + t.dueDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                    const opensLabel = t.opensDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+
+                    return `
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex ${t.isCompleted ? 'opacity-60' : ''}">
+                            <div class="${t.color} w-1.5 flex-shrink-0"></div>
+                            <div class="p-4 flex-grow flex items-start gap-3">
+                                <input type="checkbox" ${t.isCompleted ? 'checked' : ''} onchange="toggleTaskCompleted('${t.id}')"
+                                    class="mt-1.5 w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400 cursor-pointer flex-shrink-0">
+                                <div class="flex-grow min-w-0">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                        <span class="text-xs font-bold uppercase tracking-wide text-gray-500">${t.subject}</span>
+                                        ${statusBadge}
+                                    </div>
+                                    <p class="font-semibold text-gray-900 leading-snug ${t.isCompleted ? 'line-through' : ''}">${t.title}</p>
+                                    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
+                                        <span><i class="fa-regular fa-calendar-check mr-1"></i>Entrega: ${dueLabel}</span>
+                                        <span><i class="fa-regular fa-calendar-plus mr-1"></i>Abre: ${opensLabel}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('') + '</div>';
+            }
+
+            container.innerHTML = filterBar + listHtml;
+        }
+
+        // Initialize app on load: apply saved personalization, then show the status/entry screen first
+        window.onload = () => {
+            applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul'));
+            applyStudentName(loadSetting(STORAGE_KEYS.name, ''));
+            renderEntryScreen();
+        };
+
+        // Close settings modal when clicking the dark backdrop
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'settings-modal') closeSettings();
+        });
+
+    </script>
+</body>
+</html>
