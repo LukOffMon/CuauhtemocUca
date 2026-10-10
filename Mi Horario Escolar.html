@@ -4,27 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mi Horario Escolar</title>
+    <!-- Aplica el modo oscuro/claro antes de pintar para evitar parpadeos -->
+    <script>
+        try {
+            var m = localStorage.getItem('schedule_mode') || 'auto';
+            if (m === 'dark' || (m === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            }
+        } catch (e) {}
+    </script>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <script>
         tailwind.config = {
+            darkMode: 'class',
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
                     colors: {
-                        uca: {
-                            dark: '#1e3a8a', // Dark blue from the screenshots
-                            light: '#3b82f6',
-                            accent: '#f97316', // Orange accent for exams or current day
-                            bg: '#f3f4f6'
-                        }
+                        uca: { dark: '#1e3a8a', light: '#3b82f6', accent: '#f97316', bg: '#f3f4f6' }
                     }
                 }
             }
@@ -34,159 +37,767 @@
         :root {
             --brand-dark: #1e3a8a;
             --brand-light: #3b82f6;
+            --brand-deep: #172554;
             --brand-bg: #f3f4f6;
+            --surface: #ffffff;
+            --surface-2: #f9fafb;
+            --text: #374151;
+            --text-strong: #111827;
+            --muted: #6b7280;
+            --border: #e5e7eb;
         }
-        /* Custom scrollbar for grid view on specific devices if needed */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+        html.dark {
+            --brand-bg: #0a0f1e;
+            --surface: #141b2d;
+            --surface-2: #1a2238;
+            --text: #d1d5db;
+            --text-strong: #f9fafb;
+            --muted: #9ca3af;
+            --border: #27324d;
+            color-scheme: dark;
         }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1; 
+        body { transition: background-color .25s ease, color .25s ease; }
+
+        .app-header-bg { background: linear-gradient(90deg, var(--brand-dark), var(--brand-deep)); }
+        .entry-bg { background: linear-gradient(145deg, var(--brand-dark) 0%, var(--brand-deep) 100%); }
+        .surface-card { background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+        .field {
+            background: var(--surface-2); color: var(--text-strong); border: 1px solid var(--border);
+            border-radius: .5rem; padding: .5rem .75rem; font-size: .875rem; outline: none;
         }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1; 
-            border-radius: 4px;
+        .field:focus { box-shadow: 0 0 0 2px var(--brand-light); }
+        .btn-brand { background: var(--brand-dark); color: #fff; }
+        .btn-brand:hover { opacity: .9; }
+        .btn-ghost { background: var(--surface-2); color: var(--text-strong); border: 1px solid var(--border); }
+        .btn-ghost:hover { border-color: var(--brand-light); }
+
+        /* ---------- Overrides del modo oscuro para las clases Tailwind ya usadas ---------- */
+        html.dark .bg-white { background-color: var(--surface) !important; }
+        html.dark .bg-gray-50, html.dark .bg-gray-100 { background-color: var(--surface-2) !important; }
+        html.dark .text-gray-900, html.dark .text-gray-800 { color: var(--text-strong) !important; }
+        html.dark .text-gray-700, html.dark .text-gray-600 { color: var(--text) !important; }
+        html.dark .text-gray-500, html.dark .text-gray-400 { color: var(--muted) !important; }
+        html.dark .border-gray-100, html.dark .border-gray-200, html.dark .border-gray-300 { border-color: var(--border) !important; }
+        html.dark .divide-gray-100 > * + * { border-color: var(--border) !important; }
+        html.dark .bg-blue-50 { background-color: rgba(59,130,246,.12) !important; }
+        html.dark .text-blue-700 { color: #93c5fd !important; }
+        html.dark .bg-amber-50 { background-color: rgba(245,158,11,.12) !important; }
+        html.dark .text-amber-800, html.dark .text-amber-700 { color: #fcd34d !important; }
+        html.dark .bg-amber-100 { background-color: rgba(245,158,11,.18) !important; }
+        html.dark .bg-emerald-100 { background-color: rgba(16,185,129,.18) !important; }
+        html.dark .text-emerald-700 { color: #6ee7b7 !important; }
+        html.dark .bg-red-100 { background-color: rgba(239,68,68,.18) !important; }
+        html.dark .text-red-700 { color: #fca5a5 !important; }
+        html.dark .bg-orange-100 { background-color: rgba(249,115,22,.18) !important; }
+        html.dark .text-orange-700 { color: #fdba74 !important; }
+        html.dark .text-purple-700 { color: #c4b5fd !important; }
+        html.dark ::-webkit-scrollbar-track { background: #0f1629; }
+        html.dark ::-webkit-scrollbar-thumb { background: #33415f; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        #main-nav::-webkit-scrollbar { height: 0; }
+
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulseSoft { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
+
+        /* ---------- Navegación ---------- */
+        .nav-btn {
+            --acc: #ffffff;
+            display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap;
+            padding: .5rem .85rem; border-radius: .6rem; font-size: .85rem; font-weight: 600;
+            color: rgba(255,255,255,.78); transition: background .15s, color .15s; position: relative;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8; 
+        .nav-btn i { color: var(--acc); }
+        .nav-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+        .nav-btn.active { background: rgba(255,255,255,.2); color: #fff; box-shadow: inset 0 -2px 0 var(--acc); }
+        .nav-btn[data-accent="amber"]   { --acc: #fbbf24; }
+        .nav-btn[data-accent="purple"]  { --acc: #c4b5fd; }
+        .nav-btn[data-accent="emerald"] { --acc: #6ee7b7; }
+        .nav-btn[data-accent="red"]     { --acc: #fca5a5; }
+        .nav-btn[data-accent="sky"]     { --acc: #7dd3fc; }
+        .nav-badge {
+            background: #ef4444; color: #fff; font-size: .65rem; font-weight: 800; min-width: 1.1rem; height: 1.1rem;
+            border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; padding: 0 .3rem;
         }
-        
-        .fade-in {
-            animation: fadeIn 0.3s ease-in-out;
+        .icon-btn {
+            width: 2.25rem; height: 2.25rem; border-radius: 999px; background: rgba(255,255,255,.12);
+            display: inline-flex; align-items: center; justify-content: center; color: #fff; transition: background .15s; flex-shrink: 0;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .icon-btn:hover { background: rgba(255,255,255,.25); }
+
+        /* ---------- Cuenta regresiva ---------- */
+        .cd-chip {
+            display: inline-flex; align-items: center; gap: .35rem; padding: .25rem .65rem; border-radius: 999px;
+            font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+        }
+        .cd-ok   { background: #dcfce7; color: #166534; }
+        .cd-warn { background: #fef3c7; color: #92400e; }
+        .cd-hot  { background: #ffedd5; color: #9a3412; }
+        .cd-crit { background: #fee2e2; color: #991b1b; animation: pulseSoft 1.4s infinite; }
+        .cd-over { background: #991b1b; color: #fff; }
+        .cd-done { background: #d1fae5; color: #065f46; }
+        .cd-soon { background: #e0e7ff; color: #3730a3; }
+        html.dark .cd-ok   { background: rgba(34,197,94,.18);  color: #86efac; }
+        html.dark .cd-warn { background: rgba(245,158,11,.2);  color: #fcd34d; }
+        html.dark .cd-hot  { background: rgba(249,115,22,.22); color: #fdba74; }
+        html.dark .cd-crit { background: rgba(239,68,68,.25);  color: #fca5a5; }
+        html.dark .cd-done { background: rgba(16,185,129,.2);  color: #6ee7b7; }
+        html.dark .cd-soon { background: rgba(99,102,241,.25); color: #c7d2fe; }
+        .bar-track { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 999px; transition: width .4s ease; }
+
+        /* ---------- Toasts ---------- */
+        #toast-wrap { position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); width: min(92vw, 26rem);
+            z-index: 400; display: flex; flex-direction: column; gap: .5rem; pointer-events: none; }
+        .toast { pointer-events: auto; background: #111827; color: #fff; border-left: 4px solid var(--brand-light);
+            padding: .75rem 1rem; border-radius: .75rem; box-shadow: 0 10px 30px rgba(0,0,0,.35);
+            display: flex; gap: .75rem; align-items: flex-start; font-size: .85rem; animation: fadeIn .25s ease; }
+        .toast span { flex: 1; }
+        .toast button { opacity: .6; }
+        .toast button:hover { opacity: 1; }
+        .toast-warn { border-color: #f59e0b; }
+        .toast-danger { border-color: #ef4444; }
+        .toast-ok { border-color: #22c55e; }
+
+        /* ---------- Chips de herramientas ---------- */
+        .tool-chip { padding: .45rem .9rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap;
+            background: var(--surface); border: 1px solid var(--border); color: var(--text); transition: all .15s; }
+        .tool-chip:hover { border-color: var(--brand-light); }
+        .tool-chip.active { background: var(--brand-dark); border-color: var(--brand-dark); color: #fff; }
+
+        /* ---------- Impresión ---------- */
+        @media print {
+            #app-header, #toast-wrap, #entry-screen, #offline-bar, .no-print { display: none !important; }
+            body { background: #fff !important; }
+            html.dark { --surface:#fff; --surface-2:#f9fafb; --text:#374151; --text-strong:#111827; --muted:#6b7280; --border:#e5e7eb; }
         }
     </style>
 </head>
 <body class="bg-[var(--brand-bg)] text-gray-800 font-sans min-h-screen flex flex-col">
 
+    <!-- Banner sin conexión -->
+    <div id="offline-bar" class="hidden fixed top-0 inset-x-0 z-[300] bg-red-600 text-white text-center text-xs font-semibold py-1">
+        <i class="fa-solid fa-wifi mr-1"></i> Sin conexión a internet — el horario y tus tareas siguen disponibles.
+    </div>
+
+    <div id="toast-wrap"></div>
+
     <!-- Entry / Status Screen -->
-    <div id="entry-screen" class="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 bg-gradient-to-br from-[var(--brand-dark)] to-blue-950 relative">
-        <button onclick="openSettings()" title="Personalizar" class="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors text-white">
-            <i class="fa-solid fa-gear"></i>
-        </button>
+    <div id="entry-screen" class="min-h-screen w-full flex flex-col items-center justify-center px-4 py-10 entry-bg relative">
+        <div class="absolute top-4 right-4 flex gap-2">
+            <button onclick="openChangelog()" title="Novedades" class="icon-btn"><i class="fa-solid fa-gift"></i></button>
+            <button onclick="toggleDark()" title="Cambiar claro / oscuro" class="icon-btn"><i class="mode-icon fa-solid fa-moon"></i></button>
+            <button onclick="openSettings()" title="Personalizar" class="icon-btn"><i class="fa-solid fa-gear"></i></button>
+        </div>
         <div class="w-full max-w-lg">
             <div class="text-center mb-6">
                 <i class="fa-solid fa-graduation-cap text-4xl text-white mb-2"></i>
-                <p class="text-blue-200 text-sm font-medium" id="entry-greeting"></p>
-                <p class="text-blue-200 text-sm font-medium" id="entry-date"></p>
+                <p class="text-white/80 text-sm font-medium" id="entry-greeting"></p>
+                <p class="text-white/80 text-sm font-medium" id="entry-date"></p>
             </div>
 
-            <div id="entry-card" class="bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
-                <!-- Filled dynamically by JS -->
+            <div id="entry-card" class="surface-card rounded-2xl shadow-xl p-6 sm:p-8 text-center">
                 <p class="text-gray-400">Calculando tu horario...</p>
             </div>
 
-            <!-- Pending Moodle tasks reminder -->
-            <div id="tasks-reminder" class="hidden mt-4 bg-white/95 rounded-xl shadow-lg p-4 flex items-center gap-3 cursor-pointer hover:bg-white transition-colors" onclick="enterApp(false); changeView('moodle');">
-                <!-- Filled dynamically by JS -->
-            </div>
+            <!-- Pending tasks reminder (Moodle + ALEKS) with live countdown -->
+            <div id="tasks-reminder" class="hidden mt-4 surface-card rounded-xl shadow-lg p-4 flex items-center gap-3 cursor-pointer hover:opacity-95 transition-opacity" onclick="enterApp(false); changeView('panel');"></div>
+
+            <!-- Weather -->
+            <div id="weather-card" class="hidden mt-4 rounded-xl p-4 bg-white/10 border border-white/15 text-white backdrop-blur"></div>
 
             <div class="flex flex-col sm:flex-row gap-3 mt-6">
                 <button onclick="enterApp(true)" id="btn-go-current" class="flex-1 bg-white text-[var(--brand-dark)] font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-50 transition-colors flex items-center justify-center gap-2">
                     <i class="fa-solid fa-location-arrow"></i> Ir a mi clase actual
                 </button>
-                <button onclick="enterApp(false)" id="btn-go-menu" class="flex-1 bg-blue-800/60 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-blue-800 transition-colors border border-blue-700 flex items-center justify-center gap-2">
+                <button onclick="enterApp(false)" id="btn-go-menu" class="flex-1 bg-white/15 text-white font-semibold py-3 px-4 rounded-xl shadow-md hover:bg-white/25 transition-colors border border-white/25 flex items-center justify-center gap-2">
                     <i class="fa-solid fa-bars"></i> Ver menú principal
                 </button>
             </div>
+            <button onclick="openMoodle()" class="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-4 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Abrir Moodle de la prepa
+            </button>
         </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+    <div id="settings-modal" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+        <div class="surface-card rounded-2xl shadow-2xl w-full max-w-md p-6 max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-sliders mr-2 text-[var(--brand-light)]"></i>Personalizar</h3>
                 <button onclick="closeSettings()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
             </div>
 
             <label class="block text-sm font-semibold text-gray-600 mb-1">Nombre del alumno</label>
-            <input id="settings-name-input" type="text" placeholder="Tu nombre" maxlength="40"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-5 focus:outline-none focus:ring-2 focus:ring-[var(--brand-light)]">
+            <input id="settings-name-input" type="text" placeholder="Tu nombre" maxlength="40" class="field w-full mb-4">
+
+            <label class="block text-sm font-semibold text-gray-600 mb-1">Enlace de Moodle de la prepa</label>
+            <input id="settings-moodle-input" type="url" placeholder="https://moodle.tuprepa.edu.mx" class="field w-full mb-1">
+            <p class="text-xs text-gray-400 mb-4">Se usa en los botones “Abrir Moodle”. Se guarda solo en este navegador.</p>
+
+            <label class="block text-sm font-semibold text-gray-600 mb-2">Apariencia</label>
+            <div id="mode-buttons" class="grid grid-cols-3 gap-2 mb-4"></div>
 
             <label class="block text-sm font-semibold text-gray-600 mb-2">Tema de colores</label>
-            <div id="theme-swatches" class="grid grid-cols-5 gap-3 mb-6">
-                <!-- Filled dynamically by JS -->
-            </div>
+            <div id="theme-swatches" class="grid grid-cols-4 gap-3 mb-5"></div>
 
-            <button onclick="saveSettings()" class="w-full bg-[var(--brand-dark)] hover:opacity-90 text-white font-semibold py-2.5 rounded-lg transition-opacity">
-                Guardar
+            <label class="block text-sm font-semibold text-gray-600 mb-2">Alertas</label>
+            <div class="surface-card rounded-xl p-3 mb-3 flex items-center justify-between gap-3" style="background:var(--surface-2)">
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-gray-800">Notificaciones del navegador</p>
+                    <p id="notif-status" class="text-xs text-gray-500"></p>
+                </div>
+                <button id="notif-btn" onclick="requestNotifPermission()" class="btn-brand text-xs font-semibold px-3 py-2 rounded-lg whitespace-nowrap">Activar</button>
+            </div>
+            <label class="flex items-center gap-2 text-sm text-gray-700 mb-5 cursor-pointer">
+                <input id="settings-sound" type="checkbox" class="w-4 h-4 rounded"> Sonido en alertas y Pomodoro
+            </label>
+
+            <button onclick="saveSettings()" class="w-full btn-brand font-semibold py-2.5 rounded-lg transition-opacity">Guardar</button>
+            <button onclick="closeSettings(); openChangelog();" class="w-full mt-2 text-sm text-[var(--brand-light)] font-semibold py-2 rounded-lg hover:underline">
+                <i class="fa-solid fa-gift mr-1"></i> Ver novedades
             </button>
-            <p class="text-xs text-gray-400 text-center mt-3">Se guarda solo en este navegador.</p>
+            <p class="text-xs text-gray-400 text-center mt-1">Todo se guarda solo en este navegador.</p>
+        </div>
+    </div>
+
+    <!-- Changelog / Novedades Modal -->
+    <div id="changelog-modal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-black/65 px-4">
+        <div class="surface-card rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
+            <div class="app-header-bg text-white px-6 py-5 flex-shrink-0">
+                <p class="text-xs font-bold uppercase tracking-widest text-white/70">¡Actualización!</p>
+                <h3 class="text-2xl font-extrabold mt-1">Novedades <span id="changelog-version" class="text-white/70 text-lg font-semibold"></span></h3>
+            </div>
+            <div id="changelog-body" class="p-5 overflow-y-auto space-y-3"></div>
+            <div class="p-4 border-t flex-shrink-0" style="border-color:var(--border)">
+                <button onclick="closeChangelog()" class="w-full btn-brand font-semibold py-3 rounded-xl">¡Entendido, vamos!</button>
+            </div>
         </div>
     </div>
 
     <!-- Header / Nav -->
-    <header id="app-header" class="bg-[var(--brand-dark)] text-white shadow-md sticky top-0 z-50 hidden">
+    <header id="app-header" class="app-header-bg text-white shadow-md sticky top-0 z-50 hidden">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-3">
+            <div class="flex items-center justify-between h-14 sm:h-16 gap-2">
+                <div class="flex items-center gap-3 min-w-0">
                     <i class="fa-solid fa-graduation-cap text-2xl"></i>
-                    <div>
+                    <div class="min-w-0">
                         <h1 class="font-bold text-lg leading-tight">Mi Horario</h1>
-                        <p class="text-xs text-blue-200" id="student-name-label">Estudiante</p>
+                        <p class="text-xs text-white/70 truncate" id="student-name-label">Estudiante</p>
                     </div>
-                    <button onclick="openSettings()" title="Personalizar" class="ml-1 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
-                        <i class="fa-solid fa-gear text-sm"></i>
-                    </button>
                 </div>
-                <!-- Desktop Navigation -->
-                <nav class="hidden md:flex space-x-1">
-                    <button onclick="changeView('today')" id="btn-today" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Día Actual</button>
-                    <button onclick="changeView('week')" id="btn-week" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors hover:bg-blue-800">Semana Completa</button>
-                    <button onclick="changeView('moodle')" id="btn-moodle" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2">
-                        <i class="fa-solid fa-list-check"></i> Tareas Moodle
+                <div class="flex items-center gap-2">
+                    <button onclick="openMoodle()" title="Abrir Moodle de la prepa" class="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-3 h-9 rounded-full flex items-center gap-2 transition-colors">
+                        <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i><span class="hidden sm:inline">Moodle</span>
                     </button>
-                    <button onclick="changeView('exams')" id="btn-exams" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-red-600 hover:bg-red-700 text-white flex items-center gap-2">
-                        <i class="fa-solid fa-file-signature"></i> Exámenes
-                    </button>
-                    <button onclick="changeView('aleks')" id="btn-aleks" class="nav-btn px-4 py-2 rounded-md text-sm font-medium transition-colors bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2">
-                        <i class="fa-solid fa-laptop-code"></i> Tareas ALEKS
-                    </button>
-                </nav>
+                    <button onclick="openChangelog()" title="Novedades" class="icon-btn"><i class="fa-solid fa-gift text-sm"></i></button>
+                    <button onclick="toggleDark()" title="Cambiar claro / oscuro" class="icon-btn"><i class="mode-icon fa-solid fa-moon text-sm"></i></button>
+                    <button onclick="openSettings()" title="Personalizar" class="icon-btn"><i class="fa-solid fa-gear text-sm"></i></button>
+                </div>
             </div>
+            <nav id="main-nav" class="flex gap-1 overflow-x-auto pb-2 md:justify-center"></nav>
         </div>
-        
-        <!-- Mobile Navigation (Bottom Bar style or sub-header) -->
-        <div class="md:hidden bg-blue-900 border-t border-blue-800 flex overflow-x-auto">
-            <button onclick="changeView('today')" id="btn-today-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Día Actual</button>
-            <button onclick="changeView('week')" id="btn-week-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent transition-colors whitespace-nowrap px-4">Semana</button>
-            <button onclick="changeView('moodle')" id="btn-moodle-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-purple-300 transition-colors whitespace-nowrap px-4">
-                <i class="fa-solid fa-list-check mr-1"></i> Moodle
-            </button>
-            <button onclick="changeView('exams')" id="btn-exams-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-red-300 transition-colors whitespace-nowrap px-4">
-                <i class="fa-solid fa-file-signature mr-1"></i> Exámenes
-            </button>
-            <button onclick="changeView('aleks')" id="btn-aleks-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-emerald-300 transition-colors whitespace-nowrap px-4">
-                <i class="fa-solid fa-laptop-code mr-1"></i> ALEKS
-            </button>
-            <button onclick="openSettings()" id="btn-settings-mob" class="nav-btn flex-1 py-3 text-sm font-medium text-center border-b-2 border-transparent text-blue-200 transition-colors whitespace-nowrap px-4">
-                <i class="fa-solid fa-gear mr-1"></i> Ajustes
-            </button>
-        </div>
+        <!-- Barra de urgencia: la tarea más próxima con cuenta regresiva -->
+        <div id="urgent-bar" class="hidden cursor-pointer" onclick="changeView('panel')"></div>
     </header>
 
     <!-- Main Content Area -->
     <main id="app-main" class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 hidden">
-        
-        <!-- Dynamic Content Header -->
-        <div class="flex justify-between items-end mb-6 border-b border-gray-200 pb-2">
+        <div class="flex justify-between items-end mb-6 border-b border-gray-200 pb-2 gap-3">
             <h2 id="view-title" class="text-2xl font-bold text-gray-900">Cargando...</h2>
-            <span id="current-date" class="text-sm text-gray-500 font-medium"></span>
+            <span id="current-date" class="text-sm text-gray-500 font-medium text-right"></span>
         </div>
-
-        <!-- Container where JS will inject the layout -->
-        <div id="content-container" class="fade-in">
-            <!-- Content loaded via JS -->
-        </div>
-
+        <div id="content-container" class="fade-in"></div>
     </main>
 
     <script>
+
+        // =================================================================
+        // CONFIGURACIÓN RÁPIDA (puedes editar estos valores)
+        // =================================================================
+        const APP_VERSION = '2.0.0';          // Cambia este número para volver a mostrar la ventana de novedades
+        const DEFAULT_MOODLE_URL = '';        // <-- Pega aquí el enlace de Moodle de la prepa (o ponlo en ⚙ Personalizar)
+        const ALEKS_URL = 'https://www.aleks.com/';
+        const SEMESTER_WEEKS = 10;            // Semanas que se repiten las clases al exportar el horario (.ics)
+        const DEFAULT_GEO = { lat: 21.8853, lon: -102.2916, label: 'Aguascalientes' }; // Para el clima
+
+        const CHANGELOG = [
+            { icon: 'fa-circle-check', color: '#10b981', title: 'Tareas de ALEKS completables', text: 'Ahora puedes marcar cada tarea de ALEKS como completada, igual que en Moodle.' },
+            { icon: 'fa-hourglass-half', color: '#f59e0b', title: 'Cuenta regresiva en vivo', text: 'Cada tarea muestra cuánto tiempo le queda, actualizado al segundo, con colores según la urgencia.' },
+            { icon: 'fa-bell', color: '#ef4444', title: 'Alertas reales', text: 'Avisos a las 24 h, 3 h, 1 h y 15 min antes de cada entrega (notificación del navegador + aviso en pantalla). Para tener alertas aunque la página esté cerrada, exporta tus recordatorios a tu calendario (.ics).' },
+            { icon: 'fa-arrow-up-right-from-square', color: '#a855f7', title: 'Acceso directo a Moodle', text: 'Botón “Abrir Moodle” en la pantalla de inicio y en el menú. Configura el enlace en ⚙ Personalizar.' },
+            { icon: 'fa-moon', color: '#6366f1', title: 'Modo claro, oscuro y automático', text: 'Cambia con un toque desde el menú, o deja que siga el modo de tu dispositivo.' },
+            { icon: 'fa-palette', color: '#ec4899', title: '12 temas de colores', text: 'Nuevos: Aurora, Atardecer, Neón, Océano, Galaxia, Lava y Grafito, con degradados.' },
+            { icon: 'fa-cloud-sun-rain', color: '#0ea5e9', title: 'Clima en la pantalla de inicio', text: 'Pronóstico y probabilidad de lluvia para que sepas si llevar paraguas (datos de Open-Meteo).' },
+            { icon: 'fa-toolbox', color: '#14b8a6', title: 'Nueva sección de Herramientas', text: 'Pomodoro, calculadora de promedios, contador de faltas, notas por materia, enlaces útiles, respaldo de datos, exportar a calendario e imprimir horario.' },
+            { icon: 'fa-wifi', color: '#64748b', title: 'Aviso de conexión', text: 'Te avisa si pierdes internet. El horario y tus tareas se siguen viendo.' }
+        ];
+
+        const STORAGE_KEYS = {
+            name: 'schedule_studentName', theme: 'schedule_theme', completed: 'schedule_completedTasks',
+            mode: 'schedule_mode', moodleUrl: 'schedule_moodleUrl', seenVersion: 'schedule_seenVersion',
+            notified: 'schedule_notified', sound: 'schedule_sound', notifOn: 'schedule_notifOn',
+            links: 'schedule_links', grades: 'schedule_grades', absences: 'schedule_absences', notes: 'schedule_notes',
+            passMin: 'schedule_passMin', absLimit: 'schedule_absLimit', geo: 'schedule_geo', pomoDay: 'schedule_pomoDay'
+        };
+
+        const THEMES = {
+            azul:      { label: 'Azul',      dark: '#1e3a8a', light: '#3b82f6', deep: '#172554' },
+            verde:     { label: 'Verde',     dark: '#065f46', light: '#10b981', deep: '#022c22' },
+            morado:    { label: 'Morado',    dark: '#4c1d95', light: '#8b5cf6', deep: '#2e1065' },
+            rosa:      { label: 'Rosa',      dark: '#9d174d', light: '#ec4899', deep: '#500724' },
+            naranja:   { label: 'Naranja',   dark: '#7c2d12', light: '#f97316', deep: '#431407' },
+            aurora:    { label: 'Aurora',    dark: '#0f766e', light: '#2dd4bf', deep: '#4c1d95' },
+            atardecer: { label: 'Atardecer', dark: '#be123c', light: '#fb7185', deep: '#4c1d95' },
+            neon:      { label: 'Neón',      dark: '#701a75', light: '#d946ef', deep: '#0e7490' },
+            oceano:    { label: 'Océano',    dark: '#075985', light: '#06b6d4', deep: '#0f172a' },
+            galaxia:   { label: 'Galaxia',   dark: '#312e81', light: '#818cf8', deep: '#020617' },
+            lava:      { label: 'Lava',      dark: '#991b1b', light: '#f97316', deep: '#1c0a05' },
+            grafito:   { label: 'Grafito',   dark: '#1f2937', light: '#64748b', deep: '#030712' }
+        };
+
+        let currentView = 'today';
+        let currentDayIndex = new Date().getDay();
+        let highlightCurrentClass = false;
+
+        // ---------------------------------------------------------------
+        // Almacenamiento seguro (localStorage puede no estar disponible)
+        // ---------------------------------------------------------------
+        function loadSetting(key, fallback) {
+            try { const v = localStorage.getItem(key); return v === null ? fallback : v; } catch (e) { return fallback; }
+        }
+        function saveSetting(key, value) {
+            try { localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ }
+        }
+        function loadJSON(key, fallback) {
+            try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; }
+        }
+        function saveJSON(key, value) {
+            try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* ignore */ }
+        }
+        function loadCompletedTasks() { const v = loadJSON(STORAGE_KEYS.completed, []); return Array.isArray(v) ? v : []; }
+        function saveCompletedTasks(arr) { saveJSON(STORAGE_KEYS.completed, arr); }
+
+        function esc(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+        const pad = n => String(n).padStart(2, '0');
+
+        // ---------------------------------------------------------------
+        // Tema de color + modo claro/oscuro
+        // ---------------------------------------------------------------
+        function applyTheme(themeKey) {
+            const t = THEMES[themeKey] || THEMES.azul;
+            const r = document.documentElement.style;
+            r.setProperty('--brand-dark', t.dark);
+            r.setProperty('--brand-light', t.light);
+            r.setProperty('--brand-deep', t.deep);
+        }
+        function isDarkEffective(mode) {
+            return mode === 'dark' || (mode === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        }
+        function applyMode(mode) {
+            const dark = isDarkEffective(mode);
+            document.documentElement.classList.toggle('dark', dark);
+            document.querySelectorAll('.mode-icon').forEach(i => { i.className = 'mode-icon fa-solid ' + (dark ? 'fa-sun' : 'fa-moon') + (i.closest('#app-header') ? ' text-sm' : ''); });
+        }
+        function toggleDark() {
+            const nowDark = document.documentElement.classList.contains('dark');
+            const next = nowDark ? 'light' : 'dark';
+            saveSetting(STORAGE_KEYS.mode, next);
+            applyMode(next);
+        }
+
+        function applyStudentName(name) {
+            const label = name && name.trim() ? name.trim() : 'Estudiante';
+            const headerLabel = document.getElementById('student-name-label');
+            if (headerLabel) headerLabel.textContent = label;
+            const greeting = document.getElementById('entry-greeting');
+            if (greeting) greeting.textContent = name && name.trim() ? `¡Hola, ${name.trim()}!` : '¡Hola!';
+        }
+
+        // ---------------------------------------------------------------
+        // Toasts, sonido y notificaciones
+        // ---------------------------------------------------------------
+        function showToast(msg, type = 'info', ms = 7000) {
+            const wrap = document.getElementById('toast-wrap');
+            if (!wrap) return;
+            const el = document.createElement('div');
+            el.className = 'toast toast-' + type;
+            el.innerHTML = `<span>${msg}</span><button aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>`;
+            el.querySelector('button').onclick = () => el.remove();
+            wrap.appendChild(el);
+            setTimeout(() => el.remove(), ms);
+        }
+
+        function soundEnabled() { return loadSetting(STORAGE_KEYS.sound, '1') === '1'; }
+        function beep(times = 2, freq = 880) {
+            if (!soundEnabled()) return;
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                for (let i = 0; i < times; i++) {
+                    const o = ctx.createOscillator(), g = ctx.createGain();
+                    o.type = 'sine'; o.frequency.value = freq;
+                    o.connect(g); g.connect(ctx.destination);
+                    const t0 = ctx.currentTime + i * 0.25;
+                    g.gain.setValueAtTime(0.0001, t0);
+                    g.gain.exponentialRampToValueAtTime(0.25, t0 + 0.02);
+                    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+                    o.start(t0); o.stop(t0 + 0.2);
+                }
+            } catch (e) { /* audio no disponible hasta que haya interacción */ }
+        }
+
+        function notifSupported() { return 'Notification' in window; }
+        function notifGranted() { return notifSupported() && Notification.permission === 'granted' && loadSetting(STORAGE_KEYS.notifOn, '0') === '1'; }
+        function sendNotification(title, body, tag) {
+            if (!notifGranted()) return;
+            try { new Notification(title, { body, tag }); } catch (e) { /* algunos móviles no lo permiten sin service worker */ }
+        }
+        function requestNotifPermission() {
+            if (!notifSupported()) { showToast('Tu navegador no soporta notificaciones. Las alertas saldrán dentro de la página.', 'warn'); return; }
+            if (Notification.permission === 'denied') { showToast('Las notificaciones están bloqueadas. Actívalas en los permisos del sitio de tu navegador.', 'warn', 9000); return; }
+            Notification.requestPermission().then(p => {
+                if (p === 'granted') {
+                    saveSetting(STORAGE_KEYS.notifOn, '1');
+                    showToast('¡Listo! Te avisaremos antes de cada entrega mientras la página esté abierta.', 'ok');
+                    sendNotification('Mi Horario', 'Las alertas están activadas ✅', 'test');
+                } else {
+                    showToast('No se activaron las notificaciones.', 'warn');
+                }
+                refreshNotifStatus();
+                if (currentView === 'panel' || currentView === 'tools') renderView(currentView);
+            });
+        }
+        function refreshNotifStatus() {
+            const st = document.getElementById('notif-status'), btn = document.getElementById('notif-btn');
+            if (!st || !btn) return;
+            if (!notifSupported()) { st.textContent = 'No disponible en este navegador'; btn.classList.add('hidden'); return; }
+            btn.classList.remove('hidden');
+            if (Notification.permission === 'granted' && loadSetting(STORAGE_KEYS.notifOn, '0') === '1') { st.textContent = 'Activadas ✅'; btn.textContent = 'Probar'; btn.onclick = () => sendNotification('Mi Horario', 'Así se verá una alerta 🔔', 'test'); }
+            else if (Notification.permission === 'denied') { st.textContent = 'Bloqueadas en el navegador'; btn.textContent = 'Ayuda'; btn.onclick = requestNotifPermission; }
+            else { st.textContent = 'Desactivadas'; btn.textContent = 'Activar'; btn.onclick = requestNotifPermission; }
+        }
+
+        // ---------------------------------------------------------------
+        // Modal de personalización
+        // ---------------------------------------------------------------
+        let pendingThemeSelection = null;
+        let pendingMode = 'auto';
+
+        function renderThemeSwatches() {
+            const container = document.getElementById('theme-swatches');
+            if (!container) return;
+            container.innerHTML = Object.entries(THEMES).map(([key, t]) => `
+                <button type="button" onclick="selectThemeSwatch('${key}')" class="flex flex-col items-center gap-1">
+                    <span class="w-11 h-11 rounded-full border-2 ${key === pendingThemeSelection ? 'border-[var(--text-strong)] scale-110' : 'border-transparent'} flex items-center justify-center transition-all shadow"
+                        style="background: linear-gradient(135deg, ${t.dark}, ${t.light} 60%, ${t.deep});">
+                        ${key === pendingThemeSelection ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ''}
+                    </span>
+                    <span class="text-[10px] text-gray-500">${t.label}</span>
+                </button>
+            `).join('');
+        }
+        function selectThemeSwatch(key) {
+            pendingThemeSelection = key;
+            applyTheme(key); // vista previa en vivo
+            renderThemeSwatches();
+        }
+        function renderModeButtons() {
+            const box = document.getElementById('mode-buttons');
+            if (!box) return;
+            const opts = [['light', 'fa-sun', 'Claro'], ['dark', 'fa-moon', 'Oscuro'], ['auto', 'fa-circle-half-stroke', 'Auto']];
+            box.innerHTML = opts.map(([k, ic, lb]) => `
+                <button type="button" onclick="selectMode('${k}')" class="tool-chip ${pendingMode === k ? 'active' : ''} flex items-center justify-center gap-2">
+                    <i class="fa-solid ${ic}"></i>${lb}
+                </button>`).join('');
+        }
+        function selectMode(m) { pendingMode = m; applyMode(m); renderModeButtons(); }
+
+        function openSettings() {
+            document.getElementById('settings-name-input').value = loadSetting(STORAGE_KEYS.name, '');
+            document.getElementById('settings-moodle-input').value = loadSetting(STORAGE_KEYS.moodleUrl, DEFAULT_MOODLE_URL);
+            document.getElementById('settings-sound').checked = soundEnabled();
+            pendingThemeSelection = loadSetting(STORAGE_KEYS.theme, 'azul');
+            pendingMode = loadSetting(STORAGE_KEYS.mode, 'auto');
+            renderThemeSwatches(); renderModeButtons(); refreshNotifStatus();
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettings() {
+            applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul'));   // revierte vista previa si no guardó
+            applyMode(loadSetting(STORAGE_KEYS.mode, 'auto'));
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+        function sanitizeUrl(u) {
+            u = (u || '').trim();
+            if (!u) return '';
+            if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+            try { const p = new URL(u); return (p.protocol === 'http:' || p.protocol === 'https:') && p.hostname.includes('.') ? p.href : ''; } catch (e) { return ''; }
+        }
+        function saveSettings() {
+            const name = document.getElementById('settings-name-input').value;
+            const rawUrl = document.getElementById('settings-moodle-input').value;
+            const url = sanitizeUrl(rawUrl);
+            if (rawUrl.trim() && !url) { showToast('El enlace de Moodle no parece válido. Ejemplo: https://moodle.miprepa.edu.mx', 'warn'); return; }
+            saveSetting(STORAGE_KEYS.name, name);
+            saveSetting(STORAGE_KEYS.moodleUrl, url);
+            saveSetting(STORAGE_KEYS.sound, document.getElementById('settings-sound').checked ? '1' : '0');
+            saveSetting(STORAGE_KEYS.theme, pendingThemeSelection || 'azul');
+            saveSetting(STORAGE_KEYS.mode, pendingMode);
+            applyStudentName(name); applyTheme(pendingThemeSelection || 'azul'); applyMode(pendingMode);
+            document.getElementById('settings-modal').classList.add('hidden');
+            showToast('Preferencias guardadas ✅', 'ok', 3000);
+            if (currentView === 'tools') renderView('tools');
+        }
+
+        // ---------------------------------------------------------------
+        // Moodle
+        // ---------------------------------------------------------------
+        function getMoodleUrl() { return sanitizeUrl(loadSetting(STORAGE_KEYS.moodleUrl, DEFAULT_MOODLE_URL)); }
+        function openMoodle() {
+            const url = getMoodleUrl();
+            if (url) { window.open(url, '_blank', 'noopener'); return; }
+            showToast('Aún no has configurado el enlace de Moodle. Pégalo aquí y listo 👇', 'warn');
+            openSettings();
+            setTimeout(() => { const i = document.getElementById('settings-moodle-input'); if (i) i.focus(); }, 100);
+        }
+
+        // ---------------------------------------------------------------
+        // Novedades
+        // ---------------------------------------------------------------
+        function openChangelog() {
+            document.getElementById('changelog-version').textContent = 'v' + APP_VERSION;
+            document.getElementById('changelog-body').innerHTML = CHANGELOG.map(c => `
+                <div class="flex gap-3 items-start">
+                    <span class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white" style="background:${c.color}"><i class="fa-solid ${c.icon}"></i></span>
+                    <div><p class="font-bold text-gray-900 leading-tight">${c.title}</p><p class="text-sm text-gray-500 mt-0.5">${c.text}</p></div>
+                </div>`).join('');
+            document.getElementById('changelog-modal').classList.remove('hidden');
+        }
+        function closeChangelog() {
+            document.getElementById('changelog-modal').classList.add('hidden');
+            saveSetting(STORAGE_KEYS.seenVersion, APP_VERSION);
+        }
+        function maybeShowChangelog() {
+            if (loadSetting(STORAGE_KEYS.seenVersion, '') !== APP_VERSION) setTimeout(openChangelog, 500);
+        }
+
+        // ---------------------------------------------------------------
+        // Fechas límite unificadas (Moodle + ALEKS)
+        // ---------------------------------------------------------------
+        function parseAleksDate(s) {
+            const m = s.match(/(\d+)\/(\d+)\/(\d+)\s+(\d+):(\d+)/);
+            return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
+        }
+        function getDeadlines() {
+            const done = loadCompletedTasks();
+            const now = new Date();
+            const out = [];
+            moodleTasks.forEach(t => out.push({
+                id: t.id, kind: 'moodle', subject: t.subject, title: t.title, color: t.color,
+                opens: new Date(t.opens), due: new Date(t.due), completed: done.includes(t.id)
+            }));
+            aleksTasks.forEach(t => {
+                const id = 'aleks-' + t.name.replace(/\D/g, '');
+                const opens = parseAleksDate(t.opens), closes = parseAleksDate(t.closes);
+                const fin = t.finalDue ? parseAleksDate(t.finalDue) : null;
+                const inExtra = !!fin && now > closes;
+                out.push({
+                    id, kind: 'aleks', subject: 'ALEKS', title: t.name, color: 'bg-emerald-600',
+                    opens, closes, finalDue: fin, inExtra, due: inExtra ? fin : closes, completed: done.includes(id)
+                });
+            });
+            return out;
+        }
+        function getPendingDeadlines() {
+            return getDeadlines().filter(d => !d.completed).sort((a, b) => a.due - b.due);
+        }
+        function toggleTaskCompleted(taskId) {
+            const list = loadCompletedTasks();
+            const idx = list.indexOf(taskId);
+            const nowDone = idx === -1;
+            if (nowDone) list.push(taskId); else list.splice(idx, 1);
+            saveCompletedTasks(list);
+            if (nowDone) { showToast('¡Tarea completada! 🎉', 'ok', 2500); }
+            renderView(currentView);
+            updateNavBadge(); updateUrgentBar();
+        }
+
+        // ---------------------------------------------------------------
+        // Cuenta regresiva
+        // ---------------------------------------------------------------
+        function levelFor(ms) {
+            if (ms <= 0) return 'over';
+            const h = ms / 3600000;
+            if (h < 3) return 'crit';
+            if (h < 24) return 'hot';
+            if (h < 72) return 'warn';
+            return 'ok';
+        }
+        function fmtDuration(ms) {
+            const s = Math.floor(Math.abs(ms) / 1000);
+            const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+            if (d > 0) return `${d}d ${h}h ${pad(m)}m`;
+            return `${pad(h)}:${pad(m)}:${pad(sec)}`;
+        }
+        function chipState(opensMs, dueMs) {
+            const now = Date.now();
+            if (now < opensMs) return { cls: 'cd-soon', html: `<i class="fa-regular fa-calendar-plus"></i> Abre en ${fmtDuration(opensMs - now)}` };
+            const ms = dueMs - now;
+            const lvl = levelFor(ms);
+            if (lvl === 'over') return { cls: 'cd-over', html: `<i class="fa-solid fa-triangle-exclamation"></i> Venció hace ${fmtDuration(ms)}` };
+            return { cls: 'cd-' + lvl, html: `<i class="fa-regular fa-hourglass-half"></i> Faltan ${fmtDuration(ms)}` };
+        }
+        function countdownChip(d) {
+            if (d.completed) return `<span class="cd-chip cd-done"><i class="fa-solid fa-circle-check"></i> Completada</span>`;
+            const st = chipState(d.opens.getTime(), d.due.getTime());
+            return `<span class="cd-chip ${st.cls}" data-cd data-opens="${d.opens.getTime()}" data-due="${d.due.getTime()}">${st.html}</span>`;
+        }
+        function tickCountdowns() {
+            document.querySelectorAll('[data-cd]').forEach(el => {
+                const st = chipState(+el.dataset.opens, +el.dataset.due);
+                el.className = 'cd-chip ' + st.cls;
+                el.innerHTML = st.html;
+            });
+        }
+        function progressBar(d) {
+            if (d.completed) return `<div class="bar-track mt-3"><div class="bar-fill" style="width:100%;background:#10b981"></div></div>`;
+            const now = Date.now(), o = d.opens.getTime(), du = d.due.getTime();
+            if (now < o) return '';
+            const pct = Math.max(0, Math.min(100, ((now - o) / (du - o)) * 100));
+            const colors = { ok: '#22c55e', warn: '#f59e0b', hot: '#f97316', crit: '#ef4444', over: '#991b1b' };
+            return `<div class="bar-track mt-3" title="Tiempo transcurrido del plazo"><div class="bar-fill" style="width:${pct.toFixed(1)}%;background:${colors[levelFor(du - now)]}"></div></div>`;
+        }
+
+        // Barra de urgencia en el encabezado
+        function updateUrgentBar() {
+            const bar = document.getElementById('urgent-bar');
+            if (!bar || document.getElementById('app-header').classList.contains('hidden')) return;
+            const now = Date.now();
+            const pending = getPendingDeadlines().filter(d => d.opens.getTime() <= now);
+            const overdue = pending.filter(d => d.due.getTime() <= now);
+            const upcoming = pending.filter(d => d.due.getTime() > now);
+            const next = upcoming[0];
+            let html = '', bg = '';
+            if (next && (next.due.getTime() - now) < 72 * 3600000) {
+                const lvl = levelFor(next.due.getTime() - now);
+                bg = { warn: '#b45309', hot: '#c2410c', crit: '#b91c1c' }[lvl] || '#b45309';
+                const t = next.title.length > 46 ? next.title.slice(0, 46) + '…' : next.title;
+                html = `<i class="fa-solid fa-bell ${lvl === 'crit' ? 'fa-shake' : ''} mr-2"></i><b>${esc(next.subject)}</b> · ${esc(t)} — <b class="tabular-nums">${fmtDuration(next.due.getTime() - now)}</b>`;
+            } else if (overdue.length) {
+                bg = '#7f1d1d';
+                html = `<i class="fa-solid fa-triangle-exclamation mr-2"></i>Tienes <b>${overdue.length}</b> tarea${overdue.length === 1 ? '' : 's'} vencida${overdue.length === 1 ? '' : 's'} sin marcar`;
+            }
+            if (!html) { bar.classList.add('hidden'); return; }
+            bar.className = 'cursor-pointer text-white text-xs sm:text-sm font-semibold text-center px-4 py-1.5 truncate';
+            bar.style.background = bg;
+            bar.innerHTML = html;
+        }
+        function updateNavBadge() {
+            const now = Date.now();
+            const n = getPendingDeadlines().filter(d => d.opens.getTime() <= now && d.due.getTime() - now < 24 * 3600000).length;
+            const b = document.getElementById('nav-badge-panel');
+            if (!b) return;
+            if (n > 0) { b.textContent = n; b.classList.remove('hidden'); } else b.classList.add('hidden');
+        }
+
+        // ---------------------------------------------------------------
+        // Alertas programadas (mientras la página esté abierta)
+        // ---------------------------------------------------------------
+        const ALERT_STEPS = [
+            { ms: 24 * 3600000, label: '24 horas' },
+            { ms: 3 * 3600000, label: '3 horas' },
+            { ms: 3600000, label: '1 hora' },
+            { ms: 15 * 60000, label: '15 minutos' }
+        ];
+        function checkAlerts() {
+            const now = Date.now();
+            const notified = loadJSON(STORAGE_KEYS.notified, {});
+            let changed = false;
+            getDeadlines().forEach(d => {
+                if (d.completed || d.opens.getTime() > now) return;
+                const rem = d.due.getTime() - now;
+                if (rem <= 0) return;
+                const crossed = ALERT_STEPS.filter(s => rem <= s.ms);
+                if (!crossed.length) return;
+                const smallest = crossed[crossed.length - 1];
+                const base = d.id + ':' + d.due.getTime() + ':';
+                if (notified[base + smallest.ms]) return;
+                crossed.forEach(s => { notified[base + s.ms] = 1; });
+                changed = true;
+                const label = d.kind === 'aleks' ? `ALEKS · ${d.title}` : `${d.subject}: ${d.title}`;
+                showToast(`⏰ <b>${esc(label)}</b><br>vence en menos de <b>${smallest.label}</b>.`, smallest.ms <= 3600000 ? 'danger' : 'warn', 12000);
+                sendNotification(`Vence en menos de ${smallest.label}`, label, d.id + smallest.ms);
+                beep(smallest.ms <= 3600000 ? 3 : 2);
+            });
+            if (changed) saveJSON(STORAGE_KEYS.notified, notified);
+        }
+
+        // ---------------------------------------------------------------
+        // Clima (Open-Meteo, sin clave)
+        // ---------------------------------------------------------------
+        function weatherInfo(code) {
+            if (code === 0) return ['☀️', 'Despejado'];
+            if (code <= 2) return ['⛅', 'Parcialmente nublado'];
+            if (code === 3) return ['☁️', 'Nublado'];
+            if (code <= 48) return ['🌫️', 'Neblina'];
+            if (code <= 57) return ['🌦️', 'Llovizna'];
+            if (code <= 67) return ['🌧️', 'Lluvia'];
+            if (code <= 77) return ['❄️', 'Nieve'];
+            if (code <= 82) return ['🌧️', 'Chubascos'];
+            if (code <= 86) return ['❄️', 'Nevada'];
+            return ['⛈️', 'Tormenta'];
+        }
+        function getGeo() { return loadJSON(STORAGE_KEYS.geo, null) || DEFAULT_GEO; }
+        function toggleGeo() {
+            const saved = loadJSON(STORAGE_KEYS.geo, null);
+            if (saved) { try { localStorage.removeItem(STORAGE_KEYS.geo); } catch (e) {} loadWeather(); return; }
+            if (!navigator.geolocation) { showToast('Tu navegador no permite obtener la ubicación.', 'warn'); return; }
+            navigator.geolocation.getCurrentPosition(pos => {
+                saveJSON(STORAGE_KEYS.geo, { lat: pos.coords.latitude, lon: pos.coords.longitude, label: 'Mi ubicación' });
+                loadWeather();
+            }, () => showToast('No se pudo obtener tu ubicación.', 'warn'));
+        }
+        async function loadWeather() {
+            const box = document.getElementById('weather-card');
+            if (!box) return;
+            const geo = getGeo();
+            try {
+                const ctrl = new AbortController();
+                const to = setTimeout(() => ctrl.abort(), 7000);
+                const url = `https://api.open-meteo.com/v1/forecast?latitude=${geo.lat}&longitude=${geo.lon}&current=temperature_2m,weather_code&hourly=precipitation_probability&timezone=auto&forecast_days=2`;
+                const res = await fetch(url, { signal: ctrl.signal });
+                clearTimeout(to);
+                if (!res.ok) throw new Error('http ' + res.status);
+                const data = await res.json();
+                const [icon, desc] = weatherInfo(data.current.weather_code);
+                const now = Date.now();
+                let maxP = 0;
+                data.hourly.time.forEach((t, i) => {
+                    const ts = new Date(t).getTime();
+                    if (ts >= now - 3600000 && ts <= now + 6 * 3600000) maxP = Math.max(maxP, data.hourly.precipitation_probability[i] || 0);
+                });
+                const rainWarn = maxP >= 50;
+                box.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="text-4xl leading-none">${icon}</span>
+                        <div class="flex-grow min-w-0">
+                            <p class="font-semibold">${Math.round(data.current.temperature_2m)}°C · ${desc}</p>
+                            <p class="text-xs text-white/75">${esc(geo.label)} · Lluvia próximas 6 h: <b>${maxP}%</b></p>
+                        </div>
+                        <button onclick="toggleGeo()" title="${loadJSON(STORAGE_KEYS.geo, null) ? 'Volver a ' + DEFAULT_GEO.label : 'Usar mi ubicación'}" class="icon-btn"><i class="fa-solid ${loadJSON(STORAGE_KEYS.geo, null) ? 'fa-rotate-left' : 'fa-location-crosshairs'} text-sm"></i></button>
+                    </div>
+                    ${rainWarn ? '<p class="mt-2 text-sm font-semibold bg-white/15 rounded-lg px-3 py-1.5">☔ Hay buena probabilidad de lluvia: lleva paraguas o chamarra.</p>' : ''}`;
+                box.classList.remove('hidden');
+            } catch (e) {
+                box.classList.add('hidden'); // sin conexión o API caída: no estorba
+            }
+        }
         // Data Configuration
         const daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         
@@ -287,136 +898,6 @@
             { id: 'fund-2', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.2 Características de la metodología de la investigación', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
             { id: 'fund-3', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.3 La investigación como herramienta para resolver problemas', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' }
         ];
-
-        let currentView = 'today';
-        const today = new Date();
-        let currentDayIndex = today.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
-        let highlightCurrentClass = false;
-
-        // ---------------------------------------------------------------
-        // Personalization: student name, color theme, and task completion
-        // are all saved locally in this browser (localStorage).
-        // ---------------------------------------------------------------
-        const STORAGE_KEYS = { name: 'schedule_studentName', theme: 'schedule_theme', completed: 'schedule_completedTasks' };
-
-        const THEMES = {
-            azul:    { label: 'Azul',    dark: '#1e3a8a', light: '#3b82f6' },
-            verde:   { label: 'Verde',   dark: '#065f46', light: '#10b981' },
-            morado:  { label: 'Morado',  dark: '#4c1d95', light: '#8b5cf6' },
-            rosa:    { label: 'Rosa',    dark: '#9d174d', light: '#ec4899' },
-            naranja: { label: 'Naranja', dark: '#7c2d12', light: '#f97316' }
-        };
-
-        function loadSetting(key, fallback) {
-            try {
-                const v = localStorage.getItem(key);
-                return v === null ? fallback : v;
-            } catch (e) { return fallback; }
-        }
-        function saveSetting(key, value) {
-            try { localStorage.setItem(key, value); } catch (e) { /* storage unavailable */ }
-        }
-        function loadCompletedTasks() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEYS.completed);
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) { return []; }
-        }
-        function saveCompletedTasks(arr) {
-            try { localStorage.setItem(STORAGE_KEYS.completed, JSON.stringify(arr)); } catch (e) { /* ignore */ }
-        }
-        function toggleTaskCompleted(taskId) {
-            const list = loadCompletedTasks();
-            const idx = list.indexOf(taskId);
-            if (idx === -1) list.push(taskId); else list.splice(idx, 1);
-            saveCompletedTasks(list);
-            renderView('moodle'); // re-render with updated state, keeping current filters
-        }
-
-        function applyTheme(themeKey) {
-            const t = THEMES[themeKey] || THEMES.azul;
-            document.documentElement.style.setProperty('--brand-dark', t.dark);
-            document.documentElement.style.setProperty('--brand-light', t.light);
-        }
-
-        function applyStudentName(name) {
-            const label = name && name.trim() ? name.trim() : 'Estudiante';
-            const headerLabel = document.getElementById('student-name-label');
-            if (headerLabel) headerLabel.textContent = label;
-            const greeting = document.getElementById('entry-greeting');
-            if (greeting) greeting.textContent = name && name.trim() ? `¡Hola, ${name.trim()}!` : '¡Hola!';
-        }
-
-        function renderThemeSwatches() {
-            const container = document.getElementById('theme-swatches');
-            if (!container) return;
-            const activeTheme = loadSetting(STORAGE_KEYS.theme, 'azul');
-            container.innerHTML = Object.entries(THEMES).map(([key, t]) => `
-                <button type="button" onclick="selectThemeSwatch('${key}')" data-theme-key="${key}"
-                    class="theme-swatch-btn flex flex-col items-center gap-1 group">
-                    <span class="w-9 h-9 rounded-full border-2 ${key === activeTheme ? 'border-gray-800' : 'border-transparent'} flex items-center justify-center transition-all"
-                        style="background: linear-gradient(135deg, ${t.dark}, ${t.light});">
-                        ${key === activeTheme ? '<i class="fa-solid fa-check text-white text-xs"></i>' : ''}
-                    </span>
-                    <span class="text-[10px] text-gray-500">${t.label}</span>
-                </button>
-            `).join('');
-        }
-
-        let pendingThemeSelection = null;
-        function selectThemeSwatch(key) {
-            pendingThemeSelection = key;
-            applyTheme(key); // live preview
-            document.querySelectorAll('.theme-swatch-btn span:first-child').forEach(el => {
-                el.classList.remove('border-gray-800');
-                el.classList.add('border-transparent');
-                el.innerHTML = '';
-            });
-            const btn = document.querySelector(`.theme-swatch-btn[data-theme-key="${key}"] span:first-child`);
-            if (btn) {
-                btn.classList.remove('border-transparent');
-                btn.classList.add('border-gray-800');
-                btn.innerHTML = '<i class="fa-solid fa-check text-white text-xs"></i>';
-            }
-        }
-
-        function openSettings() {
-            document.getElementById('settings-name-input').value = loadSetting(STORAGE_KEYS.name, '');
-            pendingThemeSelection = loadSetting(STORAGE_KEYS.theme, 'azul');
-            renderThemeSwatches();
-            document.getElementById('settings-modal').classList.remove('hidden');
-        }
-        function closeSettings() {
-            // revert live preview if user didn't save
-            applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul'));
-            document.getElementById('settings-modal').classList.add('hidden');
-        }
-        function saveSettings() {
-            const name = document.getElementById('settings-name-input').value;
-            saveSetting(STORAGE_KEYS.name, name);
-            applyStudentName(name);
-            const theme = pendingThemeSelection || 'azul';
-            saveSetting(STORAGE_KEYS.theme, theme);
-            applyTheme(theme);
-            document.getElementById('settings-modal').classList.add('hidden');
-        }
-
-        // ---- Pending Moodle task helpers (for the entry-screen reminder) ----
-        function getPendingMoodleTasks() {
-            const completed = loadCompletedTasks();
-            const now = new Date();
-            return moodleTasks
-                .filter(t => !completed.includes(t.id))
-                .map(t => ({ ...t, dueDate: new Date(t.due), overdue: new Date(t.due) < now }))
-                .sort((a, b) => a.dueDate - b.dueDate);
-        }
-
-        // Format date for the header
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        document.getElementById('current-date').textContent = today.toLocaleDateString('es-ES', options);
-        const entryDateEl = document.getElementById('entry-date');
-        if (entryDateEl) entryDateEl.textContent = today.toLocaleDateString('es-ES', options);
-
         // ---- Recess: every school day, 10:40–11:30, overrides whatever class is "scheduled" ----
         const RECESS = { start: 10 * 60 + 40, end: 11 * 60 + 30, startStr: '10:40', endStr: '11:30' };
 
@@ -512,6 +993,16 @@
             return `${next.cls.subject} — ${dayLabel} a las ${parseTimeRange(next.cls.time).startStr}`;
         }
 
+        function updateDates() {
+            const opts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            const s = new Date().toLocaleDateString('es-MX', opts);
+            const a = document.getElementById('current-date'); if (a) a.textContent = s;
+            const b = document.getElementById('entry-date'); if (b) b.textContent = s;
+        }
+
+        // ---------------------------------------------------------------
+        // Pantalla de entrada
+        // ---------------------------------------------------------------
         function renderEntryScreen() {
             const status = getScheduleStatus();
             const card = document.getElementById('entry-card');
@@ -519,14 +1010,13 @@
                 ? `<div class="mt-5 pt-4 border-t border-gray-100">
                        <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold mb-1">Sigue</p>
                        <p class="text-gray-800 font-medium">${nextClassLabel(status.next)}</p>
-                       <p class="text-sm text-[var(--brand-light)] font-semibold mt-1">${status.next.sameDay || status.next.offsetDays === 1 ? `Falta ${formatMinutes(minutesUntil(status.next))}` : `Falta ${formatMinutes(minutesUntil(status.next))}`}</p>
+                       <p class="text-sm text-[var(--brand-light)] font-semibold mt-1">Falta ${formatMinutes(minutesUntil(status.next))}</p>
                    </div>`
                 : '';
 
             let mainBlock = '';
             if (status.state === 'class') {
-                const c = status.current.cls;
-                const r = status.current.range;
+                const c = status.current.cls, r = status.current.range;
                 mainBlock = `
                     <i class="fa-solid fa-chalkboard-user text-4xl ${c.color.replace('bg-', 'text-')} mb-3"></i>
                     <p class="text-sm text-gray-400 font-medium">Debes estar en la clase de:</p>
@@ -567,44 +1057,45 @@
                     <h2 class="text-2xl font-bold text-gray-900 mt-1">Sin clases hoy</h2>
                 `;
             }
-
             card.innerHTML = mainBlock + nextInfo;
 
-            // "Ir a mi clase actual" only makes sense when there's something happening now
             const btnCurrent = document.getElementById('btn-go-current');
-            if (status.state === 'weekend' || status.state === 'after_school' || status.state === 'no_classes_today') {
-                btnCurrent.classList.add('hidden');
-            } else {
-                btnCurrent.classList.remove('hidden');
-            }
+            if (status.state === 'weekend' || status.state === 'after_school' || status.state === 'no_classes_today') btnCurrent.classList.add('hidden');
+            else btnCurrent.classList.remove('hidden');
 
-            // ---- Pending Moodle tasks reminder ----
+            // ---- Recordatorio de pendientes (Moodle + ALEKS) con cuenta regresiva ----
             const reminder = document.getElementById('tasks-reminder');
-            const pending = getPendingMoodleTasks();
+            const now = Date.now();
+            const pending = getPendingDeadlines();
             if (pending.length === 0) {
-                reminder.classList.add('hidden');
-            } else {
-                const overdueCount = pending.filter(t => t.overdue).length;
-                const soonCount = pending.filter(t => !t.overdue && (t.dueDate - new Date()) / 3600000 <= 72).length;
-                let icon = 'fa-circle-check', iconColor = 'text-emerald-500', headline = `Tienes ${pending.length} tarea${pending.length === 1 ? '' : 's'} pendiente${pending.length === 1 ? '' : 's'} en Moodle`;
-                if (overdueCount > 0) {
-                    icon = 'fa-triangle-exclamation'; iconColor = 'text-red-500';
-                    headline = `${overdueCount} tarea${overdueCount === 1 ? '' : 's'} vencida${overdueCount === 1 ? '' : 's'} y ${pending.length - overdueCount} más pendiente${(pending.length - overdueCount) === 1 ? '' : 's'}`;
-                } else if (soonCount > 0) {
-                    icon = 'fa-clock'; iconColor = 'text-amber-500';
-                    headline = `${soonCount} tarea${soonCount === 1 ? '' : 's'} vence${soonCount === 1 ? '' : 'n'} pronto`;
-                }
-                const nextOne = pending[0];
-                reminder.innerHTML = `
-                    <i class="fa-solid ${icon} ${iconColor} text-2xl"></i>
-                    <div class="text-left flex-grow">
-                        <p class="font-semibold text-gray-900 text-sm">${headline}</p>
-                        <p class="text-xs text-gray-500 mt-0.5">Próxima: ${nextOne.subject} — ${nextOne.title.length > 40 ? nextOne.title.slice(0, 40) + '…' : nextOne.title}</p>
-                    </div>
-                    <i class="fa-solid fa-chevron-right text-gray-300"></i>
-                `;
+                reminder.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-500 text-2xl"></i>
+                    <div class="text-left flex-grow"><p class="font-semibold text-gray-900 text-sm">¡Todo al día! 🎉</p>
+                    <p class="text-xs text-gray-500 mt-0.5">No tienes tareas pendientes.</p></div>`;
                 reminder.classList.remove('hidden');
+                return;
             }
+            const overdueCount = pending.filter(d => d.due.getTime() <= now).length;
+            const soonCount = pending.filter(d => d.due.getTime() > now && (d.due.getTime() - now) <= 72 * 3600000 && d.opens.getTime() <= now).length;
+            let icon = 'fa-list-check', iconColor = 'text-emerald-500';
+            let headline = `Tienes ${pending.length} tarea${pending.length === 1 ? '' : 's'} pendiente${pending.length === 1 ? '' : 's'}`;
+            if (overdueCount > 0) {
+                icon = 'fa-triangle-exclamation'; iconColor = 'text-red-500';
+                headline = `${overdueCount} tarea${overdueCount === 1 ? '' : 's'} vencida${overdueCount === 1 ? '' : 's'} y ${pending.length - overdueCount} más pendiente${(pending.length - overdueCount) === 1 ? '' : 's'}`;
+            } else if (soonCount > 0) {
+                icon = 'fa-clock'; iconColor = 'text-amber-500';
+                headline = `${soonCount} tarea${soonCount === 1 ? '' : 's'} vence${soonCount === 1 ? '' : 'n'} pronto`;
+            }
+            const nextOne = pending.find(d => d.due.getTime() > now && d.opens.getTime() <= now) || pending[0];
+            const t = nextOne.title.length > 38 ? nextOne.title.slice(0, 38) + '…' : nextOne.title;
+            reminder.innerHTML = `
+                <i class="fa-solid ${icon} ${iconColor} text-2xl"></i>
+                <div class="text-left flex-grow min-w-0">
+                    <p class="font-semibold text-gray-900 text-sm">${headline}</p>
+                    <p class="text-xs text-gray-500 mt-0.5 truncate">Próxima: ${esc(nextOne.subject)} — ${esc(t)}</p>
+                    <div class="mt-1.5">${countdownChip(nextOne)}</div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-gray-300"></i>`;
+            reminder.classList.remove('hidden');
         }
 
         function enterApp(focusCurrent) {
@@ -613,7 +1104,7 @@
             document.getElementById('app-header').classList.remove('hidden');
             document.getElementById('app-main').classList.remove('hidden');
             changeView('today');
-
+            updateNavBadge(); updateUrgentBar();
             if (highlightCurrentClass) {
                 setTimeout(() => {
                     const el = document.getElementById('current-class-card');
@@ -622,79 +1113,120 @@
             }
         }
 
-        function updateNavStyles(activeView) {
-            // Reset all styles
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.classList.remove('bg-[var(--brand-light)]', 'text-white', 'border-white', 'text-white');
-                if(!btn.id.includes('exams') && !btn.id.includes('aleks')) {
-                    if(btn.id.includes('mob')) {
-                        btn.classList.add('text-blue-200');
-                    } else {
-                        btn.classList.add('text-gray-300');
-                    }
-                }
-            });
-
-            // Set active styles based on view
-            if (activeView === 'today') {
-                document.getElementById('btn-today').classList.add('bg-[var(--brand-light)]', 'text-white');
-                document.getElementById('btn-today').classList.remove('text-gray-300');
-                document.getElementById('btn-today-mob').classList.add('border-white', 'text-white');
-                document.getElementById('btn-today-mob').classList.remove('text-blue-200');
-            } else if (activeView === 'week') {
-                document.getElementById('btn-week').classList.add('bg-[var(--brand-light)]', 'text-white');
-                document.getElementById('btn-week').classList.remove('text-gray-300');
-                document.getElementById('btn-week-mob').classList.add('border-white', 'text-white');
-                document.getElementById('btn-week-mob').classList.remove('text-blue-200');
-            } else if (activeView === 'exams') {
-                document.getElementById('btn-exams-mob').classList.add('border-red-400', 'text-red-100');
-                document.getElementById('btn-exams-mob').classList.remove('text-red-300');
-            } else if (activeView === 'aleks') {
-                document.getElementById('btn-aleks-mob').classList.add('border-emerald-400', 'text-emerald-100');
-                document.getElementById('btn-aleks-mob').classList.remove('text-emerald-300');
-            } else if (activeView === 'moodle') {
-                document.getElementById('btn-moodle-mob').classList.add('border-purple-400', 'text-purple-100');
-                document.getElementById('btn-moodle-mob').classList.remove('text-purple-300');
-            }
+        // ---------------------------------------------------------------
+        // Navegación
+        // ---------------------------------------------------------------
+        const VIEWS = [
+            { id: 'today',  label: 'Hoy',          icon: 'fa-calendar-day' },
+            { id: 'week',   label: 'Semana',       icon: 'fa-calendar-week' },
+            { id: 'panel',  label: 'Alertas',      icon: 'fa-bell',          accent: 'amber' },
+            { id: 'moodle', label: 'Moodle',       icon: 'fa-list-check',    accent: 'purple' },
+            { id: 'aleks',  label: 'ALEKS',        icon: 'fa-laptop-code',   accent: 'emerald' },
+            { id: 'exams',  label: 'Exámenes',     icon: 'fa-file-signature', accent: 'red' },
+            { id: 'tools',  label: 'Herramientas', icon: 'fa-toolbox',       accent: 'sky' }
+        ];
+        function buildNav() {
+            document.getElementById('main-nav').innerHTML = VIEWS.map(v => `
+                <button onclick="changeView('${v.id}')" id="nav-${v.id}" class="nav-btn" data-accent="${v.accent || ''}">
+                    <i class="fa-solid ${v.icon}"></i>${v.label}${v.id === 'panel' ? '<span id="nav-badge-panel" class="nav-badge hidden"></span>' : ''}
+                </button>`).join('');
+        }
+        function updateNavStyles(active) {
+            VIEWS.forEach(v => { const b = document.getElementById('nav-' + v.id); if (b) b.classList.toggle('active', v.id === active); });
         }
 
         function changeView(view) {
             currentView = view;
             updateNavStyles(view);
             const container = document.getElementById('content-container');
-            const title = document.getElementById('view-title');
-            
-            // Trigger animation
             container.classList.remove('fade-in');
-            void container.offsetWidth; // trigger reflow
+            void container.offsetWidth;
             container.classList.add('fade-in');
+            renderView(view);
+            window.scrollTo({ top: 0 });
+        }
 
-            container.innerHTML = ''; // Clear current content
+        // ---------------------------------------------------------------
+        // Tarjeta de tarea (Moodle y ALEKS)
+        // ---------------------------------------------------------------
+        const fmtDay = dt => dt.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' }) + ' · ' +
+            dt.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+        function taskCard(d) {
+            const now = Date.now();
+            const ms = d.due.getTime() - now;
+            const notOpen = d.opens.getTime() > now;
+            let badge = ['Con tiempo', 'bg-gray-100 text-gray-500'];
+            if (d.completed) badge = ['Completada', 'bg-emerald-100 text-emerald-700'];
+            else if (ms <= 0) badge = ['Vencida', 'bg-red-100 text-red-700'];
+            else if (notOpen) badge = ['Aún no abre', 'bg-gray-100 text-gray-500'];
+            else if (d.inExtra) badge = ['Plazo extra', 'bg-amber-100 text-amber-700'];
+            else if (ms <= 24 * 3600000) badge = ['Vence pronto', 'bg-amber-100 text-amber-700'];
+            else if (ms <= 168 * 3600000) badge = ['Esta semana', 'bg-orange-100 text-orange-700'];
+
+            let details, link;
+            if (d.kind === 'aleks') {
+                details = `
+                    <span><i class="fa-regular fa-calendar-plus mr-1"></i>Abre: ${fmtDay(d.opens)}</span>
+                    <span><i class="fa-regular fa-calendar-xmark mr-1"></i>Cierra: ${fmtDay(d.closes)}</span>
+                    ${d.finalDue ? `<span class="${d.inExtra ? 'text-orange-600 font-semibold' : ''}"><i class="fa-solid fa-flag-checkered mr-1"></i>Entrega final: ${fmtDay(d.finalDue)}</span>` : ''}`;
+                link = `<a href="${ALEKS_URL}" target="_blank" rel="noopener" class="text-xs font-semibold text-emerald-600 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Abrir ALEKS</a>`;
+            } else {
+                details = `
+                    <span><i class="fa-regular fa-calendar-check mr-1"></i>Entrega: ${fmtDay(d.due)}</span>
+                    <span><i class="fa-regular fa-calendar-plus mr-1"></i>Abre: ${fmtDay(d.opens)}</span>`;
+                link = `<button onclick="openMoodle()" class="text-xs font-semibold text-purple-600 hover:underline"><i class="fa-solid fa-arrow-up-right-from-square mr-1"></i>Abrir Moodle</button>`;
+            }
+            const heading = d.kind === 'aleks' ? d.title : d.subject;
+            const body = d.kind === 'aleks' ? 'Tarea de ALEKS (Cálculo Diferencial)' : d.title;
+
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex ${d.completed ? 'opacity-65' : ''}">
+                    <div class="${d.color} w-1.5 flex-shrink-0"></div>
+                    <div class="p-4 flex-grow flex items-start gap-3 min-w-0">
+                        <input type="checkbox" ${d.completed ? 'checked' : ''} onchange="toggleTaskCompleted('${d.id}')" aria-label="Marcar como completada"
+                            class="mt-1 w-5 h-5 rounded border-gray-300 text-[var(--brand-light)] focus:ring-[var(--brand-light)] cursor-pointer flex-shrink-0">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <span class="text-xs font-bold uppercase tracking-wide text-gray-500">${esc(heading)}</span>
+                                <span class="text-xs font-bold px-2 py-1 rounded-full ${badge[1]}">${badge[0]}</span>
+                            </div>
+                            <p class="font-semibold text-gray-900 leading-snug ${d.completed ? 'line-through' : ''}">${esc(body)}</p>
+                            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">${details}</div>
+                            <div class="flex items-center justify-between gap-2 flex-wrap mt-3">
+                                ${countdownChip(d)}
+                                ${link}
+                            </div>
+                            ${progressBar(d)}
+                        </div>
+                    </div>
+                </div>`;
+        }
+
+        // ---------------------------------------------------------------
+        // Render de vistas
+        // ---------------------------------------------------------------
+        let moodleSubjectFilter = 'all';
+        let moodleDateFilter = 'all';
+        let aleksFilter = 'all';
+
+        function renderView(view) {
+            const container = document.getElementById('content-container');
+            const title = document.getElementById('view-title');
 
             if (view === 'today') {
-                let dayToRender = currentDayIndex;
+                let dayToRender = currentDayIndex = new Date().getDay();
                 let isWeekend = false;
-                
-                // Handle weekend
-                if (dayToRender === 0 || dayToRender === 6) {
-                    dayToRender = 1; // Default to Monday
-                    isWeekend = true;
-                }
+                if (dayToRender === 0 || dayToRender === 6) { dayToRender = 1; isWeekend = true; }
 
                 title.innerHTML = `Horario para hoy: <span class="text-[var(--brand-light)]">${daysOfWeek[dayToRender]}</span>`;
-                
-                if (isWeekend) {
-                    container.innerHTML = `
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-md">
-                            <div class="flex">
-                                <div class="flex-shrink-0"><i class="fa-solid fa-circle-info text-blue-500"></i></div>
-                                <div class="ml-3"><p class="text-sm text-blue-700">¡Feliz fin de semana! Mostrando el horario del próximo Lunes.</p></div>
-                            </div>
-                        </div>`;
-                }
+                container.innerHTML = isWeekend ? `
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded-r-md">
+                        <div class="flex"><div class="flex-shrink-0"><i class="fa-solid fa-circle-info text-blue-500"></i></div>
+                        <div class="ml-3"><p class="text-sm text-blue-700">¡Feliz fin de semana! Mostrando el horario del próximo Lunes.</p></div></div>
+                    </div>` : '';
 
                 const classes = regularSchedule[dayToRender] || [];
-                
                 if (classes.length === 0) {
                     container.innerHTML += `<p class="text-gray-500 italic">No hay clases registradas para este día.</p>`;
                 } else {
@@ -706,9 +1238,8 @@
                         const r = parseTimeRange(cls.time);
                         const isCurrent = isCurrentDayReal && liveStatus.state === 'class' &&
                             liveStatus.current.cls.subject === cls.subject && liveStatus.current.range.start === r.start;
-
                         cardsHtml += `
-                            <div id="${isCurrent ? 'current-class-card' : ''}" class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border overflow-hidden flex flex-col ${isCurrent ? 'border-[var(--brand-light)] ring-2 ring-[var(--brand-light)] ring-offset-2' : 'border-gray-100'}">
+                            <div id="${isCurrent ? 'current-class-card' : ''}" class="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow border overflow-hidden flex flex-col ${isCurrent ? 'border-[var(--brand-light)] ring-2 ring-[var(--brand-light)] ring-offset-2' : 'border-gray-100'}" style="--tw-ring-offset-color: var(--brand-bg)">
                                 <div class="${cls.color} h-2 w-full"></div>
                                 <div class="p-6 flex-grow flex flex-col justify-between">
                                     <div>
@@ -719,12 +1250,11 @@
                                         <h3 class="text-xl font-bold text-gray-900 mb-4 leading-tight">${cls.subject}</h3>
                                     </div>
                                     <div class="flex items-center gap-2 mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                        <i class="fa-solid fa-door-open text-[var(--brand-dark)] opacity-70"></i>
+                                        <i class="fa-solid fa-door-open text-[var(--brand-light)] opacity-80"></i>
                                         <span class="text-sm font-semibold text-gray-700">Aula: ${cls.room}</span>
                                     </div>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     });
                     cardsHtml += '</div>';
 
@@ -734,54 +1264,45 @@
                             <p class="text-sm text-amber-800 font-medium">Ahorita es receso (${RECESS.startStr} - ${RECESS.endStr}), sin importar lo que diga el horario.</p>
                         </div>` + cardsHtml;
                     }
-
                     container.innerHTML += cardsHtml;
                 }
-            } 
+            }
             else if (view === 'week') {
                 title.textContent = 'Semana Completa';
-                
-                // Create a CSS grid for desktop, stacking for mobile
+                const todayIdx = new Date().getDay();
                 let gridHtml = '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
-                
                 for (let i = 1; i <= 5; i++) {
                     gridHtml += `
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                            <div class="bg-[var(--brand-dark)] text-white p-3 text-center font-semibold border-b border-[var(--brand-dark)]">
-                                ${daysOfWeek[i].toUpperCase()}
+                        <div class="bg-white rounded-lg shadow-sm border ${i === todayIdx ? 'border-[var(--brand-light)] ring-2 ring-[var(--brand-light)]' : 'border-gray-200'} overflow-hidden">
+                            <div class="app-header-bg text-white p-3 text-center font-semibold">
+                                ${daysOfWeek[i].toUpperCase()}${i === todayIdx ? ' · HOY' : ''}
                             </div>
-                            <div class="p-2 space-y-2">
-                    `;
-                    
+                            <div class="p-2 space-y-2">`;
                     const classes = regularSchedule[i] || [];
-                    if(classes.length === 0) {
-                        gridHtml += `<div class="p-3 text-center text-sm text-gray-400">Sin clases</div>`;
-                    }
-                    
+                    if (classes.length === 0) gridHtml += `<div class="p-3 text-center text-sm text-gray-400">Sin clases</div>`;
                     classes.forEach(cls => {
-                        // Extract start time for compact view
                         const startTime = cls.time.split('-')[0].trim();
                         gridHtml += `
                             <div class="p-3 rounded-md ${cls.color} text-white flex flex-col gap-1 shadow-sm text-sm">
                                 <span class="font-bold opacity-90"><i class="fa-regular fa-clock mr-1"></i>${startTime}</span>
                                 <span class="font-semibold leading-tight line-clamp-2" title="${cls.subject}">${cls.subject}</span>
                                 <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full w-max mt-1 border border-white/30">Aula ${cls.room}</span>
-                            </div>
-                        `;
+                            </div>`;
                     });
-                    
                     gridHtml += `</div></div>`;
                 }
                 gridHtml += '</div>';
                 container.innerHTML = gridHtml;
             }
+            else if (view === 'panel') {
+                title.innerHTML = '<span class="text-amber-500"><i class="fa-solid fa-bell mr-2"></i>Alertas y pendientes</span>';
+                renderPanel(container);
+            }
             else if (view === 'exams') {
                 title.innerHTML = '<span class="text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Horario de Exámenes</span>';
-
-                // No exam schedule published yet for the second partial
                 container.innerHTML = `
                     <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                        <div class="bg-blue-900 text-white p-4 text-center">
+                        <div class="app-header-bg text-white p-4 text-center">
                             <h3 class="text-xl font-bold">HORARIO DE EXÁMENES — 5A INF y COMPACTADOS</h3>
                         </div>
                         <div class="flex flex-col items-center justify-center text-center gap-3 py-16 px-6">
@@ -789,152 +1310,583 @@
                             <p class="text-lg font-semibold text-gray-700">Aún no hay calendario de exámenes para el segundo parcial</p>
                             <p class="text-sm text-gray-500 max-w-md">En cuanto Coordinación publique las fechas, se actualizará esta sección.</p>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             }
             else if (view === 'aleks') {
                 title.innerHTML = '<span class="text-emerald-700"><i class="fa-solid fa-laptop-code mr-2"></i>Tareas ALEKS</span>';
-
-                let html = `
-                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                        <div class="bg-emerald-700 text-white p-4 text-center">
-                            <h3 class="text-xl font-bold">FECHAS DE APERTURA Y CIERRE — ALEKS</h3>
-                            <p class="text-sm text-emerald-100 mt-1 italic">Consulta cuándo se abren y cierran tus tareas.</p>
-                        </div>
-                        <div class="bg-emerald-900 text-white grid grid-cols-4 px-4 sm:px-6 py-2 text-xs sm:text-sm font-semibold">
-                            <div class="col-span-1">TAREA</div>
-                            <div class="col-span-1">ABRE</div>
-                            <div class="col-span-1">CIERRA</div>
-                            <div class="col-span-1">ENTREGA FINAL</div>
-                        </div>
-                        <div class="divide-y divide-gray-100">
-                `;
-
-                aleksTasks.forEach(task => {
-                    html += `
-                        <div class="grid grid-cols-4 px-4 sm:px-6 py-3 text-xs sm:text-sm hover:bg-gray-50 transition-colors">
-                            <div class="col-span-1 font-bold text-gray-900">${task.name}</div>
-                            <div class="col-span-1 text-green-700 font-medium">${task.opens}</div>
-                            <div class="col-span-1 text-red-600 font-medium">${task.closes}</div>
-                            <div class="col-span-1 ${task.finalDue ? 'text-orange-600 font-semibold' : 'text-gray-400'}">${task.finalDue ? task.finalDue : '—'}</div>
-                        </div>
-                    `;
-                });
-
-                html += `
-                        </div>
-                        <div class="bg-gray-50 p-4 border-t border-gray-200 text-sm text-gray-600 flex items-center gap-2">
-                            <i class="fa-solid fa-thumbtack text-gray-400"></i>
-                            <em>Fecha de entrega final aplica solo cuando ALEKS otorga un plazo extra tras el cierre normal.</em>
-                        </div>
-                    </div>
-                `;
-
-                container.innerHTML = html;
+                renderAleksView(container);
             }
             else if (view === 'moodle') {
                 title.innerHTML = '<span class="text-purple-700"><i class="fa-solid fa-list-check mr-2"></i>Tareas Moodle</span>';
                 renderMoodleView(container);
             }
+            else if (view === 'tools') {
+                title.innerHTML = '<span class="text-sky-600"><i class="fa-solid fa-toolbox mr-2"></i>Herramientas</span>';
+                renderTools(container);
+            }
+            tickCountdowns();
         }
 
-        // Keeps the currently selected filters so re-renders (e.g. after checking a task) don't reset them
-        let moodleSubjectFilter = 'all';
-        let moodleDateFilter = 'all';
+        // ---- ALEKS ----
+        function renderAleksView(container) {
+            const all = getDeadlines().filter(d => d.kind === 'aleks').sort((a, b) => a.opens - b.opens);
+            const done = all.filter(d => d.completed).length;
+            const pct = Math.round((done / all.length) * 100);
+            let list = all;
+            if (aleksFilter === 'pending') list = all.filter(d => !d.completed);
+            if (aleksFilter === 'done') list = all.filter(d => d.completed);
 
+            const chip = (k, lb) => `<button onclick="aleksFilter='${k}'; renderView('aleks')" class="tool-chip ${aleksFilter === k ? 'active' : ''}">${lb}</button>`;
+            container.innerHTML = `
+                <div class="rounded-xl overflow-hidden shadow-md mb-5" style="background:linear-gradient(135deg,#047857,#065f46)">
+                    <div class="p-5 text-white">
+                        <div class="flex items-center justify-between gap-3 flex-wrap">
+                            <div>
+                                <h3 class="text-lg font-bold">Avance en ALEKS</h3>
+                                <p class="text-sm text-emerald-100 italic">Marca cada tarea cuando la termines.</p>
+                            </div>
+                            <a href="${ALEKS_URL}" target="_blank" rel="noopener" class="bg-white/15 hover:bg-white/25 border border-white/25 text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                                <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Abrir ALEKS
+                            </a>
+                        </div>
+                        <div class="flex items-center gap-3 mt-4">
+                            <div class="flex-grow h-2.5 rounded-full bg-white/20 overflow-hidden"><div class="h-full bg-white rounded-full transition-all" style="width:${pct}%"></div></div>
+                            <span class="text-sm font-bold tabular-nums">${done}/${all.length}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2 mb-4 overflow-x-auto">${chip('all', 'Todas')}${chip('pending', 'Pendientes')}${chip('done', 'Completadas')}</div>
+                ${list.length ? '<div class="space-y-3">' + list.map(taskCard).join('') + '</div>' :
+                    `<div class="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400"><i class="fa-solid fa-clipboard-check text-4xl mb-3"></i><p>No hay tareas en este filtro.</p></div>`}
+                <p class="mt-4 text-xs text-gray-500 flex items-start gap-2"><i class="fa-solid fa-thumbtack text-gray-400 mt-0.5"></i>
+                    <em>La entrega final aplica solo cuando ALEKS otorga un plazo extra tras el cierre normal. La cuenta regresiva cambia sola a ese plazo cuando se cumple el cierre.</em></p>`;
+        }
+
+        // ---- Moodle ----
         function renderMoodleView(container) {
             const subjects = [...new Set(moodleTasks.map(t => t.subject))];
-            const completed = loadCompletedTasks();
             const now = new Date();
-
             const filterBar = `
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5 flex flex-col sm:flex-row gap-3">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5 flex flex-col sm:flex-row gap-3 sm:items-end">
                     <div class="flex-1">
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Materia</label>
-                        <select id="moodle-subject-filter" onchange="moodleSubjectFilter=this.value; renderMoodleView(document.getElementById('content-container'))"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <select onchange="moodleSubjectFilter=this.value; renderView('moodle')" class="field w-full">
                             <option value="all" ${moodleSubjectFilter === 'all' ? 'selected' : ''}>Todas las materias</option>
                             ${subjects.map(s => `<option value="${s}" ${moodleSubjectFilter === s ? 'selected' : ''}>${s}</option>`).join('')}
                         </select>
                     </div>
                     <div class="flex-1">
                         <label class="block text-xs font-semibold text-gray-500 mb-1">Fecha</label>
-                        <select id="moodle-date-filter" onchange="moodleDateFilter=this.value; renderMoodleView(document.getElementById('content-container'))"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400">
+                        <select onchange="moodleDateFilter=this.value; renderView('moodle')" class="field w-full">
                             <option value="all" ${moodleDateFilter === 'all' ? 'selected' : ''}>Todas las fechas</option>
                             <option value="week" ${moodleDateFilter === 'week' ? 'selected' : ''}>Próximos 7 días</option>
                             <option value="overdue" ${moodleDateFilter === 'overdue' ? 'selected' : ''}>Vencidas</option>
                             <option value="pending" ${moodleDateFilter === 'pending' ? 'selected' : ''}>Solo pendientes (sin marcar)</option>
                         </select>
                     </div>
-                </div>
-            `;
-
-            let filtered = moodleTasks.map(t => ({ ...t, dueDate: new Date(t.due), opensDate: new Date(t.opens), isCompleted: completed.includes(t.id) }));
-
-            if (moodleSubjectFilter !== 'all') filtered = filtered.filter(t => t.subject === moodleSubjectFilter);
-            if (moodleDateFilter === 'week') filtered = filtered.filter(t => !t.isCompleted && (t.dueDate - now) / 3600000 <= 168 && t.dueDate >= now);
-            if (moodleDateFilter === 'overdue') filtered = filtered.filter(t => !t.isCompleted && t.dueDate < now);
-            if (moodleDateFilter === 'pending') filtered = filtered.filter(t => !t.isCompleted);
-
-            filtered.sort((a, b) => a.dueDate - b.dueDate);
-
-            let listHtml = '';
-            if (filtered.length === 0) {
-                listHtml = `<div class="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">
-                    <i class="fa-solid fa-clipboard-check text-4xl mb-3"></i>
-                    <p>No hay tareas que coincidan con este filtro.</p>
+                    <button onclick="openMoodle()" class="bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap">
+                        <i class="fa-solid fa-arrow-up-right-from-square mr-1"></i> Abrir Moodle
+                    </button>
                 </div>`;
-            } else {
-                listHtml = '<div class="space-y-3">' + filtered.map(t => {
-                    const isOverdue = !t.isCompleted && t.dueDate < now;
-                    const hoursLeft = (t.dueDate - now) / 3600000;
-                    let statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-gray-100 text-gray-500">Con tiempo</span>`;
-                    if (t.isCompleted) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Completada</span>`;
-                    else if (isOverdue) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-red-100 text-red-700">Vencida</span>`;
-                    else if (hoursLeft <= 24) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-amber-100 text-amber-700">Vence hoy</span>`;
-                    else if (hoursLeft <= 168) statusBadge = `<span class="text-xs font-bold px-2 py-1 rounded-full bg-orange-100 text-orange-700">Esta semana</span>`;
 
-                    const dueLabel = t.dueDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }) +
-                        ' · ' + t.dueDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-                    const opensLabel = t.opensDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+            let filtered = getDeadlines().filter(d => d.kind === 'moodle');
+            if (moodleSubjectFilter !== 'all') filtered = filtered.filter(t => t.subject === moodleSubjectFilter);
+            if (moodleDateFilter === 'week') filtered = filtered.filter(t => !t.completed && (t.due - now) / 3600000 <= 168 && t.due >= now);
+            if (moodleDateFilter === 'overdue') filtered = filtered.filter(t => !t.completed && t.due < now);
+            if (moodleDateFilter === 'pending') filtered = filtered.filter(t => !t.completed);
+            filtered.sort((a, b) => a.due - b.due);
 
-                    return `
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex ${t.isCompleted ? 'opacity-60' : ''}">
-                            <div class="${t.color} w-1.5 flex-shrink-0"></div>
-                            <div class="p-4 flex-grow flex items-start gap-3">
-                                <input type="checkbox" ${t.isCompleted ? 'checked' : ''} onchange="toggleTaskCompleted('${t.id}')"
-                                    class="mt-1.5 w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-400 cursor-pointer flex-shrink-0">
-                                <div class="flex-grow min-w-0">
-                                    <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
-                                        <span class="text-xs font-bold uppercase tracking-wide text-gray-500">${t.subject}</span>
-                                        ${statusBadge}
-                                    </div>
-                                    <p class="font-semibold text-gray-900 leading-snug ${t.isCompleted ? 'line-through' : ''}">${t.title}</p>
-                                    <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs text-gray-500">
-                                        <span><i class="fa-regular fa-calendar-check mr-1"></i>Entrega: ${dueLabel}</span>
-                                        <span><i class="fa-regular fa-calendar-plus mr-1"></i>Abre: ${opensLabel}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }).join('') + '</div>';
-            }
-
+            const listHtml = filtered.length === 0
+                ? `<div class="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400"><i class="fa-solid fa-clipboard-check text-4xl mb-3"></i><p>No hay tareas que coincidan con este filtro.</p></div>`
+                : '<div class="space-y-3">' + filtered.map(taskCard).join('') + '</div>';
             container.innerHTML = filterBar + listHtml;
         }
 
-        // Initialize app on load: apply saved personalization, then show the status/entry screen first
+        // ---- Panel de alertas ----
+        function renderPanel(container) {
+            const all = getDeadlines();
+            const now = Date.now();
+            const done = all.filter(d => d.completed);
+            const pending = all.filter(d => !d.completed).sort((a, b) => a.due - b.due);
+            const pctDone = Math.round((done.length / all.length) * 100);
+            const start = Math.min(...all.map(d => d.opens.getTime()));
+            const end = Math.max(...all.map(d => d.due.getTime()));
+            const pctTime = Math.max(0, Math.min(100, Math.round(((now - start) / (end - start)) * 100)));
+            const next = pending.find(d => d.due.getTime() > now && d.opens.getTime() <= now) || pending.find(d => d.due.getTime() > now);
+
+            const H = 3600000;
+            const groups = [
+                ['Vencidas sin completar', 'fa-triangle-exclamation', 'text-red-500', pending.filter(d => d.due.getTime() <= now)],
+                ['Vencen en menos de 24 horas', 'fa-fire', 'text-orange-500', pending.filter(d => d.due.getTime() > now && d.due.getTime() - now <= 24 * H)],
+                ['Esta semana', 'fa-calendar-week', 'text-amber-500', pending.filter(d => d.due.getTime() - now > 24 * H && d.due.getTime() - now <= 168 * H)],
+                ['Más adelante', 'fa-calendar', 'text-sky-500', pending.filter(d => d.due.getTime() - now > 168 * H)]
+            ];
+
+            const notifBlock = !notifSupported() ? '' : (notifGranted()
+                ? `<p class="text-sm text-emerald-600 font-semibold"><i class="fa-solid fa-bell mr-1"></i>Alertas del navegador activadas</p>`
+                : `<button onclick="requestNotifPermission()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg"><i class="fa-solid fa-bell mr-1"></i>Activar alertas del navegador</button>`);
+
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
+                    <div class="surface-card rounded-xl p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Próximo vencimiento</p>
+                        ${next ? `<p class="font-semibold text-gray-900 leading-snug mb-2">${esc(next.kind === 'aleks' ? 'ALEKS · ' + next.title : next.subject + ' — ' + next.title)}</p>
+                            <div class="text-base">${countdownChip(next)}</div>` : `<p class="text-gray-500 text-sm">Nada pendiente por vencer 🎉</p>`}
+                    </div>
+                    <div class="surface-card rounded-xl p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Tareas completadas</p>
+                        <p class="text-3xl font-extrabold text-gray-900 tabular-nums">${done.length}<span class="text-lg text-gray-400">/${all.length}</span></p>
+                        <div class="bar-track mt-3"><div class="bar-fill" style="width:${pctDone}%;background:var(--brand-light)"></div></div>
+                    </div>
+                    <div class="surface-card rounded-xl p-5 shadow-sm">
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Avance del 2° parcial</p>
+                        <p class="text-3xl font-extrabold text-gray-900 tabular-nums">${pctTime}%</p>
+                        <div class="bar-track mt-3"><div class="bar-fill" style="width:${pctTime}%;background:var(--brand-dark)"></div></div>
+                        <p class="text-[11px] text-gray-400 mt-2">Del ${new Date(start).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} al ${new Date(end).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</p>
+                    </div>
+                </div>
+
+                <div class="surface-card rounded-xl p-4 mb-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <div class="text-sm text-gray-600">
+                        <p class="font-semibold text-gray-900 mb-0.5">Avisos antes de cada entrega</p>
+                        <p class="text-xs text-gray-500">24 h, 3 h, 1 h y 15 min antes. Funcionan mientras la página esté abierta; para tener avisos con la página cerrada, expórtalos a tu calendario.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        ${notifBlock}
+                        <button onclick="exportDeadlinesICS()" class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg"><i class="fa-regular fa-calendar-plus mr-1"></i>Exportar a calendario</button>
+                    </div>
+                </div>
+
+                ${pending.length === 0 ? `<div class="surface-card rounded-xl p-10 text-center"><p class="text-4xl mb-2">🎉</p><p class="font-bold text-gray-900">¡Todo al día!</p><p class="text-sm text-gray-500">Completaste todas tus tareas de Moodle y ALEKS.</p></div>` : ''}
+                ${groups.filter(g => g[3].length).map(g => `
+                    <section class="mb-6">
+                        <h3 class="font-bold text-gray-900 mb-3 flex items-center gap-2"><i class="fa-solid ${g[1]} ${g[2]}"></i>${g[0]} <span class="text-xs font-semibold text-gray-400">(${g[3].length})</span></h3>
+                        <div class="space-y-3">${g[3].map(taskCard).join('')}</div>
+                    </section>`).join('')}
+                ${done.length ? `<details class="mb-6"><summary class="cursor-pointer font-semibold text-gray-500 text-sm mb-3"><i class="fa-solid fa-circle-check text-emerald-500 mr-1"></i>Completadas (${done.length})</summary>
+                    <div class="space-y-3 mt-3">${done.sort((a, b) => b.due - a.due).map(taskCard).join('')}</div></details>` : ''}`;
+        }
+
+        // ---------------------------------------------------------------
+        // Herramientas
+        // ---------------------------------------------------------------
+        let toolsTab = 'links';
+        const TOOL_TABS = [
+            ['links', 'Enlaces', 'fa-link'], ['pomo', 'Pomodoro', 'fa-stopwatch'], ['grades', 'Promedios', 'fa-calculator'],
+            ['absences', 'Faltas', 'fa-user-xmark'], ['notes', 'Notas', 'fa-note-sticky'], ['data', 'Calendario y datos', 'fa-database']
+        ];
+        function getSubjects() {
+            const set = [];
+            Object.values(regularSchedule).forEach(day => day.forEach(c => { if (!set.includes(c.subject)) set.push(c.subject); }));
+            return set;
+        }
+        function setToolsTab(k) { toolsTab = k; renderView('tools'); }
+
+        function renderTools(container) {
+            container.innerHTML = `
+                <div class="flex gap-2 overflow-x-auto pb-1">
+                    ${TOOL_TABS.map(([k, lb, ic]) => `<button onclick="setToolsTab('${k}')" class="tool-chip ${toolsTab === k ? 'active' : ''}"><i class="fa-solid ${ic} mr-1.5"></i>${lb}</button>`).join('')}
+                </div>
+                <div id="tools-body" class="mt-5"></div>`;
+            const body = document.getElementById('tools-body');
+            ({ links: renderToolsLinks, pomo: renderToolsPomo, grades: renderToolsGrades, absences: renderToolsAbsences, notes: renderToolsNotes, data: renderToolsData }[toolsTab])(body);
+        }
+
+        // ---- Enlaces ----
+        function renderToolsLinks(b) {
+            const moodle = getMoodleUrl();
+            const custom = loadJSON(STORAGE_KEYS.links, []);
+            const tile = (icon, color, name, desc, inner) => `
+                <div class="surface-card rounded-xl p-4 shadow-sm flex items-center gap-3">
+                    <span class="w-11 h-11 rounded-xl flex items-center justify-center text-white flex-shrink-0" style="background:${color}"><i class="fa-solid ${icon}"></i></span>
+                    <div class="min-w-0 flex-grow"><p class="font-semibold text-gray-900 truncate">${name}</p><p class="text-xs text-gray-500 truncate">${desc}</p></div>
+                    ${inner}
+                </div>`;
+            const openBtn = href => `<a href="${esc(href)}" target="_blank" rel="noopener" class="btn-brand text-xs font-semibold px-3 py-2 rounded-lg whitespace-nowrap">Abrir</a>`;
+            b.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${tile('fa-graduation-cap', '#9333ea', 'Moodle de la prepa', moodle ? esc(moodle) : 'Aún sin configurar',
+                        moodle ? openBtn(moodle) : `<button onclick="openMoodle()" class="btn-brand text-xs font-semibold px-3 py-2 rounded-lg whitespace-nowrap">Configurar</button>`)}
+                    ${tile('fa-laptop-code', '#059669', 'ALEKS', ALEKS_URL, openBtn(ALEKS_URL))}
+                    ${custom.map((l, i) => tile('fa-link', '#0ea5e9', esc(l.name), esc(l.url),
+                        `<div class="flex gap-2">${openBtn(l.url)}<button onclick="removeLink(${i})" title="Quitar" class="btn-ghost text-xs px-2.5 rounded-lg"><i class="fa-solid fa-trash"></i></button></div>`)).join('')}
+                </div>
+                <div class="surface-card rounded-xl p-4 mt-5 shadow-sm">
+                    <p class="font-semibold text-gray-900 mb-3"><i class="fa-solid fa-plus mr-1 text-[var(--brand-light)]"></i>Agregar un enlace (portal escolar, biblioteca, Drive…)</p>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input id="link-name" class="field flex-1" placeholder="Nombre" maxlength="40">
+                        <input id="link-url" class="field flex-[2]" placeholder="https://…" inputmode="url">
+                        <button onclick="addCustomLink()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Agregar</button>
+                    </div>
+                </div>`;
+        }
+        function addCustomLink() {
+            const name = document.getElementById('link-name').value.trim();
+            const url = sanitizeUrl(document.getElementById('link-url').value);
+            if (!name || !url) { showToast('Escribe un nombre y un enlace válido.', 'warn'); return; }
+            const list = loadJSON(STORAGE_KEYS.links, []);
+            list.push({ name, url });
+            saveJSON(STORAGE_KEYS.links, list);
+            renderView('tools');
+        }
+        function removeLink(i) {
+            const list = loadJSON(STORAGE_KEYS.links, []);
+            list.splice(i, 1);
+            saveJSON(STORAGE_KEYS.links, list);
+            renderView('tools');
+        }
+
+        // ---- Pomodoro ----
+        const POMO_PRESETS = { '25/5': [25, 5, 15], '50/10': [50, 10, 20] };
+        const POMO_LABELS = { focus: 'Concentración', short: 'Descanso corto', long: 'Descanso largo' };
+        let pomo = { mode: 'focus', preset: '25/5', remaining: 25 * 60, running: false, endAt: 0, cycle: 0, timer: null };
+
+        function pomoDur(mode) { const p = POMO_PRESETS[pomo.preset]; return (mode === 'focus' ? p[0] : mode === 'short' ? p[1] : p[2]) * 60; }
+        function todayKey() { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
+        function getPomoCount() { const v = loadJSON(STORAGE_KEYS.pomoDay, null); return v && v.date === todayKey() ? v.n : 0; }
+        function addPomoCount() { saveJSON(STORAGE_KEYS.pomoDay, { date: todayKey(), n: getPomoCount() + 1 }); }
+        function pomoStart() { if (pomo.running) return; pomo.endAt = Date.now() + pomo.remaining * 1000; pomo.running = true; pomo.timer = setInterval(pomoTick, 250); pomoUpdateUI(); }
+        function pomoPause() { if (!pomo.running) return; pomoTick(); clearInterval(pomo.timer); pomo.running = false; pomoUpdateUI(); }
+        function pomoToggle() { pomo.running ? pomoPause() : pomoStart(); }
+        function pomoReset() { clearInterval(pomo.timer); pomo.running = false; pomo.remaining = pomoDur(pomo.mode); pomoUpdateUI(); }
+        function pomoSkip() { pomoNext(false); }
+        function pomoSetPreset(p) { pomo.preset = p; pomo.cycle = 0; pomo.mode = 'focus'; pomoReset(); renderView('tools'); }
+        function pomoTick() {
+            if (!pomo.running) return;
+            pomo.remaining = Math.max(0, Math.ceil((pomo.endAt - Date.now()) / 1000));
+            if (pomo.remaining <= 0) pomoNext(true);
+            pomoUpdateUI();
+        }
+        function pomoNext(completed) {
+            clearInterval(pomo.timer); pomo.running = false;
+            const wasFocus = pomo.mode === 'focus';
+            if (wasFocus) {
+                if (completed) { pomo.cycle++; addPomoCount(); }
+                pomo.mode = (completed && pomo.cycle % 4 === 0) ? 'long' : 'short';
+            } else pomo.mode = 'focus';
+            pomo.remaining = pomoDur(pomo.mode);
+            if (completed) {
+                const msg = wasFocus ? '¡Bloque terminado! Toma tu descanso 🎉' : 'Fin del descanso. ¡A concentrarse! 💪';
+                showToast(msg, 'ok', 8000); sendNotification('Pomodoro', msg, 'pomo'); beep(3, 660);
+            }
+            pomoUpdateUI();
+        }
+        function pomoUpdateUI() {
+            const m = Math.floor(pomo.remaining / 60), s = pomo.remaining % 60;
+            const t = document.getElementById('pomo-time');
+            if (t) t.textContent = `${pad(m)}:${pad(s)}`;
+            const md = document.getElementById('pomo-mode'); if (md) md.textContent = POMO_LABELS[pomo.mode];
+            const bt = document.getElementById('pomo-btn'); if (bt) bt.innerHTML = pomo.running ? '<i class="fa-solid fa-pause mr-2"></i>Pausar' : '<i class="fa-solid fa-play mr-2"></i>Iniciar';
+            const ct = document.getElementById('pomo-count'); if (ct) ct.textContent = getPomoCount();
+            const bar = document.getElementById('pomo-bar');
+            if (bar) bar.style.width = (100 - (pomo.remaining / pomoDur(pomo.mode)) * 100) + '%';
+            document.title = pomo.running ? `${pad(m)}:${pad(s)} · ${POMO_LABELS[pomo.mode]}` : 'Mi Horario Escolar';
+        }
+        function renderToolsPomo(b) {
+            b.innerHTML = `
+                <div class="surface-card rounded-2xl p-6 sm:p-8 shadow-sm max-w-md mx-auto text-center">
+                    <p id="pomo-mode" class="text-sm font-bold uppercase tracking-widest text-[var(--brand-light)]"></p>
+                    <p id="pomo-time" class="text-7xl font-extrabold text-gray-900 tabular-nums my-4">25:00</p>
+                    <div class="bar-track mb-6"><div id="pomo-bar" class="bar-fill" style="width:0;background:var(--brand-light)"></div></div>
+                    <div class="flex gap-2 justify-center mb-5">
+                        <button id="pomo-btn" onclick="pomoToggle()" class="btn-brand font-semibold px-6 py-3 rounded-xl"></button>
+                        <button onclick="pomoReset()" class="btn-ghost font-semibold px-4 py-3 rounded-xl" title="Reiniciar"><i class="fa-solid fa-rotate-left"></i></button>
+                        <button onclick="pomoSkip()" class="btn-ghost font-semibold px-4 py-3 rounded-xl" title="Saltar"><i class="fa-solid fa-forward-step"></i></button>
+                    </div>
+                    <div class="flex gap-2 justify-center mb-4">
+                        ${Object.keys(POMO_PRESETS).map(p => `<button onclick="pomoSetPreset('${p}')" class="tool-chip ${pomo.preset === p ? 'active' : ''}">${p} min</button>`).join('')}
+                    </div>
+                    <p class="text-sm text-gray-500">Bloques completados hoy: <b id="pomo-count" class="text-gray-900">0</b></p>
+                    <p class="text-xs text-gray-400 mt-2">El temporizador sigue corriendo aunque cambies de sección.</p>
+                </div>`;
+            pomoUpdateUI();
+        }
+
+        // ---- Promedios ----
+        function gradeResultHtml(vals, pm) {
+            const nums = vals.map(v => (v === '' || v == null) ? null : parseFloat(v)).filter(v => v !== null && !isNaN(v));
+            if (!nums.length) return '<span class="text-gray-400">Captura tus calificaciones para ver tu promedio.</span>';
+            const sum = nums.reduce((a, c) => a + c, 0), avg = sum / nums.length, remaining = 3 - nums.length;
+            if (remaining === 0) return `Promedio final: <b>${avg.toFixed(1)}</b> — ${avg >= pm ? '✅ Aprobada' : '⚠️ Por debajo de ' + pm}`;
+            const need = (pm * 3 - sum) / remaining;
+            if (need <= 0) return `Promedio actual: <b>${avg.toFixed(1)}</b> — ✅ Ya aseguras ${pm}, incluso con 0 en lo que falta.`;
+            if (need > 100) return `Promedio actual: <b>${avg.toFixed(1)}</b> — ⚠️ Ni con 100 en lo que falta llegarías a ${pm}.`;
+            return `Promedio actual: <b>${avg.toFixed(1)}</b> — necesitas <b>${need.toFixed(1)}</b> de promedio en ${remaining} parcial${remaining === 1 ? '' : 'es'} para llegar a ${pm}.`;
+        }
+        function updateGradeResult(i) {
+            const subs = getSubjects(), g = loadJSON(STORAGE_KEYS.grades, {});
+            const el = document.getElementById('grade-res-' + i);
+            if (el) el.innerHTML = gradeResultHtml(g[subs[i]] || ['', '', ''], +loadSetting(STORAGE_KEYS.passMin, '70'));
+        }
+        function setGrade(i, j, val) {
+            const subs = getSubjects(), g = loadJSON(STORAGE_KEYS.grades, {});
+            const row = g[subs[i]] || ['', '', ''];
+            row[j] = val;
+            g[subs[i]] = row;
+            saveJSON(STORAGE_KEYS.grades, g);
+            updateGradeResult(i);
+        }
+        function setPassMin(v) {
+            const n = Math.max(0, Math.min(100, parseFloat(v) || 70));
+            saveSetting(STORAGE_KEYS.passMin, String(n));
+            getSubjects().forEach((_, i) => updateGradeResult(i));
+        }
+        function renderToolsGrades(b) {
+            const subs = getSubjects(), g = loadJSON(STORAGE_KEYS.grades, {});
+            const pm = loadSetting(STORAGE_KEYS.passMin, '70');
+            b.innerHTML = `
+                <div class="surface-card rounded-xl p-4 mb-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <p class="text-sm text-gray-600">Escribe tus calificaciones (0–100). Supone <b>3 parciales con el mismo peso</b>; ajusta la mínima aprobatoria según tu reglamento.</p>
+                    <label class="text-sm font-semibold text-gray-700 flex items-center gap-2 whitespace-nowrap">Mínima aprobatoria
+                        <input type="number" min="0" max="100" value="${pm}" oninput="setPassMin(this.value)" class="field w-20 text-center"></label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${subs.map((s, i) => {
+                        const row = g[s] || ['', '', ''];
+                        return `<div class="surface-card rounded-xl p-4 shadow-sm">
+                            <p class="font-semibold text-gray-900">${esc(s)}</p>
+                            <div class="grid grid-cols-3 gap-2 mt-2">
+                                ${[0, 1, 2].map(j => `<div><label class="block text-[10px] font-semibold text-gray-500 mb-0.5">Parcial ${j + 1}</label>
+                                    <input type="number" min="0" max="100" step="0.1" value="${esc(row[j] ?? '')}" oninput="setGrade(${i},${j},this.value)" class="field w-full"></div>`).join('')}
+                            </div>
+                            <p id="grade-res-${i}" class="text-xs text-gray-600 mt-2.5"></p>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+            subs.forEach((_, i) => updateGradeResult(i));
+        }
+
+        // ---- Faltas ----
+        function changeAbsence(i, delta) {
+            const subs = getSubjects(), ab = loadJSON(STORAGE_KEYS.absences, {});
+            ab[subs[i]] = Math.max(0, (ab[subs[i]] || 0) + delta);
+            saveJSON(STORAGE_KEYS.absences, ab);
+            renderView('tools');
+        }
+        function setAbsLimit(v) { saveSetting(STORAGE_KEYS.absLimit, String(Math.max(1, parseInt(v) || 6))); renderView('tools'); }
+        function renderToolsAbsences(b) {
+            const subs = getSubjects(), ab = loadJSON(STORAGE_KEYS.absences, {});
+            const lim = parseInt(loadSetting(STORAGE_KEYS.absLimit, '6')) || 6;
+            b.innerHTML = `
+                <div class="surface-card rounded-xl p-4 mb-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                    <p class="text-sm text-gray-600">Lleva el conteo de tus faltas por materia. Pon el límite que marque tu reglamento.</p>
+                    <label class="text-sm font-semibold text-gray-700 flex items-center gap-2 whitespace-nowrap">Límite por materia
+                        <input type="number" min="1" value="${lim}" onchange="setAbsLimit(this.value)" class="field w-20 text-center"></label>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    ${subs.map((s, i) => {
+                        const n = ab[s] || 0;
+                        const pct = Math.min(100, (n / lim) * 100);
+                        const color = n >= lim ? '#ef4444' : n >= lim - 1 ? '#f59e0b' : '#22c55e';
+                        return `<div class="surface-card rounded-xl p-4 shadow-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="font-semibold text-gray-900 leading-tight">${esc(s)}</p>
+                                <div class="flex items-center gap-2 flex-shrink-0">
+                                    <button onclick="changeAbsence(${i},-1)" class="btn-ghost w-8 h-8 rounded-lg" aria-label="Quitar falta"><i class="fa-solid fa-minus text-xs"></i></button>
+                                    <span class="w-8 text-center text-lg font-extrabold text-gray-900 tabular-nums">${n}</span>
+                                    <button onclick="changeAbsence(${i},1)" class="btn-brand w-8 h-8 rounded-lg" aria-label="Agregar falta"><i class="fa-solid fa-plus text-xs"></i></button>
+                                </div>
+                            </div>
+                            <div class="bar-track mt-3"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div>
+                            <p class="text-xs mt-1.5" style="color:${color}">${n >= lim ? '⚠️ Alcanzaste el límite' : `${lim - n} falta${lim - n === 1 ? '' : 's'} disponible${lim - n === 1 ? '' : 's'}`}</p>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        // ---- Notas por materia ----
+        function saveNote(i, val) {
+            const subs = getSubjects(), n = loadJSON(STORAGE_KEYS.notes, {});
+            n[subs[i]] = val;
+            saveJSON(STORAGE_KEYS.notes, n);
+        }
+        function renderToolsNotes(b) {
+            const subs = getSubjects(), notes = loadJSON(STORAGE_KEYS.notes, {});
+            b.innerHTML = `<p class="text-sm text-gray-500 mb-3">Apuntes rápidos por materia. Se guardan solos mientras escribes.</p>
+                <div class="space-y-3">
+                    ${subs.map((s, i) => `
+                        <details class="surface-card rounded-xl shadow-sm" ${(notes[s] || '').trim() ? 'open' : ''}>
+                            <summary class="cursor-pointer p-4 font-semibold text-gray-900 flex items-center justify-between">${esc(s)}
+                                ${(notes[s] || '').trim() ? '<i class="fa-solid fa-note-sticky text-amber-500"></i>' : ''}</summary>
+                            <div class="px-4 pb-4"><textarea rows="4" oninput="saveNote(${i}, this.value)" placeholder="Escribe aquí tus apuntes, dudas o pendientes…" class="field w-full">${esc(notes[s] || '')}</textarea></div>
+                        </details>`).join('')}
+                </div>`;
+        }
+
+        // ---- Calendario y datos ----
+        function renderToolsData(b) {
+            const card = (icon, title, desc, buttons) => `
+                <div class="surface-card rounded-xl p-5 shadow-sm">
+                    <p class="font-bold text-gray-900 mb-1"><i class="fa-solid ${icon} mr-2 text-[var(--brand-light)]"></i>${title}</p>
+                    <p class="text-sm text-gray-500 mb-3">${desc}</p>
+                    <div class="flex flex-wrap gap-2">${buttons}</div>
+                </div>`;
+            b.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${card('fa-calendar-plus', 'Llévalo a tu calendario',
+                        'Exporta un archivo .ics para Google Calendar, Apple Calendar u Outlook. Las entregas llevan alarmas 1 día, 3 horas y 30 min antes, así te avisa tu teléfono aunque esta página esté cerrada.',
+                        `<button onclick="exportDeadlinesICS()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Entregas pendientes (.ics)</button>
+                         <button onclick="exportClassesICS()" class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg">Horario de clases (.ics)</button>`)}
+                    ${card('fa-print', 'Imprimir horario', 'Abre una vista limpia de la semana lista para imprimir o guardar como PDF.',
+                        `<button onclick="printSchedule()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Imprimir semana</button>`)}
+                    ${card('fa-cloud-arrow-down', 'Respaldo de tus datos', 'Descarga un archivo con tus tareas completadas, notas, calificaciones y ajustes para pasarlos a otro dispositivo.',
+                        `<button onclick="exportBackup()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Descargar respaldo</button>
+                         <label class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer">Restaurar respaldo
+                            <input type="file" accept="application/json,.json" class="hidden" onchange="importBackup(this)"></label>`)}
+                    ${card('fa-trash-can', 'Borrar mis datos', 'Elimina todo lo guardado en este navegador (ajustes, tareas marcadas, notas…).',
+                        `<button onclick="resetAll()" class="text-sm font-semibold px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white">Borrar todo</button>`)}
+                </div>`;
+        }
+
+        // ---------------------------------------------------------------
+        // Exportar / respaldo / imprimir
+        // ---------------------------------------------------------------
+        function downloadFile(name, content, mime) {
+            const blob = new Blob([content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = name;
+            document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        function icsEscape(s) { return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+        function icsLocal(d) { return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`; }
+        function icsStamp() { return new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'; }
+        function icsWrap(events) {
+            return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Mi Horario Escolar//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', ...events.flat(), 'END:VCALENDAR'].join('\r\n');
+        }
+        function exportDeadlinesICS() {
+            const pending = getPendingDeadlines().filter(d => d.due.getTime() > Date.now());
+            if (!pending.length) { showToast('No hay entregas pendientes por exportar.', 'warn'); return; }
+            const stamp = icsStamp();
+            const alarm = (trigger, text) => ['BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape(text)}`, `TRIGGER:${trigger}`, 'END:VALARM'];
+            const events = pending.map(d => {
+                const name = (d.kind === 'aleks' ? 'ALEKS ' : d.subject + ': ') + d.title;
+                return ['BEGIN:VEVENT', `UID:${d.id}-${d.due.getTime()}@mi-horario`, `DTSTAMP:${stamp}`,
+                    `DTSTART:${icsLocal(d.due)}`, `DTEND:${icsLocal(new Date(d.due.getTime() + 15 * 60000))}`,
+                    `SUMMARY:${icsEscape('📌 Entrega: ' + name)}`,
+                    `DESCRIPTION:${icsEscape('Marca la tarea como completada en Mi Horario cuando la termines.')}`,
+                    ...alarm('-P1D', 'Mañana vence: ' + name), ...alarm('-PT3H', 'En 3 horas vence: ' + name), ...alarm('-PT30M', 'En 30 minutos vence: ' + name),
+                    'END:VEVENT'];
+            });
+            downloadFile('entregas-pendientes.ics', icsWrap(events), 'text/calendar');
+            showToast('Archivo .ics descargado. Ábrelo para agregarlo a tu calendario 📅', 'ok');
+        }
+        function exportClassesICS() {
+            const stamp = icsStamp(), events = [];
+            for (let day = 1; day <= 5; day++) {
+                const first = new Date();
+                first.setHours(0, 0, 0, 0);
+                while (first.getDay() !== day) first.setDate(first.getDate() + 1);
+                (regularSchedule[day] || []).forEach((c, k) => {
+                    const r = parseTimeRange(c.time);
+                    const s = new Date(first); s.setHours(Math.floor(r.start / 60), r.start % 60);
+                    const e = new Date(first); e.setHours(Math.floor(r.end / 60), r.end % 60);
+                    events.push(['BEGIN:VEVENT', `UID:clase-${day}-${k}@mi-horario`, `DTSTAMP:${stamp}`,
+                        `DTSTART:${icsLocal(s)}`, `DTEND:${icsLocal(e)}`, `RRULE:FREQ=WEEKLY;COUNT=${SEMESTER_WEEKS}`,
+                        `SUMMARY:${icsEscape(c.subject)}`, `LOCATION:${icsEscape('Aula ' + c.room)}`,
+                        'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape('Clase en 15 min: ' + c.subject)}`, 'TRIGGER:-PT15M', 'END:VALARM',
+                        'END:VEVENT']);
+                });
+            }
+            downloadFile('horario-de-clases.ics', icsWrap(events), 'text/calendar');
+            showToast(`Horario exportado (se repite ${SEMESTER_WEEKS} semanas).`, 'ok');
+        }
+        function printSchedule() { changeView('week'); setTimeout(() => window.print(), 350); }
+
+        function exportBackup() {
+            const data = {};
+            try {
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith('schedule_')) data[k] = localStorage.getItem(k);
+                }
+            } catch (e) { /* ignore */ }
+            const d = new Date();
+            downloadFile(`mi-horario-respaldo-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}.json`,
+                JSON.stringify({ app: 'mi-horario', version: APP_VERSION, exported: d.toISOString(), data }, null, 2), 'application/json');
+            showToast('Respaldo descargado 💾', 'ok');
+        }
+        function importBackup(input) {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const obj = JSON.parse(reader.result);
+                    if (obj.app !== 'mi-horario' || typeof obj.data !== 'object') throw new Error('formato');
+                    Object.entries(obj.data).forEach(([k, v]) => { if (k.startsWith('schedule_') && typeof v === 'string') saveSetting(k, v); });
+                    applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul')); applyMode(loadSetting(STORAGE_KEYS.mode, 'auto'));
+                    applyStudentName(loadSetting(STORAGE_KEYS.name, ''));
+                    showToast('Respaldo restaurado ✅', 'ok');
+                    renderView(currentView); updateNavBadge(); updateUrgentBar();
+                } catch (e) { showToast('Ese archivo no es un respaldo válido.', 'danger'); }
+                input.value = '';
+            };
+            reader.readAsText(f);
+        }
+        function resetAll() {
+            if (!confirm('¿Seguro que quieres borrar todos tus datos guardados en este navegador?')) return;
+            try {
+                Object.keys(localStorage).filter(k => k.startsWith('schedule_')).forEach(k => localStorage.removeItem(k));
+            } catch (e) { /* ignore */ }
+            location.reload();
+        }
+
+        // ---------------------------------------------------------------
+        // Inicio
+        // ---------------------------------------------------------------
+        function minuteRefresh() {
+            updateDates(); updateNavBadge();
+            const entryVisible = !document.getElementById('entry-screen').classList.contains('hidden');
+            if (entryVisible) { renderEntryScreen(); return; }
+            const a = document.activeElement;
+            if (a && ['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) return; // no interrumpir mientras escribe
+            if (['today', 'moodle', 'aleks', 'panel'].includes(currentView)) renderView(currentView);
+        }
+
         window.onload = () => {
             applyTheme(loadSetting(STORAGE_KEYS.theme, 'azul'));
+            applyMode(loadSetting(STORAGE_KEYS.mode, 'auto'));
             applyStudentName(loadSetting(STORAGE_KEYS.name, ''));
+            buildNav();
+            updateDates();
             renderEntryScreen();
+            tickCountdowns();
+            loadWeather();
+            maybeShowChangelog();
+
+            let n = 0;
+            setInterval(() => {
+                n++;
+                tickCountdowns(); updateUrgentBar();
+                if (n % 30 === 0) checkAlerts();
+                if (n % 60 === 0) minuteRefresh();
+            }, 1000);
+            setTimeout(checkAlerts, 1500);
+
+            // Seguir el modo del dispositivo cuando está en "Auto"
+            if (window.matchMedia) {
+                const mq = window.matchMedia('(prefers-color-scheme: dark)');
+                const onChange = () => { if (loadSetting(STORAGE_KEYS.mode, 'auto') === 'auto') applyMode('auto'); };
+                mq.addEventListener ? mq.addEventListener('change', onChange) : mq.addListener && mq.addListener(onChange);
+            }
+            // Estado de red
+            const offBar = document.getElementById('offline-bar');
+            const syncNet = () => offBar.classList.toggle('hidden', navigator.onLine);
+            window.addEventListener('online', () => { syncNet(); showToast('De nuevo en línea ✅', 'ok', 2500); loadWeather(); });
+            window.addEventListener('offline', syncNet);
+            syncNet();
         };
 
-        // Close settings modal when clicking the dark backdrop
         document.addEventListener('click', (e) => {
             if (e.target && e.target.id === 'settings-modal') closeSettings();
+            if (e.target && e.target.id === 'changelog-modal') closeChangelog();
+        });
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            if (!document.getElementById('settings-modal').classList.contains('hidden')) closeSettings();
+            if (!document.getElementById('changelog-modal').classList.contains('hidden')) closeChangelog();
         });
 
     </script>
