@@ -320,13 +320,14 @@
         // =================================================================
         // CONFIGURACIÓN RÁPIDA (puedes editar estos valores)
         // =================================================================
-        const APP_VERSION = '2.0.0';          // Cambia este número para volver a mostrar la ventana de novedades
+        const APP_VERSION = '2.1.0';          // Cambia este número para volver a mostrar la ventana de novedades
         const DEFAULT_MOODLE_URL = '';        // <-- Pega aquí el enlace de Moodle de la prepa (o ponlo en ⚙ Personalizar)
         const ALEKS_URL = 'https://www.aleks.com/';
         const SEMESTER_WEEKS = 10;            // Semanas que se repiten las clases al exportar el horario (.ics)
         const DEFAULT_GEO = { lat: 21.8853, lon: -102.2916, label: 'Aguascalientes' }; // Para el clima
 
         const CHANGELOG = [
+            { icon: 'fa-file-signature', color: '#ef4444', title: 'Semana de exámenes (19–23 oct)', text: 'Nueva pestaña Exámenes con fechas, horas y cuenta regresiva por examen. Durante esa semana, “Hoy” y la pantalla de inicio muestran tus exámenes en lugar de las clases. Puedes exportarlos a tu calendario (.ics) con alarmas.' },
             { icon: 'fa-circle-check', color: '#10b981', title: 'Tareas de ALEKS completables', text: 'Ahora puedes marcar cada tarea de ALEKS como completada, igual que en Moodle.' },
             { icon: 'fa-hourglass-half', color: '#f59e0b', title: 'Cuenta regresiva en vivo', text: 'Cada tarea muestra cuánto tiempo le queda, actualizado al segundo, con colores según la urgencia.' },
             { icon: 'fa-bell', color: '#ef4444', title: 'Alertas reales', text: 'Avisos a las 24 h, 3 h, 1 h y 15 min antes de cada entrega (notificación del navegador + aviso en pantalla). Para tener alertas aunque la página esté cerrada, exporta tus recordatorios a tu calendario (.ics).' },
@@ -664,6 +665,11 @@
                 el.className = 'cd-chip ' + st.cls;
                 el.innerHTML = st.html;
             });
+            document.querySelectorAll('[data-exam]').forEach(el => {
+                const st = examChipState(+el.dataset.start, +el.dataset.end);
+                el.className = 'cd-chip ' + st.cls;
+                el.innerHTML = st.html;
+            });
         }
         function progressBar(d) {
             if (d.completed) return `<div class="bar-track mt-3"><div class="bar-fill" style="width:100%;background:#10b981"></div></div>`;
@@ -860,6 +866,55 @@
             ]
         };
 
+        // ---- Semana de exámenes (segundo parcial): lunes 19 al viernes 23 de octubre de 2026 ----
+        const EXAM_WEEK_START = new Date(2026, 9, 19, 0, 0, 0);
+        const EXAM_WEEK_END = new Date(2026, 9, 23, 23, 59, 59);
+        const EXAM_ROOM_LABEL = 'por confirmar';   // Cambia por el aula real cuando Coordinación la indique
+        const EXAM_COLOR_ALIAS = { 'Lengua Extranjera V': 'bg-red-600', 'Educación Física y Artística V': 'bg-green-700' };
+
+        function isExamDate(dt) { return dt >= EXAM_WEEK_START && dt <= EXAM_WEEK_END; }
+        function examDateFor(dayIdx) { const d = new Date(EXAM_WEEK_START); d.setDate(d.getDate() + dayIdx - 1); return d; }
+        function examColor(subject) {
+            if (EXAM_COLOR_ALIAS[subject]) return EXAM_COLOR_ALIAS[subject];
+            for (const day of Object.values(regularSchedule)) {
+                const c = day.find(x => x.subject === subject);
+                if (c) return c.color;
+            }
+            return 'bg-gray-600';
+        }
+        function getExamList() {
+            const out = [];
+            for (let d = 1; d <= 5; d++) {
+                (examSchedule[d] || []).forEach(e => {
+                    const r = parseTimeRange(e.time), day = examDateFor(d);
+                    const start = new Date(day); start.setHours(Math.floor(r.start / 60), r.start % 60, 0, 0);
+                    const end = new Date(day); end.setHours(Math.floor(r.end / 60), r.end % 60, 0, 0);
+                    out.push({ ...e, dayIdx: d, day, start, end, room: e.room || EXAM_ROOM_LABEL, color: examColor(e.subject) });
+                });
+            }
+            return out.sort((a, b) => a.start - b.start);
+        }
+        // Horario efectivo de una fecha: exámenes en la semana de exámenes, clases normales el resto
+        function scheduleForDate(dt) {
+            const d = dt.getDay();
+            if (d < 1 || d > 5) return [];
+            if (isExamDate(dt)) {
+                return (examSchedule[d] || []).map(e => ({ time: e.time, subject: e.subject, room: e.room || EXAM_ROOM_LABEL, color: examColor(e.subject), isExam: true }));
+            }
+            return regularSchedule[d] || [];
+        }
+        function examChipState(startMs, endMs) {
+            const now = Date.now();
+            if (now >= endMs) return { cls: 'cd-done', html: '<i class="fa-solid fa-circle-check"></i> Realizado' };
+            if (now >= startMs) return { cls: 'cd-crit', html: `<i class="fa-solid fa-pen"></i> En curso · termina en ${fmtDuration(endMs - now)}` };
+            const ms = startMs - now;
+            return { cls: 'cd-' + levelFor(ms), html: `<i class="fa-regular fa-hourglass-half"></i> Faltan ${fmtDuration(ms)}` };
+        }
+        function examChip(e) {
+            const st = examChipState(e.start.getTime(), e.end.getTime());
+            return `<span class="cd-chip ${st.cls}" data-exam data-start="${e.start.getTime()}" data-end="${e.end.getTime()}">${st.html}</span>`;
+        }
+
         // ALEKS Assignments Data (2do parcial)
         const aleksTasks = [
             { name: 'Tarea 5', opens: '28/09/2026 0:00', closes: '11/10/2026 23:59', finalDue: '18/10/2026 23:59' },
@@ -921,9 +976,10 @@
         // inclusive=true also checks dayIdx itself.
         function findNextSchoolDayFirstClass(dayIdx, inclusive) {
             for (let offset = inclusive ? 0 : 1; offset <= 7; offset++) {
-                const d = (dayIdx + offset) % 7;
+                const dt = new Date(); dt.setHours(12, 0, 0, 0); dt.setDate(dt.getDate() + offset);
+                const d = dt.getDay();
                 if (d >= 1 && d <= 5) {
-                    const list = regularSchedule[d] || [];
+                    const list = scheduleForDate(dt);
                     if (list.length > 0) {
                         return { dayIdx: d, offsetDays: offset, cls: list[0] };
                     }
@@ -937,7 +993,7 @@
             const now = new Date();
             const dayIdx = now.getDay();
             const nowMinutes = now.getHours() * 60 + now.getMinutes();
-            const classesToday = (dayIdx >= 1 && dayIdx <= 5) ? (regularSchedule[dayIdx] || []) : [];
+            const classesToday = scheduleForDate(now);
 
             function nextClassAfterNow() {
                 for (const c of classesToday) {
@@ -954,7 +1010,7 @@
             }
 
             // Recess always wins, regardless of what's "scheduled"
-            if (nowMinutes >= RECESS.start && nowMinutes < RECESS.end) {
+            if (!isExamDate(now) && nowMinutes >= RECESS.start && nowMinutes < RECESS.end) {
                 return { state: 'recess', dayIdx, nowMinutes, next: nextClassAfterNow() };
             }
 
@@ -1019,7 +1075,7 @@
                 const c = status.current.cls, r = status.current.range;
                 mainBlock = `
                     <i class="fa-solid fa-chalkboard-user text-4xl ${c.color.replace('bg-', 'text-')} mb-3"></i>
-                    <p class="text-sm text-gray-400 font-medium">Debes estar en la clase de:</p>
+                    <p class="text-sm text-gray-400 font-medium">${c.isExam ? '📝 Debes estar presentando el examen de:' : 'Debes estar en la clase de:'}</p>
                     <h2 class="text-2xl font-bold text-gray-900 mt-1">${c.subject}</h2>
                     <p class="text-sm text-gray-500 mt-2"><i class="fa-regular fa-clock mr-1"></i>${r.startStr} - ${r.endStr} &nbsp;·&nbsp; Aula ${c.room}</p>
                 `;
@@ -1217,7 +1273,11 @@
             if (view === 'today') {
                 let dayToRender = currentDayIndex = new Date().getDay();
                 let isWeekend = false;
-                if (dayToRender === 0 || dayToRender === 6) { dayToRender = 1; isWeekend = true; }
+                const viewDate = new Date(); viewDate.setHours(12, 0, 0, 0);
+                if (dayToRender === 0 || dayToRender === 6) {
+                    dayToRender = 1; isWeekend = true;
+                    viewDate.setDate(viewDate.getDate() + (new Date().getDay() === 6 ? 2 : 1));
+                }
 
                 title.innerHTML = `Horario para hoy: <span class="text-[var(--brand-light)]">${daysOfWeek[dayToRender]}</span>`;
                 container.innerHTML = isWeekend ? `
@@ -1226,7 +1286,7 @@
                         <div class="ml-3"><p class="text-sm text-blue-700">¡Feliz fin de semana! Mostrando el horario del próximo Lunes.</p></div></div>
                     </div>` : '';
 
-                const classes = regularSchedule[dayToRender] || [];
+                const classes = scheduleForDate(viewDate);
                 if (classes.length === 0) {
                     container.innerHTML += `<p class="text-gray-500 italic">No hay clases registradas para este día.</p>`;
                 } else {
@@ -1264,13 +1324,26 @@
                             <p class="text-sm text-amber-800 font-medium">Ahorita es receso (${RECESS.startStr} - ${RECESS.endStr}), sin importar lo que diga el horario.</p>
                         </div>` + cardsHtml;
                     }
+                    if (classes[0] && classes[0].isExam) {
+                        cardsHtml = `<div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-r-md flex items-center gap-3">
+                            <i class="fa-solid fa-file-signature text-red-500 text-xl"></i>
+                            <p class="text-sm text-red-800 font-medium">Semana de exámenes: hoy presentas examen, no hay clases. Confirma aula e indicaciones con tu docente o Coordinación.</p>
+                        </div>` + cardsHtml;
+                    }
                     container.innerHTML += cardsHtml;
                 }
             }
             else if (view === 'week') {
                 title.textContent = 'Semana Completa';
                 const todayIdx = new Date().getDay();
-                let gridHtml = '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
+                let gridHtml = '';
+                if (Date.now() <= EXAM_WEEK_END.getTime()) {
+                    gridHtml += `<button onclick="changeView('exams')" class="w-full mb-4 text-left bg-red-50 border-l-4 border-red-500 p-3 rounded-r-md flex items-center gap-3 hover:opacity-90">
+                        <i class="fa-solid fa-file-signature text-red-500"></i>
+                        <span class="text-sm text-red-800 font-medium">Del 19 al 23 de octubre es semana de exámenes. Toca para ver el horario.</span>
+                        <i class="fa-solid fa-chevron-right text-red-300 ml-auto"></i></button>`;
+                }
+                gridHtml += '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
                 for (let i = 1; i <= 5; i++) {
                     gridHtml += `
                         <div class="bg-white rounded-lg shadow-sm border ${i === todayIdx ? 'border-[var(--brand-light)] ring-2 ring-[var(--brand-light)]' : 'border-gray-200'} overflow-hidden">
@@ -1300,17 +1373,7 @@
             }
             else if (view === 'exams') {
                 title.innerHTML = '<span class="text-red-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>Horario de Exámenes</span>';
-                container.innerHTML = `
-                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-                        <div class="app-header-bg text-white p-4 text-center">
-                            <h3 class="text-xl font-bold">HORARIO DE EXÁMENES — 5A INF y COMPACTADOS</h3>
-                        </div>
-                        <div class="flex flex-col items-center justify-center text-center gap-3 py-16 px-6">
-                            <i class="fa-solid fa-calendar-xmark text-5xl text-gray-300"></i>
-                            <p class="text-lg font-semibold text-gray-700">Aún no hay calendario de exámenes para el segundo parcial</p>
-                            <p class="text-sm text-gray-500 max-w-md">En cuanto Coordinación publique las fechas, se actualizará esta sección.</p>
-                        </div>
-                    </div>`;
+                renderExamsView(container);
             }
             else if (view === 'aleks') {
                 title.innerHTML = '<span class="text-emerald-700"><i class="fa-solid fa-laptop-code mr-2"></i>Tareas ALEKS</span>';
@@ -1325,6 +1388,73 @@
                 renderTools(container);
             }
             tickCountdowns();
+        }
+
+
+        // ---- Exámenes ----
+        function renderExamsView(container) {
+            const exams = getExamList();
+            const now = Date.now();
+            const next = exams.find(e => e.end.getTime() > now);
+            const today = new Date().toDateString();
+            const longDay = d => d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const nextBlock = next ? `
+                <div class="surface-card rounded-xl shadow-md border-l-4 border-red-500 p-4 mb-5 flex items-center gap-4 flex-wrap">
+                    <i class="fa-solid fa-bullseye text-red-500 text-3xl"></i>
+                    <div class="flex-grow min-w-0">
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500">Próximo examen</p>
+                        <p class="text-lg font-bold text-gray-900 leading-tight">${esc(next.subject)}</p>
+                        <p class="text-sm text-gray-500 mt-0.5"><i class="fa-regular fa-calendar mr-1"></i>${esc(longDay(next.day))} · ${next.time}</p>
+                    </div>
+                    <div>${examChip(next)}</div>
+                </div>` : `
+                <div class="surface-card rounded-xl shadow-md border-l-4 border-emerald-500 p-4 mb-5 flex items-center gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-500 text-3xl"></i>
+                    <p class="font-semibold text-gray-900">¡Terminaste la semana de exámenes! 🎉</p>
+                </div>`;
+
+            let grid = '<div class="grid grid-cols-1 lg:grid-cols-5 gap-4 lg:gap-2">';
+            for (let d = 1; d <= 5; d++) {
+                const date = examDateFor(d);
+                const isToday = date.toDateString() === today;
+                const monthName = date.toLocaleDateString('es-MX', { month: 'long' }).toUpperCase();
+                grid += `
+                    <div class="bg-white rounded-lg shadow-sm border ${isToday ? 'border-red-500 ring-2 ring-red-500' : 'border-gray-200'} overflow-hidden">
+                        <div class="app-header-bg text-white p-3 text-center font-semibold text-sm leading-tight">
+                            ${daysOfWeek[d].toUpperCase()}<br><span class="text-xs font-medium text-white/80">${date.getDate()} DE ${monthName}${isToday ? ' · HOY' : ''}</span>
+                        </div>
+                        <div class="p-2 space-y-2">`;
+                exams.filter(e => e.dayIdx === d).forEach(e => {
+                    const done = e.end.getTime() <= now;
+                    grid += `
+                            <div class="p-3 rounded-md ${e.color} text-white flex flex-col gap-1 shadow-sm text-sm ${done ? 'opacity-60' : ''}">
+                                <span class="font-bold opacity-90"><i class="fa-regular fa-clock mr-1"></i>${e.time}</span>
+                                <span class="font-semibold leading-tight">${esc(e.subject)}</span>
+                                <span class="text-xs bg-white/20 px-2 py-0.5 rounded-full w-max border border-white/30">Aula ${esc(e.room)}</span>
+                                <div class="mt-1">${examChip(e)}</div>
+                            </div>`;
+                });
+                grid += `</div></div>`;
+            }
+            grid += '</div>';
+
+            container.innerHTML = `
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-5">
+                    <div class="app-header-bg text-white p-4 text-center">
+                        <h3 class="text-xl font-bold">HORARIO DE EXÁMENES — 5A INF y COMPACTADOS</h3>
+                        <p class="text-sm text-white/80 mt-1">Segundo parcial · Del 19 al 23 de octubre de 2026</p>
+                    </div>
+                </div>
+                ${nextBlock}
+                ${grid}
+                <div class="mt-5 bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md flex items-start gap-3">
+                    <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5"></i>
+                    <p class="text-sm text-amber-800 font-medium">Confirma cualquier indicación adicional de docente, aula o Coordinación.</p>
+                </div>
+                <div class="mt-4">
+                    <button onclick="exportExamsICS()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg"><i class="fa-solid fa-calendar-plus mr-2"></i>Exportar exámenes a mi calendario (.ics)</button>
+                </div>`;
         }
 
         // ---- ALEKS ----
@@ -1726,7 +1856,8 @@
                     ${card('fa-calendar-plus', 'Llévalo a tu calendario',
                         'Exporta un archivo .ics para Google Calendar, Apple Calendar u Outlook. Las entregas llevan alarmas 1 día, 3 horas y 30 min antes, así te avisa tu teléfono aunque esta página esté cerrada.',
                         `<button onclick="exportDeadlinesICS()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Entregas pendientes (.ics)</button>
-                         <button onclick="exportClassesICS()" class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg">Horario de clases (.ics)</button>`)}
+                         <button onclick="exportClassesICS()" class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg">Horario de clases (.ics)</button>
+                         <button onclick="exportExamsICS()" class="btn-ghost text-sm font-semibold px-4 py-2 rounded-lg">Exámenes (.ics)</button>`)}
                     ${card('fa-print', 'Imprimir horario', 'Abre una vista limpia de la semana lista para imprimir o guardar como PDF.',
                         `<button onclick="printSchedule()" class="btn-brand text-sm font-semibold px-4 py-2 rounded-lg">Imprimir semana</button>`)}
                     ${card('fa-cloud-arrow-down', 'Respaldo de tus datos', 'Descarga un archivo con tus tareas completadas, notas, calificaciones y ajustes para pasarlos a otro dispositivo.',
@@ -1791,6 +1922,18 @@
             }
             downloadFile('horario-de-clases.ics', icsWrap(events), 'text/calendar');
             showToast(`Horario exportado (se repite ${SEMESTER_WEEKS} semanas).`, 'ok');
+        }
+        function exportExamsICS() {
+            const stamp = icsStamp();
+            const events = getExamList().map((e, k) => ['BEGIN:VEVENT', `UID:examen-${e.dayIdx}-${k}@mi-horario`, `DTSTAMP:${stamp}`,
+                `DTSTART:${icsLocal(e.start)}`, `DTEND:${icsLocal(e.end)}`,
+                `SUMMARY:${icsEscape('📝 Examen: ' + e.subject)}`, `LOCATION:${icsEscape('Aula ' + e.room)}`,
+                `DESCRIPTION:${icsEscape('Confirma aula e indicaciones con tu docente o Coordinación.')}`,
+                'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape('Mañana: examen de ' + e.subject)}`, 'TRIGGER:-P1D', 'END:VALARM',
+                'BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEscape('En 1 hora: examen de ' + e.subject)}`, 'TRIGGER:-PT1H', 'END:VALARM',
+                'END:VEVENT']);
+            downloadFile('examenes-segundo-parcial.ics', icsWrap(events), 'text/calendar');
+            showToast('Exámenes exportados. Ábrelo para agregarlos a tu calendario 📅', 'ok');
         }
         function printSchedule() { changeView('week'); setTimeout(() => window.print(), 350); }
 
