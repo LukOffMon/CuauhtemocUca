@@ -882,8 +882,11 @@
             }
             return 'bg-gray-600';
         }
+        // Al terminar la semana de exámenes, todo se reinicia: sin exámenes hasta que haya nuevo aviso
+        function examWeekOver() { return Date.now() > EXAM_WEEK_END.getTime(); }
         function getExamList() {
             const out = [];
+            if (examWeekOver()) return out;
             for (let d = 1; d <= 5; d++) {
                 (examSchedule[d] || []).forEach(e => {
                     const r = parseTimeRange(e.time), day = examDateFor(d);
@@ -915,7 +918,7 @@
             return `<span class="cd-chip ${st.cls}" data-exam data-start="${e.start.getTime()}" data-end="${e.end.getTime()}">${st.html}</span>`;
         }
 
-        // ALEKS Assignments Data (2do parcial)
+        // ALEKS Assignments Data (2do y 3er parcial)
         const aleksTasks = [
             { name: 'Tarea 5', opens: '28/09/2026 0:00', closes: '11/10/2026 23:59', finalDue: '18/10/2026 23:59' },
             { name: 'Tarea 6', opens: '05/10/2026 0:00', closes: '18/10/2026 23:59', finalDue: null },
@@ -926,32 +929,32 @@
             { name: 'Tarea 11', opens: '16/11/2026 0:00', closes: '22/11/2026 23:59', finalDue: null }
         ];
 
-        // Moodle tasks (segundo parcial), grouped by subject with matching brand colors
+        // Moodle tasks (tercer parcial), grouped by subject with matching brand colors
         const moodleTasks = [
             // Administración
-            { id: 'admin-1', subject: 'Administración', color: 'bg-blue-600', title: '2.1 Mapa mental colaborativo sobre teorías administrativas', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'admin-2', subject: 'Administración', color: 'bg-blue-600', title: '2.2 Análisis de caso con propuesta visual interactiva', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
-            { id: 'admin-3', subject: 'Administración', color: 'bg-blue-600', title: '2.3 Análisis de la responsabilidad social, ética y ambiente externo en una organización', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            { id: 'p3-admin-1', subject: 'Administración', color: 'bg-blue-600', title: '3.1. Simulación de un proceso administrativo', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-admin-2', subject: 'Administración', color: 'bg-blue-600', title: '3.2. Análisis comparativo de estructuras organizacionales', opens: '2026-11-02T06:00:00', due: '2026-11-08T22:59:00' },
+            { id: 'p3-admin-3', subject: 'Administración', color: 'bg-blue-600', title: '3.3. Diseño de indicadores para el control administrativo', opens: '2026-11-09T06:00:00', due: '2026-11-15T22:59:00' },
             // Cálculo Diferencial
-            { id: 'calc-1', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.1 Evidencias. Representación gráfica en GeoGebra', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'calc-2', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.2 Evidencia de Actividades Semanales en ALEKS', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
-            { id: 'calc-3', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '2.3 Evaluación sumativa de la Unidad II: Ejercicios guía para el examen parcial', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
-            // Desarrollo Personal Y Profesional
-            { id: 'dpp-1', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.1 Analiza la realidad socioeconómica de tu entorno', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'dpp-2', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.2 Investiga las tendencias del mercado laboral', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
-            { id: 'dpp-3', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '2.3 Argumenta una decisión vocacional', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            { id: 'p3-calc-1', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '3.1 Evidencias. Comportamiento de una función', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-calc-2', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '3.2 Evidencia de Actividades Semanales en ALEKS', opens: '2026-11-16T06:00:00', due: '2026-11-22T22:59:00' },
+            { id: 'p3-calc-3', subject: 'Cálculo Diferencial', color: 'bg-green-600', title: '3.3 Evaluación sumativa de la Unidad III: Ejercicios guía para el examen parcial', opens: '2026-11-16T06:00:00', due: '2026-11-22T22:59:00' },
+            // Desarrollo Personal y Profesional
+            { id: 'p3-dpp-1', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '3.1 Reconoce tus fortalezas personales', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-dpp-2', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '3.2 Identifica tus intereses y valores personales', opens: '2026-11-02T06:00:00', due: '2026-11-08T22:59:00' },
+            { id: 'p3-dpp-3', subject: 'Desarrollo Personal y Profesional', color: 'bg-indigo-900', title: '3.3 Construye tu proyecto de vida académico y profesional', opens: '2026-11-09T06:00:00', due: '2026-11-15T22:59:00' },
             // Ecología
-            { id: 'eco-1', subject: 'Ecología', color: 'bg-red-500', title: '2.1 Investigación y reflexión. Ecosistemas del mundo', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'eco-2', subject: 'Ecología', color: 'bg-red-500', title: '2.2 Diagnóstico ecológico de Aguascalientes', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
-            { id: 'eco-3', subject: 'Ecología', color: 'bg-red-500', title: '2.3 Ciudadanos por la naturaleza: Propuesta para la conservación de la biodiversidad', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
+            { id: 'p3-eco-1', subject: 'Ecología', color: 'bg-red-500', title: '3.1 Investigación y reflexión. Contaminación del suelo y del agua en mi comunidad', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-eco-2', subject: 'Ecología', color: 'bg-red-500', title: '3.2 Línea del tiempo y análisis del crecimiento poblacional', opens: '2026-11-02T06:00:00', due: '2026-11-08T22:59:00' },
+            { id: 'p3-eco-3', subject: 'Ecología', color: 'bg-red-500', title: '3.3 Adaptación al cambio climático: Propuesta para una comunidad más resiliente', opens: '2026-11-09T06:00:00', due: '2026-11-15T22:59:00' },
             // Filosofía
-            { id: 'filo-1', subject: 'Filosofía', color: 'bg-teal-700', title: '2.1 Infografía: Características de la filosofía medieval', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'filo-2', subject: 'Filosofía', color: 'bg-teal-700', title: '2.2 Mapa mental: Del Renacimiento al surgimiento de la Modernidad', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
-            { id: 'filo-3', subject: 'Filosofía', color: 'bg-teal-700', title: '2.3 Cuadro comparativo: Racionalismo y empirismo', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' },
-            // Fundamentos De La Investigación
-            { id: 'fund-1', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.1 La utilidad de investigar', opens: '2026-09-28T06:00:00', due: '2026-10-04T22:59:00' },
-            { id: 'fund-2', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.2 Características de la metodología de la investigación', opens: '2026-10-05T06:00:00', due: '2026-10-11T22:59:00' },
-            { id: 'fund-3', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '2.3 La investigación como herramienta para resolver problemas', opens: '2026-10-12T06:00:00', due: '2026-10-18T22:59:00' }
+            { id: 'p3-filo-1', subject: 'Filosofía', color: 'bg-teal-700', title: '3.1 Mapa conceptual: Modernidad y Posmodernidad', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-filo-2', subject: 'Filosofía', color: 'bg-teal-700', title: '3.2 Análisis de caso: La existencia auténtica e inauténtica', opens: '2026-11-02T06:00:00', due: '2026-11-08T22:59:00' },
+            { id: 'p3-filo-3', subject: 'Filosofía', color: 'bg-teal-700', title: '3.3. Ensayo argumentativo: El poder y la construcción de la identidad', opens: '2026-11-09T06:00:00', due: '2026-11-15T22:59:00' },
+            // Fundamentos de la Investigación
+            { id: 'p3-fund-1', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '3.1. Comparando el método inductivo y deductivo', opens: '2026-10-26T06:00:00', due: '2026-11-01T22:59:00' },
+            { id: 'p3-fund-2', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '3.2. Modelos cualitativo y cuantitativo en la investigación', opens: '2026-11-02T06:00:00', due: '2026-11-08T22:59:00' },
+            { id: 'p3-fund-3', subject: 'Fundamentos de la Investigación', color: 'bg-orange-400', title: '3.3. Selección del método y modelo de investigación para un caso', opens: '2026-11-09T06:00:00', due: '2026-11-15T22:59:00' }
         ];
         // ---- Recess: every school day, 10:40–11:30, overrides whatever class is "scheduled" ----
         const RECESS = { start: 10 * 60 + 40, end: 11 * 60 + 30, startStr: '10:40', endStr: '11:30' };
@@ -1337,7 +1340,7 @@
                 title.textContent = 'Semana Completa';
                 const todayIdx = new Date().getDay();
                 let gridHtml = '';
-                if (Date.now() <= EXAM_WEEK_END.getTime()) {
+                if (!examWeekOver()) {
                     gridHtml += `<button onclick="changeView('exams')" class="w-full mb-4 text-left bg-red-50 border-l-4 border-red-500 p-3 rounded-r-md flex items-center gap-3 hover:opacity-90">
                         <i class="fa-solid fa-file-signature text-red-500"></i>
                         <span class="text-sm text-red-800 font-medium">Del 19 al 23 de octubre es semana de exámenes. Toca para ver el horario.</span>
@@ -1394,6 +1397,20 @@
         // ---- Exámenes ----
         function renderExamsView(container) {
             const exams = getExamList();
+            if (exams.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden mb-5">
+                        <div class="app-header-bg text-white p-4 text-center">
+                            <h3 class="text-xl font-bold">HORARIO DE EXÁMENES</h3>
+                        </div>
+                    </div>
+                    <div class="surface-card rounded-xl shadow-md p-10 text-center">
+                        <i class="fa-regular fa-calendar-xmark text-5xl text-gray-300 mb-4"></i>
+                        <p class="text-lg font-bold text-gray-900">Exámenes vacíos o sin aviso previo</p>
+                        <p class="text-sm text-gray-500 mt-1">Cuando Coordinación publique nuevas fechas, aparecerán aquí.</p>
+                    </div>`;
+                return;
+            }
             const now = Date.now();
             const next = exams.find(e => e.end.getTime() > now);
             const today = new Date().toDateString();
@@ -1569,7 +1586,7 @@
                         <div class="bar-track mt-3"><div class="bar-fill" style="width:${pctDone}%;background:var(--brand-light)"></div></div>
                     </div>
                     <div class="surface-card rounded-xl p-5 shadow-sm">
-                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Avance del 2° parcial</p>
+                        <p class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">Avance del 3er parcial</p>
                         <p class="text-3xl font-extrabold text-gray-900 tabular-nums">${pctTime}%</p>
                         <div class="bar-track mt-3"><div class="bar-fill" style="width:${pctTime}%;background:var(--brand-dark)"></div></div>
                         <p class="text-[11px] text-gray-400 mt-2">Del ${new Date(start).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} al ${new Date(end).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })}</p>
@@ -1924,6 +1941,7 @@
             showToast(`Horario exportado (se repite ${SEMESTER_WEEKS} semanas).`, 'ok');
         }
         function exportExamsICS() {
+            if (getExamList().length === 0) { showToast('No hay exámenes para exportar por ahora.', 'warn'); return; }
             const stamp = icsStamp();
             const events = getExamList().map((e, k) => ['BEGIN:VEVENT', `UID:examen-${e.dayIdx}-${k}@mi-horario`, `DTSTAMP:${stamp}`,
                 `DTSTART:${icsLocal(e.start)}`, `DTEND:${icsLocal(e.end)}`,
@@ -1985,7 +2003,7 @@
             if (entryVisible) { renderEntryScreen(); return; }
             const a = document.activeElement;
             if (a && ['INPUT', 'SELECT', 'TEXTAREA'].includes(a.tagName)) return; // no interrumpir mientras escribe
-            if (['today', 'moodle', 'aleks', 'panel'].includes(currentView)) renderView(currentView);
+            if (['today', 'moodle', 'aleks', 'panel', 'exams'].includes(currentView)) renderView(currentView);
         }
 
         window.onload = () => {
