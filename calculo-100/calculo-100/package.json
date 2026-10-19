@@ -1,0 +1,14 @@
+{
+  "name": "calc-100",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Entrenador interactivo de Cálculo Diferencial (2.º parcial)",
+  "scripts": {
+    "build": "python3 build.py",
+    "verify": "python3 verify.py",
+    "test": "node tests/smoke.js"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
