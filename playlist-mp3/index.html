@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playlist a MP3</title>
+<style>
+  :root { --bg:#f6f6f4; --card:#fff; --text:#1d1d1f; --muted:#6b6b70; --accent:#e53935; --line:#e2e2e0; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#141416; --card:#1f1f22; --text:#f2f2f2; --muted:#9a9aa0; --line:#323236; } }
+  * { box-sizing: border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:16px;
+         background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, sans-serif; }
+  main { width:100%; max-width:520px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
+  h1 { margin:0 0 4px; font-size:1.4rem; }
+  p.sub { margin:0 0 20px; color:var(--muted); font-size:.95rem; }
+  form { display:flex; gap:8px; flex-wrap:wrap; }
+  input { flex:1 1 240px; padding:12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; }
+  button, a.btn { padding:12px 18px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
+  button:disabled { opacity:.5; cursor:default; }
+  #status { margin-top:20px; font-size:.95rem; }
+  .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin:10px 0; }
+  .bar > div { height:100%; width:0; background:var(--accent); transition:width .3s; }
+  .err { color:var(--accent); }
+  small { display:block; margin-top:24px; color:var(--muted); font-size:.8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Playlist de YouTube → MP3</h1>
+  <p class="sub">Pega el enlace de una playlist y descarga todas las canciones en MP3 320 kbps dentro de un ZIP.</p>
+  <form id="f">
+    <input id="url" type="url" required placeholder="https://youtube.com/playlist?list=…">
+    <button id="go">Convertir</button>
+  </form>
+  <div id="status" hidden>
+    <div id="msg"></div>
+    <div class="bar"><div id="fill"></div></div>
+    <div id="done"></div>
+  </div>
+  <small>Úsalo solo con contenido propio o que tengas derecho a descargar.</small>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+$('f').onsubmit = async e => {
+  e.preventDefault();
+  $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = '';
+  $('msg').textContent = 'Leyendo la playlist…'; $('fill').style.width = '0';
+  try {
+    const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    poll(j.id);
+  } catch (err) { fail(err.message); }
+};
+async function poll(id) {
+  const s = await (await fetch('/api/status/' + id)).json();
+  if (s.status === 'error') return fail(s.error);
+  if (s.status === 'done') {
+    $('msg').textContent = `Listo: ${s.count} canciones.`; $('fill').style.width = '100%';
+    $('done').innerHTML = `<a class="btn" href="/api/download/${id}">Descargar ${s.filename}</a>`;
+    $('go').disabled = false; return;
+  }
+  if (s.status === 'zipping') $('msg').textContent = 'Creando el ZIP…';
+  else if (s.current) {
+    const n = s.total ? `${s.index}/${s.total}` : s.index || '';
+    $('msg').textContent = `${n} · ${s.current}`;
+    if (s.total) $('fill').style.width = (((s.index - 1) + (s.percent || 0) / 100) / s.total * 100) + '%';
+  }
+  setTimeout(() => poll(id), 1000);
+}
+function fail(m) { $('msg').className = 'err'; $('msg').textContent = m || 'Algo falló.'; $('go').disabled = false; }
+</script>
+</body>
+</html>

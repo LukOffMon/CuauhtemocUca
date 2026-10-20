@@ -11,3 +11,7 @@ App web de un solo archivo, sin servidor, que se usa directo desde GitHub Pages:
 Los datos se guardan en el navegador de cada dispositivo. Para pasarlos a otro: Ajustes → *Pasar a otro dispositivo* (enlace o QR, opcionalmente con contraseña) o un respaldo `.json` (también cifrado).
 
 Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEED_PERIODS` y `SEED_TASKS` al inicio del script: los cambios llegan solos a la app sin borrar lo que el alumno editó desde ella.
+
+## Playlist → MP3
+
+`playlist-mp3/`: página para convertir una playlist de YouTube a MP3 en un ZIP. Corre en tu computadora (`python3 server.py`); ver `playlist-mp3/README.md`.
