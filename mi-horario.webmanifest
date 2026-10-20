@@ -1,0 +1,22 @@
+{
+    "name": "Mi Horario Escolar",
+    "short_name": "Mi Horario",
+    "description": "Horario, exámenes y entregas de Moodle y ALEKS con alertas y herramientas de estudio.",
+    "lang": "es-MX",
+    "start_url": "Mi%20Horario%20Escolar.html",
+    "scope": "./",
+    "display": "standalone",
+    "orientation": "any",
+    "background_color": "#1e3a8a",
+    "theme_color": "#1e3a8a",
+    "icons": [
+        { "src": "mi-horario-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+        { "src": "mi-horario-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+        { "src": "mi-horario-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    ],
+    "shortcuts": [
+        { "name": "Hoy", "url": "Mi%20Horario%20Escolar.html#hoy" },
+        { "name": "Tareas", "url": "Mi%20Horario%20Escolar.html#tareas" },
+        { "name": "Exámenes", "url": "Mi%20Horario%20Escolar.html#examenes" }
+    ]
+}
