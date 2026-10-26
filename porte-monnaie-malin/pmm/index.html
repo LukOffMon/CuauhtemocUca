@@ -4,12 +4,17 @@
 <title>Porte-Monnaie Malin</title>
 <meta name="description" content="Bitácora inteligente de finanzas personales: 100% local, privada y offline.">
 <meta name="theme-color" content="#0e2721">
-<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg"><link rel="apple-touch-icon" href="icon.svg">
+<meta name="color-scheme" content="dark light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Monnaie Malin">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="icon-180.png">
 <link rel="stylesheet" href="style.css"></head>
 <body>
-<header id="top"></header><div id="ban" role="status" aria-live="polite"></div>
-<main id="app"></main><nav id="nav" aria-label="Secciones"></nav>
+<a class="skip" href="#app">Saltar al contenido</a>
+<header id="top"></header>
+<div class="shell"><nav id="nav" aria-label="Secciones"></nav>
+<main id="app" tabindex="-1"><noscript><p>Esta app necesita JavaScript.</p></noscript></main></div>
 <div id="modal"></div><div id="toast" role="status" aria-live="polite"></div>
-<button id="eye" class="fab" data-a="eye" aria-label="Ocultar saldos" aria-pressed="false" hidden>👁</button>
-<script src="vendor/chart.umd.js"></script><script src="vendor/jspdf.umd.min.js"></script><script src="app.js"></script>
+<script src="vendor/chart.umd.js" defer></script><script src="vendor/jspdf.umd.min.js" defer></script><script src="app.js" defer></script>
 </body></html>
