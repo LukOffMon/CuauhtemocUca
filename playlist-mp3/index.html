@@ -35,6 +35,7 @@
   <div id="status" hidden>
     <div id="msg"></div>
     <div class="bar"><div id="fill"></div></div>
+    <div id="warn" class="err" hidden></div>
     <div id="done"></div>
   </div>
   <small>Úsalo solo con contenido propio o que tengas derecho a descargar.</small>
@@ -43,7 +44,7 @@
 const $ = id => document.getElementById(id);
 $('f').onsubmit = async e => {
   e.preventDefault();
-  $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = '';
+  $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = ''; $('warn').hidden = true;
   $('msg').textContent = 'Leyendo la playlist…'; $('fill').style.width = '0';
   try {
     const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value }) });
@@ -57,6 +58,7 @@ $('f').onsubmit = async e => {
 };
 async function poll(id) {
   const s = await (await fetch('/api/status/' + id)).json();
+  if (s.warning) { $('warn').textContent = s.warning; $('warn').hidden = false; }
   if (s.status === 'error') return fail(s.error);
   if (s.status === 'done') {
     $('msg').textContent = `Listo: ${s.count} canciones.`; $('fill').style.width = '100%';
