@@ -10,6 +10,7 @@ import re
 import shutil
 import tempfile
 import threading
+import unicodedata
 import urllib.parse
 import urllib.request
 import uuid
@@ -26,6 +27,21 @@ JOBS = {}
 
 YOUTUBE_RE = re.compile(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/")
 SPOTIFY_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[\w-]+/)?(playlist|album|track)/(\w+)")
+
+
+WINDOWS_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
+def safe_name(text, fallback):
+    """Deja solo caracteres seguros en cualquier PC: quita acentos (á→a, ñ→n), emojis y símbolos raros."""
+    text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
+    text = re.sub(r"[^A-Za-z0-9 ()&,'!._-]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip(" .-_")[:120].rstrip(" .-_")
+    if not re.search(r"[A-Za-z]", text):  # p. ej. un título solo en japonés queda vacío o en solo números
+        text = f"{text} - {fallback}" if text else fallback
+    if text.split(".")[0].upper() in WINDOWS_RESERVED:
+        text = "_" + text
+    return text
 
 
 def ydl_opts(work, outtmpl, hook, pre=()):
@@ -120,15 +136,21 @@ def run_job(job, url):
         else:
             with yt_dlp.YoutubeDL(ydl_opts(work, "%(playlist_index)03d - %(title)s.%(ext)s", hook)) as ydl:
                 title = (ydl.extract_info(url, download=True) or {}).get("title")
-        name = re.sub(r'[\\/:*?"<>|]+', "_", title or "playlist").strip() or "playlist"
+        name = safe_name(title, "playlist")
         mp3s = sorted(f for f in os.listdir(work) if f.endswith(".mp3"))
         if not mp3s:
             raise RuntimeError("No se pudo descargar ninguna canción. Revisa que la lista sea pública o actualiza yt-dlp (pip install -U 'yt-dlp[default]').")
         job["status"] = "zipping"
         zpath = os.path.join(work, name + ".zip")
+        used = set()
         with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
             for f in mp3s:
-                z.write(os.path.join(work, f), f)
+                base = clean = safe_name(f[:-4], "Cancion")
+                n = 2
+                while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
+                    clean, n = f"{base} ({n})", n + 1
+                used.add(clean.lower())
+                z.write(os.path.join(work, f), clean + ".mp3")
         job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
