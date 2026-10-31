@@ -53,16 +53,30 @@ $('f').onsubmit = async e => {
     const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value }) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
+    sessionStorage.setItem('job', j.id);
     poll(j.id);
   } catch (err) {
     // fetch solo falla así cuando no hay servidor: página abierta como archivo o ventana de server.py cerrada
     fail(err instanceof TypeError ? 'No hay conexión con el convertidor. Abre iniciar.bat, deja su ventana abierta y entra a http://localhost:8000' : err.message);
   }
 };
-async function poll(id) {
-  const s = await (await fetch('/api/status/' + id)).json();
+async function poll(id, fails = 0) {
+  let s;
+  try {
+    const r = await fetch('/api/status/' + id);
+    s = await r.json();
+    if (r.status === 404) {
+      sessionStorage.removeItem('job');
+      return fail('Esta descarga ya no existe: ya se descargó el ZIP o el convertidor se cerró.');
+    }
+  } catch {
+    // Un fallo suelto (PC ocupada, red) no corta el seguimiento: la descarga sigue en el servidor
+    $('msg').className = ''; $('msg').textContent = 'Reconectando con el convertidor…';
+    return setTimeout(() => poll(id, fails + 1), Math.min(30, 2 + fails * 2) * 1000);
+  }
+  $('msg').className = '';
   if (s.warning) { $('warn').textContent = s.warning; $('warn').hidden = false; }
-  if (s.status === 'error') return fail(s.error);
+  if (s.status === 'error') { sessionStorage.removeItem('job'); return fail(s.error); }
   if (s.status === 'done') {
     $('msg').textContent = `Listo: ${s.count} canciones.`; $('fill').style.width = '100%';
     $('done').innerHTML = `<a class="btn" href="/api/download/${id}">Descargar ${s.filename}</a>`;
@@ -75,6 +89,13 @@ async function poll(id) {
     if (s.total) $('fill').style.width = (((s.index - 1) + (s.percent || 0) / 100) / s.total * 100) + '%';
   }
   setTimeout(() => poll(id), 1000);
+}
+// Cada pestaña recuerda su descarga: al recargar (o abrir /?job=<id>) se retoma en vez de perderse
+const resume = new URLSearchParams(location.search).get('job') || sessionStorage.getItem('job');
+if (resume) {
+  sessionStorage.setItem('job', resume);
+  $('go').disabled = true; $('status').hidden = false; $('msg').textContent = 'Retomando la descarga…';
+  poll(resume);
 }
 // Las playlists de Spotify de más de 100 canciones necesitan la sesión de Spotify del usuario
 fetch('/api/spotify/session').then(r => r.json()).then(s => {

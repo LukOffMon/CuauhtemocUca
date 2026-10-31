@@ -17,6 +17,7 @@ import urllib.parse
 import urllib.request
 import uuid
 import zipfile
+from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import yt_dlp
@@ -28,6 +29,7 @@ KEYS_FILE = os.path.join(HERE, "spotify.json")
 TOKEN_FILE = os.path.join(HERE, "spotify_token.json")  # sesión de Spotify guardada; es privada, igual que spotify.json
 REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect URI de la app en developer.spotify.com
 LOGIN_STATES = set()
+WORKERS = 4  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
 JOBS = {}
 
 
@@ -50,9 +52,13 @@ def safe_name(text, fallback):
     return text
 
 
-def ydl_opts(work, outtmpl, hook, pre=()):
+def ydl_opts(work, outtmpl, pre=()):
     return {
         "format": "bestaudio/best",
+        "retries": 10,  # reintenta si la conexión se corta a media canción
+        "fragment_retries": 10,
+        "extractor_retries": 3,
+        "socket_timeout": 30,
         "js_runtimes": {"deno": {}, "node": {}},
         "outtmpl": os.path.join(work, outtmpl),
         "restrictfilenames": False,
@@ -61,7 +67,6 @@ def ydl_opts(work, outtmpl, hook, pre=()):
         "quiet": True,
         "noprogress": True,
         "writethumbnail": True,
-        "progress_hooks": [hook],
         "postprocessors": [
             *pre,
             {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "320"},
@@ -176,7 +181,7 @@ def spotify_tracks(url):
 
 def youtube_match(artist, title, seconds):
     """Busca la canción en YouTube y elige el resultado con la duración más parecida a la de Spotify."""
-    with yt_dlp.YoutubeDL({"extract_flat": True, "quiet": True, "ignoreerrors": True}) as ydl:
+    with yt_dlp.YoutubeDL({"extract_flat": True, "quiet": True, "ignoreerrors": True, "socket_timeout": 30, "extractor_retries": 3}) as ydl:
         res = ydl.extract_info(f"ytsearch5:{artist} - {title} audio", download=False) or {}
     entries = [e for e in res.get("entries") or [] if e]
     if not entries:
@@ -189,48 +194,72 @@ def youtube_match(artist, title, seconds):
     return best["url"]
 
 
-def download_spotify(job, url, work, hook):
+def download_parallel(job, items, fn):
+    """Corre fn(i, item) para cada canción, varias a la vez, y lleva el progreso por canciones terminadas."""
+    job.update(total=len(items), index=1, percent=None)
+    finished = 0
+    lock = threading.Lock()
+
+    def one(args):
+        nonlocal finished
+        try:
+            fn(*args)
+        except Exception:  # noqa: BLE001  una canción que falla no detiene las demás
+            pass
+        with lock:
+            finished += 1
+            job["index"] = min(finished + 1, len(items))
+
+    with ThreadPoolExecutor(WORKERS) as pool:
+        list(pool.map(one, enumerate(items, 1)))
+
+
+def download_spotify(job, url, work):
     name, tracks, warning = spotify_tracks(url)
     if warning:
         job["warning"] = warning
-    job["total"] = len(tracks)
-    for i, (artist, title, seconds) in enumerate(tracks, 1):
-        job.update(index=i, current=f"{artist} - {title}", percent=None)
+    width = len(str(len(tracks)))  # 001…922 o 0001…1500, para que el ZIP quede en orden
+
+    def one(i, track):
+        artist, title, seconds = track
+        job["current"] = f"{artist} - {title}"
         video = youtube_match(artist, title, seconds)
         if not video:
-            continue
+            return
         # Las etiquetas del MP3 usan los datos de Spotify, no el título del video de YouTube.
         tags = f"{artist} ::: {title}".replace("%", "%%")
         pre = [{"key": "MetadataParser", "when": "pre_process",
                 "actions": [(MetadataParserPP.Actions.INTERPRET, tags, r"(?P<artist>.+) ::: (?P<title>(?P<track>.+))")]}]
-        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:03d} - %(artist)s - %(title)s.%(ext)s", hook, pre)) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:0{width}d} - %(artist)s - %(title)s.%(ext)s", pre)) as ydl:
             ydl.download([video])
+
+    download_parallel(job, tracks, one)
     return name
+
+
+def download_youtube(job, url, work):
+    with yt_dlp.YoutubeDL({"extract_flat": "in_playlist", "quiet": True, "ignoreerrors": True, "socket_timeout": 30}) as ydl:
+        info = ydl.extract_info(url, download=False) or {}
+    entries = [e for e in info.get("entries") or [info] if e]  # un video suelto no trae "entries"
+    width = len(str(len(entries)))
+
+    def one(i, entry):
+        job["current"] = entry.get("title") or job["current"]
+        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:0{width}d} - %(title)s.%(ext)s")) as ydl:
+            ydl.download([entry.get("webpage_url") or entry["url"]])
+
+    download_parallel(job, entries, one)
+    return info.get("title")
 
 
 def run_job(job, url):
     work = tempfile.mkdtemp(prefix="pl2mp3-")
     job["dir"] = work
-    spotify = bool(SPOTIFY_RE.match(url))
-
-    def hook(d):
-        if not spotify:  # en Spotify el progreso lo lleva download_spotify, canción por canción
-            info = d.get("info_dict") or {}
-            job["current"] = info.get("title") or job["current"]
-            job["index"] = info.get("playlist_index") or job["index"]
-            job["total"] = info.get("n_entries") or job["total"]
-        if d["status"] == "downloading":
-            done, total = d.get("downloaded_bytes") or 0, d.get("total_bytes") or d.get("total_bytes_estimate")
-            job["percent"] = round(done * 100 / total) if total else None
-        elif d["status"] == "finished":
-            job["percent"] = 100
-
     try:
-        if spotify:
-            title = download_spotify(job, url, work, hook)
+        if SPOTIFY_RE.match(url):
+            title = download_spotify(job, url, work)
         else:
-            with yt_dlp.YoutubeDL(ydl_opts(work, "%(playlist_index)03d - %(title)s.%(ext)s", hook)) as ydl:
-                title = (ydl.extract_info(url, download=True) or {}).get("title")
+            title = download_youtube(job, url, work)
         name = safe_name(title, "playlist")
         mp3s = sorted(f for f in os.listdir(work) if f.endswith(".mp3"))
         if not mp3s:
