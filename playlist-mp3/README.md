@@ -12,8 +12,11 @@ Para bajar la lista completa, crea tus propias claves gratuitas de la API de Spo
 2. Ponle cualquier nombre y descripción, en *Redirect URI* escribe `http://127.0.0.1:8000`, marca **Web API** y guarda.
 3. En **Settings** copia el *Client ID* y el *Client Secret*.
 4. Copia `spotify.example.json` como `spotify.json` (en esta misma carpeta), pega ahí tus dos claves y vuelve a abrir `iniciar.bat`.
+5. En la página aparece **Iniciar sesión con Spotify**: púlsalo y acepta. Solo hace falta una vez.
 
-`spotify.json` es privado: no lo compartas ni lo subas a GitHub (ya está en `.gitignore`). Las listas hechas por Spotify (por ejemplo "Today's Top Hits") no se pueden leer con la API; las listas creadas por usuarios sí.
+Spotify solo deja leer por la API las playlists **tuyas** o en las que colaboras. Si la lista es de otra persona, cópiala: en la app de Spotify ábrela, selecciona todas las canciones (Ctrl+A), clic derecho → **Agregar a playlist** → **Nueva playlist**, y usa el enlace de tu copia.
+
+`spotify.json` y `spotify_token.json` (la sesión guardada) son privados: no los compartas ni los subas a GitHub (ya están en `.gitignore`). Para cerrar la sesión, borra `spotify_token.json`.
 
 ## Cómo usarla
 

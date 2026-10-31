@@ -25,6 +25,9 @@ from yt_dlp.postprocessor import MetadataParserPP
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("PORT", 8000))
 KEYS_FILE = os.path.join(HERE, "spotify.json")
+TOKEN_FILE = os.path.join(HERE, "spotify_token.json")  # sesión de Spotify guardada; es privada, igual que spotify.json
+REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect URI de la app en developer.spotify.com
+LOGIN_STATES = set()
 JOBS = {}
 
 
@@ -78,22 +81,39 @@ def spotify_keys():
         return None
 
 
+def spotify_token_request(fields, client_id, client_secret):
+    auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+    req = urllib.request.Request("https://accounts.spotify.com/api/token", data=urllib.parse.urlencode(fields).encode(),
+                                 headers={"Authorization": "Basic " + auth, "Content-Type": "application/x-www-form-urlencoded"})
+    return json.load(urllib.request.urlopen(req, timeout=20))
+
+
+def save_refresh_token(refresh):
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump({"refresh_token": refresh}, f)
+
+
+def spotify_user_token(client_id, client_secret):
+    """Token de la sesión de Spotify que el usuario inició en la página (spotify_token.json), o None."""
+    try:
+        with open(TOKEN_FILE, encoding="utf-8") as f:
+            refresh = json.load(f)["refresh_token"]
+        res = spotify_token_request({"grant_type": "refresh_token", "refresh_token": refresh}, client_id, client_secret)
+    except (OSError, ValueError, KeyError, urllib.error.HTTPError):
+        return None  # nunca inició sesión, o la sesión venció o fue revocada
+    if res.get("refresh_token"):
+        save_refresh_token(res["refresh_token"])
+    return res["access_token"]
+
+
 def spotify_api_get(path, token):
     req = urllib.request.Request(path if path.startswith("https://") else "https://api.spotify.com/v1/" + path,
                                  headers={"Authorization": "Bearer " + token})
     return json.load(urllib.request.urlopen(req, timeout=20))
 
 
-def spotify_api_tracks(kind, sid, client_id, client_secret):
+def spotify_api_tracks(kind, sid, token):
     """Lista completa con la API oficial de Spotify, página por página (sin el límite de 100)."""
-    auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
-    req = urllib.request.Request("https://accounts.spotify.com/api/token", data=b"grant_type=client_credentials",
-                                 headers={"Authorization": "Basic " + auth, "Content-Type": "application/x-www-form-urlencoded"})
-    try:
-        token = json.load(urllib.request.urlopen(req, timeout=20))["access_token"]
-    except urllib.error.HTTPError as e:
-        raise RuntimeError("Spotify rechazó las claves de spotify.json. Revisa el Client ID y el Client Secret.") from e
-
     def track(t):
         return ", ".join(a["name"] for a in t["artists"]), t["name"], (t.get("duration_ms") or 0) / 1000
 
@@ -102,28 +122,41 @@ def spotify_api_tracks(kind, sid, client_id, client_secret):
             t = spotify_api_get(f"tracks/{sid}", token)
             return t["name"], [track(t)]
         info = spotify_api_get(f"{kind}s/{sid}", token)
-        page = info.get("tracks") or info.get("items")  # Spotify está renombrando "tracks" a "items" en playlists
+        if kind == "playlist":
+            page = spotify_api_get(f"playlists/{sid}/items?limit=50", token)
+        else:
+            page = info["tracks"]
         tracks = []
         while page:
             for item in page["items"]:
-                t = (item.get("track") or item.get("item")) if kind == "playlist" else item
-                if t and t.get("name") and not t.get("is_local"):  # en playlists puede haber huecos o archivos locales
+                t = (item.get("item") or item.get("track")) if kind == "playlist" else item
+                if t and t.get("name") and t.get("artists") and not t.get("is_local"):  # huecos, archivos locales, podcasts
                     tracks.append(track(t))
             page = spotify_api_get(page["next"], token) if page.get("next") else None
         return info["name"], tracks
     except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            raise RuntimeError("Spotify solo deja leer playlists tuyas o en las que colaboras. "
+                               "Copia las canciones a una playlist tuya y usa ese enlace (mira el README).") from e
         if e.code == 404:
-            raise RuntimeError("Spotify no deja leer esa lista con la API (¿es privada o una lista hecha por Spotify?).") from e
+            raise RuntimeError("Spotify no encontró esa lista. ¿Es privada o una lista hecha por Spotify?") from e
         raise
 
 
 def spotify_tracks(url):
-    """Lee nombre y canciones (artista, título, segundos). Devuelve también si la lista quedó cortada en 100."""
+    """Lee nombre y canciones (artista, título, segundos), más un aviso si la lista quedó cortada en 100."""
     kind, sid = SPOTIFY_RE.match(url).groups()
     keys = spotify_keys()
     if keys:
-        name, tracks = spotify_api_tracks(kind, sid, *keys)
-        return name, tracks, False
+        token = spotify_user_token(*keys)
+        if not token and kind != "playlist":  # álbumes y canciones se leen sin iniciar sesión
+            try:
+                token = spotify_token_request({"grant_type": "client_credentials"}, *keys)["access_token"]
+            except urllib.error.HTTPError as e:
+                raise RuntimeError("Spotify rechazó las claves de spotify.json. Revisa el Client ID y el Client Secret.") from e
+        if token:
+            name, tracks = spotify_api_tracks(kind, sid, token)
+            return name, tracks, None
     req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": "Mozilla/5.0"})
     html = urllib.request.urlopen(req, timeout=20).read().decode()
     m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
@@ -134,7 +167,11 @@ def spotify_tracks(url):
     for t in entity.get("trackList") or [entity]:
         artist = t.get("subtitle") or ", ".join(a["name"] for a in t.get("artists") or [])
         tracks.append((artist.replace(" ", " "), t.get("title") or t.get("name"), (t.get("duration") or 0) / 1000))
-    return entity.get("name") or "spotify", tracks, len(tracks) >= 100
+    if len(tracks) < 100:
+        return entity.get("name") or "spotify", tracks, None
+    if keys:
+        return entity.get("name"), tracks, "Spotify solo dejó leer las primeras 100 canciones. Pulsa \"Iniciar sesión con Spotify\" para bajar la lista completa."
+    return entity.get("name"), tracks, "Spotify solo dejó leer las primeras 100 canciones. Para bajar la lista completa, crea spotify.json (mira el README)."
 
 
 def youtube_match(artist, title, seconds):
@@ -153,9 +190,9 @@ def youtube_match(artist, title, seconds):
 
 
 def download_spotify(job, url, work, hook):
-    name, tracks, cut = spotify_tracks(url)
-    if cut:
-        job["warning"] = "Spotify solo dejó leer las primeras 100 canciones. Para bajar la lista completa, crea spotify.json (mira el README)."
+    name, tracks, warning = spotify_tracks(url)
+    if warning:
+        job["warning"] = warning
     job["total"] = len(tracks)
     for i, (artist, title, seconds) in enumerate(tracks, 1):
         job.update(index=i, current=f"{artist} - {title}", percent=None)
@@ -238,7 +275,45 @@ class Handler(SimpleHTTPRequestHandler):
         threading.Thread(target=run_job, args=(JOBS[job_id], url), daemon=True).start()
         self.send_json({"id": job_id})
 
+    def redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.end_headers()
+
+    def spotify_login(self):
+        keys = spotify_keys()
+        if not keys:
+            return self.send_json({"error": "Primero crea spotify.json (mira el README)."}, 400)
+        state = uuid.uuid4().hex
+        LOGIN_STATES.add(state)
+        query = urllib.parse.urlencode({"client_id": keys[0], "response_type": "code", "redirect_uri": REDIRECT_URI,
+                                        "scope": "playlist-read-private playlist-read-collaborative", "state": state,
+                                        "show_dialog": "true"})  # deja elegir cuenta en "Cambiar de cuenta"
+        self.redirect("https://accounts.spotify.com/authorize?" + query)
+
+    def spotify_callback(self, params):
+        """Spotify regresa aquí (al Redirect URI) después de que el usuario inicia sesión."""
+        state = params.get("state", [""])[0]
+        if state not in LOGIN_STATES or "code" not in params:
+            return self.redirect("/?spotify=error")
+        LOGIN_STATES.discard(state)
+        try:
+            res = spotify_token_request({"grant_type": "authorization_code", "code": params["code"][0],
+                                         "redirect_uri": REDIRECT_URI}, *spotify_keys())
+            save_refresh_token(res["refresh_token"])
+        except (urllib.error.HTTPError, KeyError, TypeError):
+            return self.redirect("/?spotify=error")
+        self.redirect("/?spotify=ok")
+
     def do_GET(self):
+        url = urllib.parse.urlsplit(self.path)
+        params = urllib.parse.parse_qs(url.query)
+        if url.path == "/" and ("code" in params or "error" in params):
+            return self.spotify_callback(params)
+        if url.path == "/api/spotify/login":
+            return self.spotify_login()
+        if url.path == "/api/spotify/session":
+            return self.send_json({"keys": bool(spotify_keys()), "logged": os.path.exists(TOKEN_FILE)})
         m = re.match(r"^/api/(status|download)/(\w+)$", self.path)
         if not m:
             return super().do_GET()

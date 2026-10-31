@@ -21,6 +21,8 @@
   .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin:10px 0; }
   .bar > div { height:100%; width:0; background:var(--accent); transition:width .3s; }
   .err { color:var(--accent); }
+  .note { margin:12px 0 0; font-size:.9rem; color:var(--muted); }
+  .note a { color:var(--accent); font-weight:600; }
   small { display:block; margin-top:24px; color:var(--muted); font-size:.8rem; }
 </style>
 </head>
@@ -32,6 +34,7 @@
     <input id="url" type="url" required placeholder="Enlace de YouTube o de Spotify">
     <button id="go">Convertir</button>
   </form>
+  <p id="spotify" class="note" hidden></p>
   <div id="status" hidden>
     <div id="msg"></div>
     <div class="bar"><div id="fill"></div></div>
@@ -73,6 +76,16 @@ async function poll(id) {
   }
   setTimeout(() => poll(id), 1000);
 }
+// Las playlists de Spotify de más de 100 canciones necesitan la sesión de Spotify del usuario
+fetch('/api/spotify/session').then(r => r.json()).then(s => {
+  if (!s.keys) return;
+  const back = new URLSearchParams(location.search).get('spotify');
+  $('spotify').innerHTML = s.logged
+    ? 'Sesión de Spotify iniciada ✓ · <a href="/api/spotify/login">Cambiar de cuenta</a>'
+    : (back === 'error' ? 'No se pudo iniciar sesión. ' : '') + '<a href="/api/spotify/login">Iniciar sesión con Spotify</a> para bajar listas de más de 100 canciones.';
+  $('spotify').hidden = false;
+  if (back) history.replaceState(null, '', '/');
+}).catch(() => {});
 function fail(m) { $('msg').className = 'err'; $('msg').textContent = m || 'Algo falló.'; $('go').disabled = false; }
 </script>
 </body>
