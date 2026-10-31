@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Playlist → MP3 (ZIP). Servidor mínimo: sirve index.html y una API de trabajos.
+"""Playlist (YouTube o Spotify) → MP3 (ZIP). Servidor mínimo: sirve index.html y una API de trabajos.
 
 Uso:  pip install -r requirements.txt   (y tener ffmpeg instalado)
       python3 server.py                 → http://localhost:8000
@@ -11,36 +11,28 @@ import shutil
 import tempfile
 import threading
 import urllib.parse
+import urllib.request
 import uuid
 import zipfile
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 import yt_dlp
+from yt_dlp.postprocessor import MetadataParserPP
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PORT = int(os.environ.get("PORT", 8000))
 JOBS = {}
 
 
-def run_job(job, url):
-    work = tempfile.mkdtemp(prefix="pl2mp3-")
-    job["dir"] = work
+YOUTUBE_RE = re.compile(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/")
+SPOTIFY_RE = re.compile(r"^https?://open\.spotify\.com/(?:intl-[\w-]+/)?(playlist|album|track)/(\w+)")
 
-    def hook(d):
-        info = d.get("info_dict") or {}
-        job["current"] = info.get("title") or job["current"]
-        job["index"] = info.get("playlist_index") or job["index"]
-        job["total"] = info.get("n_entries") or job["total"]
-        if d["status"] == "downloading":
-            done, total = d.get("downloaded_bytes") or 0, d.get("total_bytes") or d.get("total_bytes_estimate")
-            job["percent"] = round(done * 100 / total) if total else None
-        elif d["status"] == "finished":
-            job["percent"] = 100
 
-    opts = {
+def ydl_opts(work, outtmpl, hook, pre=()):
+    return {
         "format": "bestaudio/best",
         "js_runtimes": {"deno": {}, "node": {}},
-        "outtmpl": os.path.join(work, "%(playlist_index)03d - %(title)s.%(ext)s"),
+        "outtmpl": os.path.join(work, outtmpl),
         "restrictfilenames": False,
         "windowsfilenames": True,
         "ignoreerrors": True,
@@ -49,15 +41,86 @@ def run_job(job, url):
         "writethumbnail": True,
         "progress_hooks": [hook],
         "postprocessors": [
+            *pre,
             {"key": "FFmpegExtractAudio", "preferredcodec": "mp3", "preferredquality": "320"},
             {"key": "FFmpegMetadata"},
             {"key": "EmbedThumbnail"},
         ],
     }
+
+
+def spotify_tracks(url):
+    """Lee nombre y canciones (artista, título, segundos) de la página pública de Spotify, sin claves."""
+    kind, sid = SPOTIFY_RE.match(url).groups()
+    req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": "Mozilla/5.0"})
+    html = urllib.request.urlopen(req, timeout=20).read().decode()
+    m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
+    if not m:
+        raise RuntimeError("No se pudo leer el enlace de Spotify. Revisa que la playlist sea pública.")
+    entity = json.loads(m.group(1))["props"]["pageProps"]["state"]["data"]["entity"]
+    tracks = []
+    for t in entity.get("trackList") or [entity]:
+        artist = t.get("subtitle") or ", ".join(a["name"] for a in t.get("artists") or [])
+        tracks.append((artist.replace(" ", " "), t.get("title") or t.get("name"), (t.get("duration") or 0) / 1000))
+    return entity.get("name") or "spotify", tracks
+
+
+def youtube_match(artist, title, seconds):
+    """Busca la canción en YouTube y elige el resultado con la duración más parecida a la de Spotify."""
+    with yt_dlp.YoutubeDL({"extract_flat": True, "quiet": True, "ignoreerrors": True}) as ydl:
+        res = ydl.extract_info(f"ytsearch5:{artist} - {title} audio", download=False) or {}
+    entries = [e for e in res.get("entries") or [] if e]
+    if not entries:
+        return None
+    if seconds:
+        close = [e for e in entries if e.get("duration") and abs(e["duration"] - seconds) <= 15]
+        best = close[0] if close else min(entries, key=lambda e: abs((e.get("duration") or 0) - seconds))
+    else:
+        best = entries[0]
+    return best["url"]
+
+
+def download_spotify(job, url, work, hook):
+    name, tracks = spotify_tracks(url)
+    job["total"] = len(tracks)
+    for i, (artist, title, seconds) in enumerate(tracks, 1):
+        job.update(index=i, current=f"{artist} - {title}", percent=None)
+        video = youtube_match(artist, title, seconds)
+        if not video:
+            continue
+        # Las etiquetas del MP3 usan los datos de Spotify, no el título del video de YouTube.
+        tags = f"{artist} ::: {title}".replace("%", "%%")
+        pre = [{"key": "MetadataParser", "when": "pre_process",
+                "actions": [(MetadataParserPP.Actions.INTERPRET, tags, r"(?P<artist>.+) ::: (?P<title>(?P<track>.+))")]}]
+        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:03d} - %(artist)s - %(title)s.%(ext)s", hook, pre)) as ydl:
+            ydl.download([video])
+    return name
+
+
+def run_job(job, url):
+    work = tempfile.mkdtemp(prefix="pl2mp3-")
+    job["dir"] = work
+    spotify = bool(SPOTIFY_RE.match(url))
+
+    def hook(d):
+        if not spotify:  # en Spotify el progreso lo lleva download_spotify, canción por canción
+            info = d.get("info_dict") or {}
+            job["current"] = info.get("title") or job["current"]
+            job["index"] = info.get("playlist_index") or job["index"]
+            job["total"] = info.get("n_entries") or job["total"]
+        if d["status"] == "downloading":
+            done, total = d.get("downloaded_bytes") or 0, d.get("total_bytes") or d.get("total_bytes_estimate")
+            job["percent"] = round(done * 100 / total) if total else None
+        elif d["status"] == "finished":
+            job["percent"] = 100
+
     try:
-        with yt_dlp.YoutubeDL(opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-        name = re.sub(r'[\\/:*?"<>|]+', "_", (info or {}).get("title") or "playlist").strip() or "playlist"
+        if spotify:
+            title = download_spotify(job, url, work, hook)
+        else:
+            with yt_dlp.YoutubeDL(ydl_opts(work, "%(playlist_index)03d - %(title)s.%(ext)s", hook)) as ydl:
+                title = (ydl.extract_info(url, download=True) or {}).get("title")
+        name = re.sub(r'[\\/:*?"<>|]+', "_", title or "playlist").strip() or "playlist"
         mp3s = sorted(f for f in os.listdir(work) if f.endswith(".mp3"))
         if not mp3s:
             raise RuntimeError("No se pudo descargar ninguna canción. Revisa que la lista sea pública o actualiza yt-dlp (pip install -U 'yt-dlp[default]').")
@@ -88,8 +151,8 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_error(404)
         data = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
         url = (data.get("url") or "").strip()
-        if not re.match(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/", url):
-            return self.send_json({"error": "Pega un enlace de YouTube válido."}, 400)
+        if not (YOUTUBE_RE.match(url) or SPOTIFY_RE.match(url)):
+            return self.send_json({"error": "Pega un enlace de YouTube o de Spotify válido."}, 400)
         job_id = uuid.uuid4().hex
         JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None}
         threading.Thread(target=run_job, args=(JOBS[job_id], url), daemon=True).start()

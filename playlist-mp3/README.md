@@ -1,6 +1,8 @@
-# Playlist de YouTube → MP3 (ZIP)
+# Playlist de YouTube o Spotify → MP3 (ZIP)
 
 Página sencilla: pegas el enlace de una playlist y te devuelve un `.zip` con todas las canciones en MP3 a 320 kbps (con título, artista y portada).
+
+Acepta enlaces de YouTube y de Spotify (playlist, álbum o canción). Spotify no deja descargar su audio, así que el programa lee la lista de canciones de Spotify y baja cada una desde YouTube, eligiendo el resultado con la duración más parecida. Casi siempre es la versión correcta, pero de vez en cuando puede salir otra (en vivo, remix…). La playlist de Spotify tiene que ser pública, y no hace falta cuenta ni claves. Spotify solo muestra las primeras 100 canciones de cada lista.
 
 ## Cómo usarla
 
