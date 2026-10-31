@@ -50,7 +50,10 @@ $('f').onsubmit = async e => {
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
     poll(j.id);
-  } catch (err) { fail(err.message); }
+  } catch (err) {
+    // fetch solo falla así cuando no hay servidor: página abierta como archivo o ventana de server.py cerrada
+    fail(err instanceof TypeError ? 'No hay conexión con el convertidor. Abre iniciar.bat, deja su ventana abierta y entra a http://localhost:8000' : err.message);
+  }
 };
 async function poll(id) {
   const s = await (await fetch('/api/status/' + id)).json();
