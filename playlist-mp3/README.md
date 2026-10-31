@@ -20,6 +20,13 @@ Spotify solo deja leer por la API las playlists **tuyas** o en las que colaboras
 
 ## Cómo usarla
 
+**En Windows, lo más fácil:** en la carpeta principal del repo hay dos archivos.
+
+1. `Instalar-Playlist-MP3.bat`: doble clic una sola vez. Instala Python, ffmpeg, Node.js y las librerías con winget. Vuelve a ejecutarlo si YouTube empieza a fallar, porque también actualiza yt-dlp. No lo ejecutes mientras haya una descarga en curso.
+2. `Abrir-Playlist-MP3.bat`: doble clic cada vez que quieras usar el convertidor. Si ya está abierto, solo abre el navegador.
+
+**A mano (cualquier sistema):**
+
 Necesitas Python 3.10 o más reciente, [ffmpeg](https://ffmpeg.org/download.html) y Node.js o [Deno](https://deno.com).
 
 ```bash
