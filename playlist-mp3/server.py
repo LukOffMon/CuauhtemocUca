@@ -11,6 +11,7 @@ import re
 import shutil
 import tempfile
 import threading
+import time
 import unicodedata
 import urllib.error
 import urllib.parse
@@ -30,6 +31,9 @@ TOKEN_FILE = os.path.join(HERE, "spotify_token.json")  # sesión de Spotify guar
 REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect URI de la app en developer.spotify.com
 LOGIN_STATES = set()
 WORKERS = 4  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
+SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descargas (pestañas) a la vez
+RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
+RETRY_PAUSE = 30  # segundos de espera antes de cada vuelta extra
 JOBS = {}
 
 
@@ -52,8 +56,9 @@ def safe_name(text, fallback):
     return text
 
 
-def ydl_opts(work, outtmpl, pre=()):
+def ydl_opts(work, outtmpl, log, pre=()):
     return {
+        "logger": log,
         "format": "bestaudio/best",
         "retries": 10,  # reintenta si la conexión se corta a media canción
         "fragment_retries": 10,
@@ -179,9 +184,10 @@ def spotify_tracks(url):
     return entity.get("name"), tracks, "Spotify solo dejó leer las primeras 100 canciones. Para bajar la lista completa, crea spotify.json (mira el README)."
 
 
-def youtube_match(artist, title, seconds):
+def youtube_match(artist, title, seconds, log):
     """Busca la canción en YouTube y elige el resultado con la duración más parecida a la de Spotify."""
-    with yt_dlp.YoutubeDL({"extract_flat": True, "quiet": True, "ignoreerrors": True, "socket_timeout": 30, "extractor_retries": 3}) as ydl:
+    opts = {"extract_flat": True, "quiet": True, "ignoreerrors": True, "socket_timeout": 30, "extractor_retries": 3, "logger": log}
+    with yt_dlp.YoutubeDL(opts) as ydl:
         res = ydl.extract_info(f"ytsearch5:{artist} - {title} audio", download=False) or {}
     entries = [e for e in res.get("entries") or [] if e]
     if not entries:
@@ -194,88 +200,146 @@ def youtube_match(artist, title, seconds):
     return best["url"]
 
 
-def download_parallel(job, items, fn):
-    """Corre fn(i, item) para cada canción, varias a la vez, y lleva el progreso por canciones terminadas."""
-    job.update(total=len(items), index=1, percent=None)
+class SongLog:
+    """Logger de yt-dlp que guarda el último error de una canción, para explicar en faltantes.txt por qué faltó."""
+
+    def __init__(self):
+        self.last = None
+
+    def debug(self, msg):
+        pass
+
+    def info(self, msg):
+        pass
+
+    def warning(self, msg):
+        pass
+
+    def error(self, msg):
+        self.last = msg.removeprefix("ERROR: ")
+
+
+def download_parallel(job, pending, work, fn, label, width):
+    """Corre fn(prefijo, item, log) para cada (número, item), varias a la vez, y reintenta las que fallen.
+
+    Devuelve las que faltaron como (número, item, motivo)."""
+    job.update(total=len(pending), index=1, percent=None)
     finished = 0
+    retry = False
     lock = threading.Lock()
+    reasons = {}
 
     def one(args):
         nonlocal finished
-        try:
-            fn(*args)
-        except Exception:  # noqa: BLE001  una canción que falla no detiene las demás
-            pass
+        i, item = args
+        prefix = f"{i:0{width}d} - "
+        log = SongLog()
+        with SLOTS:
+            job["current"] = ("Reintento: " if retry else "") + label(item)
+            try:
+                fn(prefix, item, log)
+            except Exception as e:  # noqa: BLE001  una canción que falla no detiene las demás
+                log.last = str(e)
+        ok = any(f.startswith(prefix) and f.endswith(".mp3") for f in os.listdir(work))
+        reasons[i] = None if ok else log.last or "No se encontró en YouTube."
         with lock:
             finished += 1
-            job["index"] = min(finished + 1, len(items))
+            job["index"] = min(finished + 1, len(pending))
+        return ok
 
-    with ThreadPoolExecutor(WORKERS) as pool:
-        list(pool.map(one, enumerate(items, 1)))
+    for attempt in range(1 + RETRY_ROUNDS):
+        if attempt:  # casi siempre son bloqueos pasajeros de YouTube: se espera un poco y se vuelve a intentar
+            retry = True
+            job["current"] = f"Reintentando {len(pending)} canciones que fallaron…"
+            time.sleep(RETRY_PAUSE)
+        with ThreadPoolExecutor(WORKERS) as pool:
+            results = list(pool.map(one, pending))
+        pending = [p for p, ok in zip(pending, results) if not ok]
+        if not pending:
+            break
+    return [(i, item, reasons[i]) for i, item in pending]
 
 
-def download_spotify(job, url, work):
+def prepare_spotify(job, url, work):
     name, tracks, warning = spotify_tracks(url)
     if warning:
         job["warning"] = warning
-    width = len(str(len(tracks)))  # 001…922 o 0001…1500, para que el ZIP quede en orden
 
-    def one(i, track):
+    def one(prefix, track, log):
         artist, title, seconds = track
-        job["current"] = f"{artist} - {title}"
-        video = youtube_match(artist, title, seconds)
+        video = youtube_match(artist, title, seconds, log)
         if not video:
             return
         # Las etiquetas del MP3 usan los datos de Spotify, no el título del video de YouTube.
         tags = f"{artist} ::: {title}".replace("%", "%%")
         pre = [{"key": "MetadataParser", "when": "pre_process",
                 "actions": [(MetadataParserPP.Actions.INTERPRET, tags, r"(?P<artist>.+) ::: (?P<title>(?P<track>.+))")]}]
-        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:0{width}d} - %(artist)s - %(title)s.%(ext)s", pre)) as ydl:
+        with yt_dlp.YoutubeDL(ydl_opts(work, prefix + "%(artist)s - %(title)s.%(ext)s", log, pre)) as ydl:
             ydl.download([video])
 
-    download_parallel(job, tracks, one)
-    return name
+    return name, tracks, one, lambda t: f"{t[0]} - {t[1]}"
 
 
-def download_youtube(job, url, work):
+def prepare_youtube(job, url, work):
     with yt_dlp.YoutubeDL({"extract_flat": "in_playlist", "quiet": True, "ignoreerrors": True, "socket_timeout": 30}) as ydl:
         info = ydl.extract_info(url, download=False) or {}
     entries = [e for e in info.get("entries") or [info] if e]  # un video suelto no trae "entries"
-    width = len(str(len(entries)))
 
-    def one(i, entry):
-        job["current"] = entry.get("title") or job["current"]
-        with yt_dlp.YoutubeDL(ydl_opts(work, f"{i:0{width}d} - %(title)s.%(ext)s")) as ydl:
+    def one(prefix, entry, log):
+        with yt_dlp.YoutubeDL(ydl_opts(work, prefix + "%(title)s.%(ext)s", log)) as ydl:
             ydl.download([entry.get("webpage_url") or entry["url"]])
 
-    download_parallel(job, entries, one)
-    return info.get("title")
+    return info.get("title"), entries, one, lambda e: e.get("title") or e.get("url") or "?"
+
+
+def download_and_zip(job, pending):
+    """Baja las canciones pendientes y arma el ZIP con todos los MP3 que haya en la carpeta del trabajo."""
+    work = job["dir"]
+    missing = download_parallel(job, pending, work, job["_fn"], job["_label"], job["_width"])
+    failed = [[i, job["_label"](item), reason] for i, item, reason in missing]
+    job.update(_missing=missing, missing=len(missing), failed=failed)
+    mp3s = sorted(f for f in os.listdir(work) if f.endswith(".mp3"))
+    if not mp3s:
+        if job.get("downloaded"):  # reintento después de bajar el ZIP y no se recuperó ninguna
+            return job.update(status="done", zip=None, count=0)
+        raise RuntimeError("No se pudo descargar ninguna canción. Revisa que la lista sea pública o actualiza yt-dlp (pip install -U 'yt-dlp[default]').")
+    job["status"] = "zipping"
+    if job.get("zip"):  # un reintento antes de bajar el ZIP lo rehace con las canciones recuperadas
+        os.remove(job["zip"])
+    name = job["_name"] + (" - recuperadas" if job.get("downloaded") else "")
+    zpath = os.path.join(work, name + ".zip")
+    used = set()
+    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
+        for f in mp3s:
+            base = clean = safe_name(f[:-4], "Cancion")
+            n = 2
+            while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
+                clean, n = f"{base} ({n})", n + 1
+            used.add(clean.lower())
+            z.write(os.path.join(work, f), clean + ".mp3")
+        if failed:
+            lines = [f"{i}. {song}  ->  {reason}" for i, song, reason in failed]
+            text = "Canciones que no se pudieron bajar (número en la lista, nombre y motivo):\n\n" + "\n".join(lines) + "\n"
+            z.writestr("faltantes.txt", "\ufeff" + text.replace("\n", "\r\n"))  # BOM y saltos de Windows: el Bloc de notas lo lee bien
+    job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
 
 
 def run_job(job, url):
     work = tempfile.mkdtemp(prefix="pl2mp3-")
     job["dir"] = work
     try:
-        if SPOTIFY_RE.match(url):
-            title = download_spotify(job, url, work)
-        else:
-            title = download_youtube(job, url, work)
-        name = safe_name(title, "playlist")
-        mp3s = sorted(f for f in os.listdir(work) if f.endswith(".mp3"))
-        if not mp3s:
-            raise RuntimeError("No se pudo descargar ninguna canción. Revisa que la lista sea pública o actualiza yt-dlp (pip install -U 'yt-dlp[default]').")
-        job["status"] = "zipping"
-        zpath = os.path.join(work, name + ".zip")
-        used = set()
-        with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
-            for f in mp3s:
-                base = clean = safe_name(f[:-4], "Cancion")
-                n = 2
-                while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
-                    clean, n = f"{base} ({n})", n + 1
-                used.add(clean.lower())
-                z.write(os.path.join(work, f), clean + ".mp3")
-        job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
+        prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
+        title, items, fn, label = prepare(job, url, work)
+        # Se guarda lo necesario para el botón "Reintentar las que faltaron"
+        job.update(_name=safe_name(title, "playlist"), _fn=fn, _label=label, _width=len(str(len(items))))
+        download_and_zip(job, list(enumerate(items, 1)))
+    except Exception as e:  # noqa: BLE001
+        job.update(status="error", error=str(e))
+
+
+def retry_job(job):
+    try:
+        download_and_zip(job, [(i, item) for i, item, _ in job["_missing"]])
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
 
@@ -293,6 +357,14 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
+        m = re.match(r"^/api/retry/(\w+)$", self.path)
+        if m:
+            job = JOBS.get(m.group(1))
+            if not job or job["status"] != "done" or not job.get("_missing"):
+                return self.send_json({"error": "No hay canciones que reintentar."}, 400)
+            job.update(status="working", current=None)
+            threading.Thread(target=retry_job, args=(job,), daemon=True).start()
+            return self.send_json({"id": m.group(1)})
         if self.path != "/api/start":
             return self.send_error(404)
         data = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
@@ -350,9 +422,12 @@ class Handler(SimpleHTTPRequestHandler):
         if not job:
             return self.send_json({"error": "Trabajo no encontrado."}, 404)
         if m.group(1) == "status":
-            return self.send_json({k: v for k, v in job.items() if k not in ("dir", "zip")})
+            public = {k: v for k, v in job.items() if k not in ("dir", "zip") and not k.startswith("_")}
+            return self.send_json({**public, "ready": bool(job.get("zip"))})
         if job["status"] != "done":
             return self.send_json({"error": "Aún no está listo."}, 409)
+        if not job.get("zip"):
+            return self.send_json({"error": "Ese ZIP ya se descargó."}, 410)
         self.send_response(200)
         self.send_header("Content-Type", "application/zip")
         self.send_header("Content-Length", str(os.path.getsize(job["zip"])))
@@ -360,8 +435,16 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         with open(job["zip"], "rb") as f:
             shutil.copyfileobj(f, self.wfile)
-        shutil.rmtree(job["dir"], ignore_errors=True)
-        JOBS.pop(m.group(2), None)
+        if job.get("_missing"):  # se guarda el trabajo para poder reintentar las que faltaron, pero sin lo ya bajado
+            for f in os.listdir(job["dir"]):
+                try:
+                    os.remove(os.path.join(job["dir"], f))
+                except OSError:
+                    pass
+            job.update(downloaded=True, zip=None)
+        else:
+            shutil.rmtree(job["dir"], ignore_errors=True)
+            JOBS.pop(m.group(2), None)
 
 
 if __name__ == "__main__":

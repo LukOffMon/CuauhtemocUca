@@ -23,6 +23,13 @@
   .err { color:var(--accent); }
   .note { margin:12px 0 0; font-size:.9rem; color:var(--muted); }
   .note a { color:var(--accent); font-weight:600; }
+  #warn { margin-bottom:14px; }
+  #failed { margin-top:14px; }
+  #failed details { border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-bottom:10px; }
+  #failed summary { cursor:pointer; font-weight:600; }
+  #failed ul { margin:8px 0 0; padding-left:18px; max-height:260px; overflow:auto; font-size:.9rem; }
+  #failed li { margin-bottom:6px; overflow-wrap:anywhere; }
+  #failed .why { color:var(--muted); font-size:.8rem; }
   small { display:block; margin-top:24px; color:var(--muted); font-size:.8rem; }
 </style>
 </head>
@@ -40,6 +47,7 @@
     <div class="bar"><div id="fill"></div></div>
     <div id="warn" class="err" hidden></div>
     <div id="done"></div>
+    <div id="failed" hidden></div>
   </div>
   <small>Úsalo solo con contenido propio o que tengas derecho a descargar.</small>
 </main>
@@ -47,7 +55,7 @@
 const $ = id => document.getElementById(id);
 $('f').onsubmit = async e => {
   e.preventDefault();
-  $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = ''; $('warn').hidden = true;
+  $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = ''; $('warn').hidden = true; $('failed').hidden = true;
   $('msg').textContent = 'Leyendo la playlist…'; $('fill').style.width = '0';
   try {
     const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value }) });
@@ -78,8 +86,13 @@ async function poll(id, fails = 0) {
   if (s.warning) { $('warn').textContent = s.warning; $('warn').hidden = false; }
   if (s.status === 'error') { sessionStorage.removeItem('job'); return fail(s.error); }
   if (s.status === 'done') {
-    $('msg').textContent = `Listo: ${s.count} canciones.`; $('fill').style.width = '100%';
-    $('done').innerHTML = `<a class="btn" href="/api/download/${id}">Descargar ${s.filename}</a>`;
+    $('msg').textContent = s.downloaded ? `Se recuperaron ${s.count} canciones.` : `Listo: ${s.count} canciones.`;
+    $('fill').style.width = '100%';
+    $('done').innerHTML = s.ready ? `<a class="btn" href="/api/download/${id}">Descargar ${s.filename}</a>` : '';
+    if (s.ready) $('done').firstChild.onclick = e => { e.target.textContent = 'Descargando…'; e.target.style.pointerEvents = 'none'; };
+    $('warn').hidden = !s.missing;
+    if (s.missing) $('warn').textContent = `Faltaron ${s.missing} canciones.` + (s.ready ? ' La lista también va en faltantes.txt, dentro del ZIP.' : '');
+    showFailed(id, s.failed || []);
     $('go').disabled = false; return;
   }
   if (s.status === 'zipping') $('msg').textContent = 'Creando el ZIP…';
@@ -89,6 +102,45 @@ async function poll(id, fails = 0) {
     if (s.total) $('fill').style.width = (((s.index - 1) + (s.percent || 0) / 100) / s.total * 100) + '%';
   }
   setTimeout(() => poll(id), 1000);
+}
+// Lista de canciones que no se bajaron, con el motivo, y botón para volver a intentar solo esas
+function showFailed(id, failed) {
+  const box = $('failed');
+  box.replaceChildren();
+  box.hidden = !failed.length;
+  if (!failed.length) return;
+  const details = document.createElement('details');
+  const summary = document.createElement('summary');
+  summary.textContent = `Ver las ${failed.length} que faltaron`;
+  const list = document.createElement('ul');
+  for (const [n, song, reason] of failed) {
+    const li = document.createElement('li');
+    li.textContent = `${n}. ${song}`;
+    const why = document.createElement('div');
+    why.className = 'why';
+    why.textContent = reason;
+    li.append(why);
+    list.append(li);
+  }
+  details.append(summary, list);
+  const retry = document.createElement('button');
+  retry.type = 'button';
+  retry.textContent = 'Reintentar las que faltaron';
+  retry.onclick = async () => {
+    retry.disabled = true;
+    try {
+      const r = await fetch('/api/retry/' + id, { method: 'POST' });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      box.hidden = true; $('warn').hidden = true; $('done').innerHTML = ''; $('go').disabled = true;
+      $('msg').textContent = 'Reintentando…'; $('fill').style.width = '0';
+      poll(id);
+    } catch (err) {
+      retry.disabled = false;
+      fail(err instanceof TypeError ? 'No hay conexión con el convertidor.' : err.message);
+    }
+  };
+  box.append(details, retry);
 }
 // Cada pestaña recuerda su descarga: al recargar (o abrir /?job=<id>) se retoma en vez de perderse
 const resume = new URLSearchParams(location.search).get('job') || sessionStorage.getItem('job');
