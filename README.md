@@ -15,3 +15,7 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 ## Playlist → MP3
 
 `playlist-mp3/`: página para convertir una playlist de YouTube a MP3 en un ZIP. Corre en tu computadora (`python3 server.py`); ver `playlist-mp3/README.md`.
+
+## Relación de trabajos
+
+`trabajos/index.html`: lista de trabajos de la casa para marcar como hechos o pendientes. Se guarda en el navegador de cada dispositivo.

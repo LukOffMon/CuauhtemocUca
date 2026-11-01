@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Relación de trabajos</title>
+<style>
+  :root {
+    --bg: #f6f4ef; --card: #ffffff; --text: #1f2328; --muted: #6b7280;
+    --line: #e5e1d8; --accent: #2f7d4f; --accent-soft: #e3f1e8; --danger: #b42318;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #16181c; --card: #1f2227; --text: #e8e6e1; --muted: #9aa0a8;
+      --line: #2f333a; --accent: #5cc285; --accent-soft: #1d3326; --danger: #f97066;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 17px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .progress { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 16px; }
+  .progress-top { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px; }
+  .bar { height: 10px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .bar > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .filters { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters button {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    padding: 7px 14px; border-radius: 99px; font: inherit; font-size: .95rem; cursor: pointer;
+  }
+  .filters button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  li label {
+    display: flex; gap: 14px; align-items: flex-start; cursor: pointer;
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  li input { width: 24px; height: 24px; margin: 1px 0 0; flex-shrink: 0; accent-color: var(--accent); cursor: pointer; }
+  li .when { display: block; font-size: .82rem; color: var(--accent); margin-top: 2px; }
+  li.done label { background: var(--accent-soft); }
+  li.done .txt { text-decoration: line-through; color: var(--muted); }
+  .empty { color: var(--muted); text-align: center; padding: 24px 0; }
+  .reset {
+    margin-top: 24px; background: none; border: none; color: var(--danger);
+    font: inherit; font-size: .9rem; cursor: pointer; text-decoration: underline;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Relación de trabajos</h1>
+  <p class="sub">Marca cada trabajo cuando quede listo. Se guarda solo en este dispositivo.</p>
+
+  <section class="progress">
+    <div class="progress-top"><span id="count">0 de 0 hechos</span><span id="pct">0%</span></div>
+    <div class="bar"><span id="bar"></span></div>
+  </section>
+
+  <div class="filters" role="group" aria-label="Filtrar">
+    <button data-f="todos" aria-pressed="true">Todos</button>
+    <button data-f="pendientes" aria-pressed="false">Pendientes</button>
+    <button data-f="hechos" aria-pressed="false">Hechos</button>
+  </div>
+
+  <ul id="list"></ul>
+  <p class="empty" id="empty" hidden></p>
+
+  <button class="reset" id="reset">Desmarcar todo</button>
+</main>
+
+<script>
+const TASKS = [
+  "Buena limpieza de oficinas y recámara nueva arriba de la cochera.",
+  "Poner alfombras p/ los perritos.",
+  "Conseguir cajas para guardar todo lo de ellos.",
+  "Acomodar toda la herramienta, todo, todo, todo de todos lados en el mueble naranja.",
+  "Acomodar y dejar al 100 el gimnasio en la sala del piso de madera y quitar todo lo que no sea de ahí.",
+  "Revisar niveles de todos los coches, en especial el tuyo.",
+  "Poner alfombras (cerca de comida) para los perros.",
+  "Recoger caca de todo el jardín y basura.",
+  "Buena limpieza y acomodo a mi cocina.",
+  "Revisar si hay agua arriba de mi baño y barrerla."
+];
+const KEY = "relacion-trabajos-v1";
+
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { state = {}; }
+let filter = "todos";
+
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+function fmt(ts) {
+  return new Date(ts).toLocaleString("es-MX", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  let shown = 0;
+  TASKS.forEach((text, i) => {
+    const done = Boolean(state[i]);
+    if (filter === "pendientes" && done) return;
+    if (filter === "hechos" && !done) return;
+    shown++;
+    const li = document.createElement("li");
+    li.className = done ? "done" : "";
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = done;
+    cb.addEventListener("change", () => {
+      if (cb.checked) state[i] = Date.now(); else delete state[i];
+      save(); render();
+    });
+    const span = document.createElement("span");
+    const txt = document.createElement("span");
+    txt.className = "txt";
+    txt.textContent = text;
+    span.appendChild(txt);
+    if (done) {
+      const when = document.createElement("span");
+      when.className = "when";
+      when.textContent = "Hecho: " + fmt(state[i]);
+      span.appendChild(when);
+    }
+    label.append(cb, span);
+    li.appendChild(label);
+    list.appendChild(li);
+  });
+
+  const empty = document.getElementById("empty");
+  empty.hidden = shown > 0;
+  empty.textContent = filter === "pendientes" ? "¡No queda nada pendiente! 🎉" : "Todavía no hay trabajos hechos.";
+
+  const total = TASKS.length;
+  const doneCount = TASKS.filter((_, i) => state[i]).length;
+  const pct = Math.round(doneCount / total * 100);
+  document.getElementById("count").textContent = `${doneCount} de ${total} hechos`;
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("bar").style.width = pct + "%";
+}
+
+document.querySelectorAll(".filters button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    filter = btn.dataset.f;
+    document.querySelectorAll(".filters button").forEach(b => b.setAttribute("aria-pressed", b === btn));
+    render();
+  });
+});
+
+document.getElementById("reset").addEventListener("click", () => {
+  if (confirm("¿Desmarcar todos los trabajos?")) { state = {}; save(); render(); }
+});
+
+render();
+</script>
+</body>
+</html>
