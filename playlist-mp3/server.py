@@ -31,6 +31,7 @@ TOKEN_FILE = os.path.join(HERE, "spotify_token.json")  # sesión de Spotify guar
 REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect URI de la app en developer.spotify.com
 LOGIN_STATES = set()
 WORKERS = 4  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
+SPLIT_SIZE = 100  # canciones por carpeta cuando se marca "Separar en carpetas de 100"
 SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descargas (pestañas) a la vez
 RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
 RETRY_PAUSE = 30  # segundos de espera antes de cada vuelta extra
@@ -292,6 +293,15 @@ def prepare_youtube(job, url, work):
     return info.get("title"), entries, one, lambda e: e.get("title") or e.get("url") or "?"
 
 
+def split_folder(job, filename):
+    """Carpeta dentro del ZIP ("001-100/", "101-200/"…) si se pidió separar de 100 en 100; si no, ninguna."""
+    if not job.get("_split"):
+        return ""
+    total, width = job["_total"], job["_width"]
+    start = (int(filename.split(" - ", 1)[0]) - 1) // SPLIT_SIZE * SPLIT_SIZE + 1
+    return f"{start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
+
+
 def download_and_zip(job, pending):
     """Baja las canciones pendientes y arma el ZIP con todos los MP3 que haya en la carpeta del trabajo."""
     work = job["dir"]
@@ -316,7 +326,7 @@ def download_and_zip(job, pending):
             while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
                 clean, n = f"{base} ({n})", n + 1
             used.add(clean.lower())
-            z.write(os.path.join(work, f), clean + ".mp3")
+            z.write(os.path.join(work, f), split_folder(job, f) + clean + ".mp3")
         if failed:
             lines = [f"{i}. {song}  ->  {reason}" for i, song, reason in failed]
             text = "Canciones que no se pudieron bajar (número en la lista, nombre y motivo):\n\n" + "\n".join(lines) + "\n"
@@ -331,7 +341,7 @@ def run_job(job, url):
         prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
         title, items, fn, label = prepare(job, url, work)
         # Se guarda lo necesario para el botón "Reintentar las que faltaron"
-        job.update(_name=safe_name(title, "playlist"), _fn=fn, _label=label, _width=len(str(len(items))))
+        job.update(_name=safe_name(title, "playlist"), _fn=fn, _label=label, _width=len(str(len(items))), _total=len(items))
         download_and_zip(job, list(enumerate(items, 1)))
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
@@ -372,7 +382,8 @@ class Handler(SimpleHTTPRequestHandler):
         if not (YOUTUBE_RE.match(url) or SPOTIFY_RE.match(url)):
             return self.send_json({"error": "Pega un enlace de YouTube o de Spotify válido."}, 400)
         job_id = uuid.uuid4().hex
-        JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None}
+        JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None,
+                        "_split": bool(data.get("split"))}
         threading.Thread(target=run_job, args=(JOBS[job_id], url), daemon=True).start()
         self.send_json({"id": job_id})
 
