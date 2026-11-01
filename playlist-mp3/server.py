@@ -293,6 +293,11 @@ def prepare_youtube(job, url, work):
     return info.get("title"), entries, one, lambda e: e.get("title") or e.get("url") or "?"
 
 
+def windows_text(lines):
+    """Texto para el Bloc de notas: BOM UTF-8 y saltos de línea de Windows."""
+    return "\ufeff" + "\r\n".join(lines) + "\r\n"
+
+
 def split_folder(job, filename):
     """Carpeta dentro del ZIP ("001-100/", "101-200/"…) si se pidió separar de 100 en 100; si no, ninguna."""
     if not job.get("_split"):
@@ -319,6 +324,7 @@ def download_and_zip(job, pending):
     name = job["_name"] + (" - recuperadas" if job.get("downloaded") else "")
     zpath = os.path.join(work, name + ".zip")
     used = set()
+    listing = []  # (carpeta, canción) para "lista de canciones.txt"
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
         for f in mp3s:
             base = clean = safe_name(f[:-4], "Cancion")
@@ -326,11 +332,20 @@ def download_and_zip(job, pending):
             while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
                 clean, n = f"{base} ({n})", n + 1
             used.add(clean.lower())
-            z.write(os.path.join(work, f), split_folder(job, f) + clean + ".mp3")
+            folder = split_folder(job, f)
+            z.write(os.path.join(work, f), folder + clean + ".mp3")
+            listing.append((folder.rstrip("/"), clean))
+        songs = [f"Lista de canciones ({len(listing)})"]
+        prev = None
+        for folder, song in listing:
+            if folder != prev:  # con carpetas de 100, un encabezado por carpeta
+                songs += ["", f"== {folder} =="] if folder else [""]
+                prev = folder
+            songs.append(song)
+        z.writestr("lista de canciones.txt", windows_text(songs))
         if failed:
             lines = [f"{i}. {song}  ->  {reason}" for i, song, reason in failed]
-            text = "Canciones que no se pudieron bajar (número en la lista, nombre y motivo):\n\n" + "\n".join(lines) + "\n"
-            z.writestr("faltantes.txt", "\ufeff" + text.replace("\n", "\r\n"))  # BOM y saltos de Windows: el Bloc de notas lo lee bien
+            z.writestr("faltantes.txt", windows_text(["Canciones que no se pudieron bajar (número en la lista, nombre y motivo):", "", *lines]))
     job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
 
 
