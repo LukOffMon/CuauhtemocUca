@@ -9,6 +9,7 @@ import json
 import os
 import re
 import shutil
+import ssl
 import tempfile
 import threading
 import time
@@ -21,6 +22,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
+import certifi  # viene con yt-dlp[default]
 import yt_dlp
 from yt_dlp.postprocessor import MetadataParserPP
 
@@ -36,6 +38,9 @@ SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descar
 RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
 RETRY_PAUSE = 15  # segundos de espera antes de cada vuelta extra
 JOBS = {}
+# Certificados de certifi: en Windows a Python le faltan raíces que Windows baja solo, y Spotify fallaba con
+# CERTIFICATE_VERIFY_FAILED, que se veía como "No hay conexión con Spotify".
+SSL_CTX = ssl.create_default_context(cafile=certifi.where())
 
 
 YOUTUBE_RE = re.compile(r"^https?://([\w-]+\.)?(youtube\.com|youtu\.be)/")
@@ -115,7 +120,7 @@ def spotify_token_request(fields, client_id, client_secret):
     auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
     req = urllib.request.Request("https://accounts.spotify.com/api/token", data=urllib.parse.urlencode(fields).encode(),
                                  headers={"Authorization": "Basic " + auth, "Content-Type": "application/x-www-form-urlencoded"})
-    return json.load(urllib.request.urlopen(req, timeout=20))
+    return json.load(urllib.request.urlopen(req, timeout=20, context=SSL_CTX))
 
 
 def save_refresh_token(refresh):
@@ -139,7 +144,7 @@ def spotify_user_token(client_id, client_secret):
 def spotify_api_get(path, token):
     req = urllib.request.Request(path if path.startswith("https://") else "https://api.spotify.com/v1/" + path,
                                  headers={"Authorization": "Bearer " + token})
-    return json.load(urllib.request.urlopen(req, timeout=20))
+    return json.load(urllib.request.urlopen(req, timeout=20, context=SSL_CTX))
 
 
 def spotify_api_tracks(kind, sid, token):
@@ -188,7 +193,7 @@ def spotify_tracks(url):
             name, tracks = spotify_api_tracks(kind, sid, token)
             return name, tracks, None
     req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": "Mozilla/5.0"})
-    html = urllib.request.urlopen(req, timeout=20).read().decode()
+    html = urllib.request.urlopen(req, timeout=20, context=SSL_CTX).read().decode()
     m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
     if not m:
         raise RuntimeError("No se pudo leer el enlace de Spotify. Revisa que la playlist sea pública.")
