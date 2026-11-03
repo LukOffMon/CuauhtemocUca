@@ -2,7 +2,7 @@
 """Playlist (YouTube o Spotify) → MP3 (ZIP). Servidor mínimo: sirve index.html y una API de trabajos.
 
 Uso:  pip install -r requirements.txt   (y tener ffmpeg instalado)
-      python3 server.py                 → http://localhost:8000
+      python3 server.py                 → http://127.0.0.1:8000
 """
 import base64
 import json
@@ -30,11 +30,11 @@ KEYS_FILE = os.path.join(HERE, "spotify.json")
 TOKEN_FILE = os.path.join(HERE, "spotify_token.json")  # sesión de Spotify guardada; es privada, igual que spotify.json
 REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect URI de la app en developer.spotify.com
 LOGIN_STATES = set()
-WORKERS = 4  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
+WORKERS = 6  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
 SPLIT_SIZE = 100  # canciones por carpeta cuando se marca "Separar en carpetas de 100"
 SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descargas (pestañas) a la vez
 RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
-RETRY_PAUSE = 30  # segundos de espera antes de cada vuelta extra
+RETRY_PAUSE = 15  # segundos de espera antes de cada vuelta extra
 JOBS = {}
 
 
@@ -65,6 +65,9 @@ def ydl_opts(work, outtmpl, log, pre=()):
         "fragment_retries": 10,
         "extractor_retries": 3,
         "socket_timeout": 30,
+        "noplaylist": True,
+        "http_chunk_size": 10 * 1024 * 1024,  # pedir el audio en trozos evita que YouTube frene la descarga
+        "concurrent_fragment_downloads": 4,
         "js_runtimes": {"deno": {}, "node": {}},
         "outtmpl": os.path.join(work, outtmpl),
         "restrictfilenames": False,
@@ -90,6 +93,22 @@ def spotify_keys():
         return keys["client_id"].strip(), keys["client_secret"].strip()
     except (OSError, ValueError, KeyError, AttributeError):
         return None
+
+
+def save_spotify_keys(client_id, client_secret):
+    """Comprueba las claves con Spotify y las guarda en spotify.json. Devuelve un mensaje de error o None."""
+    client_id, client_secret = client_id.strip(), client_secret.strip()
+    if not re.fullmatch(r"[0-9a-fA-F]{32}", client_id) or not re.fullmatch(r"[0-9a-fA-F]{32}", client_secret):
+        return "El Client ID y el Client Secret son códigos de 32 letras y números. Cópialos de nuevo desde developer.spotify.com."
+    try:
+        spotify_token_request({"grant_type": "client_credentials"}, client_id, client_secret)
+    except urllib.error.HTTPError:
+        return "Spotify rechazó esas claves. Revisa que el Client ID y el Client Secret sean de la misma app."
+    except OSError:
+        return "No hay conexión con Spotify. Revisa tu internet."
+    with open(KEYS_FILE, "w", encoding="utf-8") as f:
+        json.dump({"client_id": client_id, "client_secret": client_secret}, f, indent=2)
+    return None
 
 
 def spotify_token_request(fields, client_id, client_secret):
@@ -383,7 +402,18 @@ class Handler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def read_json(self):
+        return json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+
     def do_POST(self):
+        if self.path == "/api/spotify/keys":  # el usuario pega sus claves en la página, sin editar archivos
+            data = self.read_json()
+            error = save_spotify_keys(str(data.get("client_id") or ""), str(data.get("client_secret") or ""))
+            return self.send_json({"error": error}, 400) if error else self.send_json({"ok": True})
+        if self.path == "/api/spotify/logout":
+            if os.path.exists(TOKEN_FILE):
+                os.remove(TOKEN_FILE)
+            return self.send_json({"ok": True})
         m = re.match(r"^/api/retry/(\w+)$", self.path)
         if m:
             job = JOBS.get(m.group(1))
@@ -394,7 +424,7 @@ class Handler(SimpleHTTPRequestHandler):
             return self.send_json({"id": m.group(1)})
         if self.path != "/api/start":
             return self.send_error(404)
-        data = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))) or b"{}")
+        data = self.read_json()
         url = (data.get("url") or "").strip()
         if not (YOUTUBE_RE.match(url) or SPOTIFY_RE.match(url)):
             return self.send_json({"error": "Pega un enlace de YouTube o de Spotify válido."}, 400)
@@ -412,7 +442,7 @@ class Handler(SimpleHTTPRequestHandler):
     def spotify_login(self):
         keys = spotify_keys()
         if not keys:
-            return self.send_json({"error": "Primero crea spotify.json (mira el README)."}, 400)
+            return self.redirect("/?spotify=nokeys")
         state = uuid.uuid4().hex
         LOGIN_STATES.add(state)
         query = urllib.parse.urlencode({"client_id": keys[0], "response_type": "code", "redirect_uri": REDIRECT_URI,
@@ -442,7 +472,7 @@ class Handler(SimpleHTTPRequestHandler):
         if url.path == "/api/spotify/login":
             return self.spotify_login()
         if url.path == "/api/spotify/session":
-            return self.send_json({"keys": bool(spotify_keys()), "logged": os.path.exists(TOKEN_FILE)})
+            return self.send_json({"keys": bool(spotify_keys()), "logged": os.path.exists(TOKEN_FILE), "redirect": REDIRECT_URI})
         m = re.match(r"^/api/(status|download)/(\w+)$", self.path)
         if not m:
             return super().do_GET()
@@ -476,5 +506,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Abre http://localhost:{PORT}")
+    print(f"Abre http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

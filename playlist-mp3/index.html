@@ -5,68 +5,73 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Playlist a MP3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#0d0d12; --card:rgba(24,24,32,.78); --text:#f4f4f7; --muted:#9b9bab; --line:rgba(255,255,255,.09);
-          --accent:#1ed760; --accent2:#ff3d6e; --field:rgba(255,255,255,.05); --err:#ff6b81; }
+  :root { --bg:#0b0a0c; --card:#151317; --raised:#1d1a20; --text:#f6eef2; --muted:#a8999f; --line:#2c272f;
+          --pink:#f28ab2; --pink-strong:#e75a95; --pink-soft:rgba(242,138,178,.12); --err:#ff7a93; --ok:#8fd9b0; }
   * { box-sizing:border-box; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
-         background:var(--bg); color:var(--text); font:16px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; overflow-x:hidden; }
-  body::before, body::after { content:""; position:fixed; z-index:-1; width:520px; height:520px; border-radius:50%; filter:blur(110px); opacity:.35; pointer-events:none; }
-  body::before { background:var(--accent); top:-180px; left:-160px; animation:float 14s ease-in-out infinite alternate; }
-  body::after { background:var(--accent2); bottom:-200px; right:-160px; animation:float 16s ease-in-out infinite alternate-reverse; }
-  @keyframes float { to { transform:translate(60px,40px) scale(1.1); } }
-  main { width:100%; max-width:560px; background:var(--card); border:1px solid var(--line); border-radius:22px; padding:34px 30px 26px;
-         backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 30px 80px rgba(0,0,0,.45); }
-  .head { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
-  .logo { flex:none; width:52px; height:52px; border-radius:15px; display:grid; place-items:center;
-          background:linear-gradient(135deg,var(--accent),#0fa3b1 55%,var(--accent2)); box-shadow:0 8px 24px rgba(30,215,96,.3); }
-  .logo svg { width:28px; height:28px; fill:#fff; }
-  h1 { margin:0; font-size:1.6rem; font-weight:800; letter-spacing:-.02em; }
-  h1 span { background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-  p.sub { margin:0 0 22px; color:var(--muted); font-size:.95rem; }
-  .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 22px; }
-  .chip { font-size:.75rem; font-weight:600; padding:4px 10px; border-radius:99px; border:1px solid var(--line); color:var(--muted); background:var(--field); }
-  form { display:flex; gap:10px; flex-wrap:wrap; }
-  input[type=url] { flex:1 1 260px; min-width:0; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--field);
-          color:inherit; font:inherit; outline:none; transition:border-color .2s, box-shadow .2s; }
-  input[type=url]::placeholder { color:#6f6f80; }
-  input[type=url]:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(30,215,96,.15); }
-  button, a.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 22px; border:0; border-radius:12px;
-          background:linear-gradient(135deg,var(--accent),#17b3a0); color:#06130b; font:inherit; font-weight:700; cursor:pointer;
-          text-decoration:none; transition:transform .15s, box-shadow .2s, opacity .2s; box-shadow:0 8px 22px rgba(30,215,96,.25); }
-  button:hover:not(:disabled), a.btn:hover { transform:translateY(-1px); box-shadow:0 12px 28px rgba(30,215,96,.35); }
-  button:active:not(:disabled) { transform:translateY(0); }
-  button:disabled { opacity:.45; cursor:default; box-shadow:none; }
-  a.btn { width:100%; margin-top:6px; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:32px 16px;
+         background:var(--bg) radial-gradient(900px 500px at 50% -10%, rgba(242,138,178,.10), transparent 70%);
+         color:var(--text); font:16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { width:100%; max-width:580px; background:var(--card); border:1px solid var(--line); border-top:2px solid var(--pink);
+         border-radius:18px; padding:36px 32px 28px; box-shadow:0 24px 60px rgba(0,0,0,.5); }
+  .head { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+  .logo { flex:none; width:48px; height:48px; border-radius:50%; display:grid; place-items:center; border:1px solid var(--pink); background:var(--pink-soft); }
+  .logo svg { width:22px; height:22px; fill:var(--pink); }
+  h1 { margin:0; font:700 1.85rem/1.1 "Playfair Display", Georgia, serif; letter-spacing:.01em; }
+  h1 span { color:var(--pink); }
+  p.sub { margin:0 0 24px; color:var(--muted); font-size:.95rem; }
+  .label { display:block; margin:0 0 8px; font-size:.72rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--pink); }
+  form#f { display:flex; gap:10px; flex-wrap:wrap; }
+  input[type=url], input[type=text], input[type=password] { flex:1 1 260px; min-width:0; padding:13px 15px; border:1px solid var(--line); border-radius:10px;
+          background:var(--bg); color:inherit; font:inherit; outline:none; }
+  input::placeholder { color:#6d6268; }
+  input:focus { border-color:var(--pink); box-shadow:0 0 0 3px var(--pink-soft); }
+  button, a.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 22px; border:1px solid var(--pink);
+          border-radius:10px; background:var(--pink); color:#1a0d13; font:inherit; font-weight:700; cursor:pointer; text-decoration:none; }
+  button:hover:not(:disabled), a.btn:hover { background:var(--pink-strong); border-color:var(--pink-strong); }
+  button:disabled { opacity:.45; cursor:default; }
+  button.ghost, a.ghost { background:transparent; color:var(--pink); }
+  button.ghost:hover:not(:disabled), a.ghost:hover { background:var(--pink-soft); color:var(--pink); border-color:var(--pink); }
+  a.btn.wide { width:100%; margin-top:8px; }
   .check { flex-basis:100%; display:flex; align-items:center; gap:12px; margin-top:6px; font-size:.9rem; color:var(--muted); cursor:pointer; user-select:none; }
   .check input { position:absolute; opacity:0; pointer-events:none; }
-  .switch { flex:none; width:42px; height:24px; border-radius:99px; background:rgba(255,255,255,.12); position:relative; transition:background .2s; }
-  .switch::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; }
-  .check input:checked + .switch { background:var(--accent); }
-  .check input:checked + .switch::after { transform:translateX(18px); }
-  .check input:focus-visible + .switch { box-shadow:0 0 0 4px rgba(30,215,96,.25); }
-  .check em { font-style:normal; color:var(--text); opacity:.75; }
-  #status { margin-top:24px; padding:18px; border-radius:14px; background:var(--field); border:1px solid var(--line); font-size:.95rem; }
+  .switch { flex:none; width:40px; height:22px; border-radius:99px; background:var(--line); position:relative; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--muted); }
+  .check input:checked + .switch { background:var(--pink); }
+  .check input:checked + .switch::after { left:21px; background:#1a0d13; }
+  .check input:focus-visible + .switch { box-shadow:0 0 0 3px var(--pink-soft); }
+  .check em { font-style:normal; color:var(--text); opacity:.7; }
+  .panel { margin-top:22px; padding:18px; border-radius:12px; background:var(--raised); border:1px solid var(--line); font-size:.93rem; }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .panel-head strong { display:flex; align-items:center; gap:8px; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .dot.on { background:var(--ok); }
+  .panel p { margin:8px 0 0; color:var(--muted); }
+  .panel .btns { display:flex; gap:8px; flex-wrap:wrap; }
+  .panel .btns button, .panel .btns a.btn { padding:9px 16px; font-size:.88rem; }
+  .panel ol { margin:12px 0; padding-left:20px; color:var(--muted); }
+  .panel ol li { margin-bottom:6px; }
+  .panel ol a { color:var(--pink); }
+  .panel code { padding:2px 6px; border-radius:6px; background:var(--bg); border:1px solid var(--line); color:var(--text); font-size:.85rem; }
+  .keys { display:grid; gap:8px; }
+  .keys button { justify-self:start; }
+  #status { margin-top:22px; padding:18px; border-radius:12px; background:var(--raised); border:1px solid var(--line); font-size:.95rem; }
   #msg { overflow-wrap:anywhere; }
-  .bar { height:10px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; margin:12px 0; }
-  .bar > div { height:100%; width:0; border-radius:99px; background:linear-gradient(90deg,var(--accent),#17b3a0,var(--accent2));
-               background-size:200% 100%; animation:flow 2.5s linear infinite; transition:width .4s ease; }
-  @keyframes flow { to { background-position:-200% 0; } }
-  .err { color:var(--err); }
-  .note { margin:14px 0 0; font-size:.9rem; color:var(--muted); }
-  .note a { color:var(--accent); font-weight:600; }
-  #warn { margin-bottom:14px; font-size:.9rem; }
+  .bar { height:6px; background:var(--line); border-radius:99px; overflow:hidden; margin:12px 0; }
+  .bar > div { height:100%; width:0; border-radius:99px; background:var(--pink); }
+  .err, .panel p.err { color:var(--err); }
+  .okmsg, .panel p.okmsg { color:var(--ok); }
+  #warn { margin-bottom:12px; font-size:.9rem; }
   #failed { margin-top:14px; }
-  #failed details { border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:10px; background:rgba(0,0,0,.15); }
+  #failed details { border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:10px; background:var(--card); }
   #failed summary { cursor:pointer; font-weight:600; }
   #failed ul { margin:8px 0 0; padding-left:18px; max-height:260px; overflow:auto; font-size:.9rem; }
   #failed li { margin-bottom:6px; overflow-wrap:anywhere; }
   #failed .why { color:var(--muted); font-size:.8rem; }
-  #failed button { background:rgba(255,255,255,.08); color:var(--text); box-shadow:none; border:1px solid var(--line); }
-  small { display:block; margin-top:26px; color:#6f6f80; font-size:.78rem; text-align:center; }
-  @media (max-width:480px) { main { padding:26px 18px 20px; } button { width:100%; } }
-  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
+  #failed button { background:transparent; color:var(--pink); }
+  small { display:block; margin-top:26px; padding-top:18px; border-top:1px solid var(--line); color:#6d6268; font-size:.78rem; text-align:center; }
+  @media (max-width:480px) { main { padding:28px 18px 22px; } form#f button { width:100%; } }
 </style>
 </head>
 <body>
@@ -76,13 +81,13 @@
     <h1>Playlist <span>→ MP3</span></h1>
   </div>
   <p class="sub">Pega el enlace de una playlist de YouTube o de Spotify y descarga todas las canciones en MP3 dentro de un ZIP.</p>
-  <div class="chips"><span class="chip">YouTube</span><span class="chip">Spotify</span><span class="chip">MP3 320 kbps</span><span class="chip">ZIP</span></div>
+  <label class="label" for="url">Enlace de la playlist</label>
   <form id="f">
     <input id="url" type="url" required placeholder="Enlace de YouTube o de Spotify">
     <button id="go">Convertir</button>
     <label class="check"><input id="split" type="checkbox"><span class="switch"></span><span>Separar en carpetas de 100 canciones <em>(ej. «Mi lista 001-100»)</em></span></label>
   </form>
-  <p id="spotify" class="note" hidden></p>
+  <section id="spotify" class="panel" hidden></section>
   <div id="status" hidden>
     <div id="msg"></div>
     <div class="bar"><div id="fill"></div></div>
@@ -106,7 +111,7 @@ $('f').onsubmit = async e => {
     poll(j.id);
   } catch (err) {
     // fetch solo falla así cuando no hay servidor: página abierta como archivo o ventana de server.py cerrada
-    fail(err instanceof TypeError ? 'No hay conexión con el convertidor. Abre iniciar.bat, deja su ventana abierta y entra a http://localhost:8000' : err.message);
+    fail(err instanceof TypeError ? 'No hay conexión con el convertidor. Abre iniciar.bat, deja su ventana abierta y entra a http://127.0.0.1:8000' : err.message);
   }
 };
 async function poll(id, fails = 0) {
@@ -129,7 +134,7 @@ async function poll(id, fails = 0) {
   if (s.status === 'done') {
     $('msg').textContent = s.downloaded ? `Se recuperaron ${s.count} canciones.` : `Listo: ${s.count} canciones.`;
     $('fill').style.width = '100%';
-    $('done').innerHTML = s.ready ? `<a class="btn" href="/api/download/${id}">Descargar ${s.filename}</a>` : '';
+    $('done').innerHTML = s.ready ? `<a class="btn wide" href="/api/download/${id}">Descargar ${s.filename}</a>` : '';
     if (s.ready) $('done').firstChild.onclick = e => { e.target.textContent = 'Descargando…'; e.target.style.pointerEvents = 'none'; };
     $('warn').hidden = !s.missing;
     if (s.missing) $('warn').textContent = `Faltaron ${s.missing} canciones.` + (s.ready ? ' La lista también va en faltantes.txt, dentro del ZIP.' : '');
@@ -190,16 +195,54 @@ if (resume) {
   $('go').disabled = true; $('status').hidden = false; $('msg').textContent = 'Retomando la descarga…';
   poll(resume);
 }
-// Las playlists de Spotify de más de 100 canciones necesitan la sesión de Spotify del usuario
-fetch('/api/spotify/session').then(r => r.json()).then(s => {
-  if (!s.keys) return;
-  const back = new URLSearchParams(location.search).get('spotify');
-  $('spotify').innerHTML = s.logged
-    ? 'Sesión de Spotify iniciada ✓ · <a href="/api/spotify/login">Cambiar de cuenta</a>'
-    : (back === 'error' ? 'No se pudo iniciar sesión. ' : '') + '<a href="/api/spotify/login">Iniciar sesión con Spotify</a> para bajar listas de más de 100 canciones.';
-  $('spotify').hidden = false;
-  if (back) history.replaceState(null, '', '/');
-}).catch(() => {});
+// Panel de Spotify: siempre visible. Sin claves enseña a crearlas y pegarlas aquí; con claves, iniciar sesión.
+const esc = t => String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+async function spotifyPanel(note = '') {
+  const box = $('spotify');
+  let s;
+  try { s = await (await fetch('/api/spotify/session')).json(); } catch { return; }
+  box.hidden = false;
+  const msg = note ? `<p class="${note.startsWith('✓') ? 'okmsg' : 'err'}">${esc(note)}</p>` : '';
+  if (s.logged) {
+    box.innerHTML = `<div class="panel-head"><strong><span class="dot on"></span>Spotify conectado</strong>
+      <div class="btns"><a class="btn ghost" href="/api/spotify/login">Cambiar de cuenta</a><button class="ghost" id="sp-out" type="button">Cerrar sesión</button></div></div>
+      <p>Se pueden bajar listas completas, de más de 100 canciones.</p>${msg}`;
+    $('sp-out').onclick = async () => { await fetch('/api/spotify/logout', { method:'POST' }); spotifyPanel(); };
+    return;
+  }
+  if (s.keys) {
+    box.innerHTML = `<div class="panel-head"><strong><span class="dot"></span>Spotify sin iniciar sesión</strong>
+      <div class="btns"><a class="btn" href="/api/spotify/login">Iniciar sesión con Spotify</a></div></div>
+      <p>Sin iniciar sesión solo se leen las primeras 100 canciones de cada playlist.</p>${msg}`;
+    return;
+  }
+  box.innerHTML = `<div class="panel-head"><strong><span class="dot"></span>Conectar Spotify</strong></div>
+    <p>Para bajar playlists de Spotify completas necesitas tus claves gratuitas (solo una vez):</p>
+    <ol>
+      <li>Entra a <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> y pulsa <b>Create app</b>.</li>
+      <li>En <i>Redirect URI</i> escribe <code>${esc(s.redirect)}</code>, marca <b>Web API</b> y guarda.</li>
+      <li>En <b>Settings</b> copia el <i>Client ID</i> y el <i>Client Secret</i> y pégalos aquí:</li>
+    </ol>
+    <form class="keys" id="sp-keys">
+      <input id="sp-id" type="text" placeholder="Client ID" autocomplete="off" required>
+      <input id="sp-secret" type="password" placeholder="Client Secret" autocomplete="off" required>
+      <button type="submit">Guardar y continuar</button>
+    </form>${msg}`;
+  $('sp-keys').onsubmit = async e => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true; btn.textContent = 'Comprobando…';
+    try {
+      const r = await fetch('/api/spotify/keys', { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ client_id: $('sp-id').value, client_secret: $('sp-secret').value }) });
+      const j = await r.json();
+      spotifyPanel(r.ok ? '✓ Claves guardadas. Ahora pulsa "Iniciar sesión con Spotify".' : j.error);
+    } catch { spotifyPanel('No hay conexión con el convertidor.'); }
+  };
+}
+const back = new URLSearchParams(location.search).get('spotify');
+if (back) history.replaceState(null, '', '/');
+spotifyPanel({ ok:'✓ Sesión de Spotify iniciada.', error:'No se pudo iniciar sesión. Revisa que el Redirect URI de tu app sea exactamente el de arriba.', nokeys:'Primero guarda tus claves de Spotify.' }[back] || '');
 function fail(m) { $('msg').className = 'err'; $('msg').textContent = m || 'Algo falló.'; $('go').disabled = false; }
 </script>
 </body>
