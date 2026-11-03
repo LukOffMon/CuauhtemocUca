@@ -299,12 +299,13 @@ def windows_text(lines):
 
 
 def split_folder(job, filename):
-    """Carpeta dentro del ZIP ("001-100/", "101-200/"…) si se pidió separar de 100 en 100; si no, ninguna."""
+    """Carpeta dentro del ZIP ("prueba1987 001-100/", "prueba1987 101-200/"…) si se pidió separar de 100 en 100;
+    si no, ninguna. Lleva el nombre de la playlist para saber de qué lista son las canciones al juntar carpetas."""
     if not job.get("_split"):
         return ""
     total, width = job["_total"], job["_width"]
     start = (int(filename.split(" - ", 1)[0]) - 1) // SPLIT_SIZE * SPLIT_SIZE + 1
-    return f"{start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
+    return f"{job['_name']} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
 
 
 def download_and_zip(job, pending):

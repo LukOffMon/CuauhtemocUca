@@ -4,45 +4,83 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Playlist a MP3</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#f6f6f4; --card:#fff; --text:#1d1d1f; --muted:#6b6b70; --accent:#e53935; --line:#e2e2e0; }
-  @media (prefers-color-scheme: dark) { :root { --bg:#141416; --card:#1f1f22; --text:#f2f2f2; --muted:#9a9aa0; --line:#323236; } }
-  * { box-sizing: border-box; }
-  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:16px;
-         background:var(--bg); color:var(--text); font:16px/1.5 system-ui, -apple-system, sans-serif; }
-  main { width:100%; max-width:520px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px; }
-  h1 { margin:0 0 4px; font-size:1.4rem; }
-  p.sub { margin:0 0 20px; color:var(--muted); font-size:.95rem; }
-  form { display:flex; gap:8px; flex-wrap:wrap; }
-  input { flex:1 1 240px; padding:12px; border:1px solid var(--line); border-radius:8px; background:transparent; color:inherit; font:inherit; }
-  button, a.btn { padding:12px 18px; border:0; border-radius:8px; background:var(--accent); color:#fff; font:inherit; font-weight:600; cursor:pointer; text-decoration:none; }
-  button:disabled { opacity:.5; cursor:default; }
-  #status { margin-top:20px; font-size:.95rem; }
-  .bar { height:8px; background:var(--line); border-radius:4px; overflow:hidden; margin:10px 0; }
-  .bar > div { height:100%; width:0; background:var(--accent); transition:width .3s; }
-  .err { color:var(--accent); }
-  .note { margin:12px 0 0; font-size:.9rem; color:var(--muted); }
+  :root { --bg:#0d0d12; --card:rgba(24,24,32,.78); --text:#f4f4f7; --muted:#9b9bab; --line:rgba(255,255,255,.09);
+          --accent:#1ed760; --accent2:#ff3d6e; --field:rgba(255,255,255,.05); --err:#ff6b81; }
+  * { box-sizing:border-box; }
+  body { margin:0; min-height:100vh; display:grid; place-items:center; padding:24px 16px;
+         background:var(--bg); color:var(--text); font:16px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; overflow-x:hidden; }
+  body::before, body::after { content:""; position:fixed; z-index:-1; width:520px; height:520px; border-radius:50%; filter:blur(110px); opacity:.35; pointer-events:none; }
+  body::before { background:var(--accent); top:-180px; left:-160px; animation:float 14s ease-in-out infinite alternate; }
+  body::after { background:var(--accent2); bottom:-200px; right:-160px; animation:float 16s ease-in-out infinite alternate-reverse; }
+  @keyframes float { to { transform:translate(60px,40px) scale(1.1); } }
+  main { width:100%; max-width:560px; background:var(--card); border:1px solid var(--line); border-radius:22px; padding:34px 30px 26px;
+         backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); box-shadow:0 30px 80px rgba(0,0,0,.45); }
+  .head { display:flex; align-items:center; gap:14px; margin-bottom:10px; }
+  .logo { flex:none; width:52px; height:52px; border-radius:15px; display:grid; place-items:center;
+          background:linear-gradient(135deg,var(--accent),#0fa3b1 55%,var(--accent2)); box-shadow:0 8px 24px rgba(30,215,96,.3); }
+  .logo svg { width:28px; height:28px; fill:#fff; }
+  h1 { margin:0; font-size:1.6rem; font-weight:800; letter-spacing:-.02em; }
+  h1 span { background:linear-gradient(90deg,var(--accent),var(--accent2)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  p.sub { margin:0 0 22px; color:var(--muted); font-size:.95rem; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; margin:0 0 22px; }
+  .chip { font-size:.75rem; font-weight:600; padding:4px 10px; border-radius:99px; border:1px solid var(--line); color:var(--muted); background:var(--field); }
+  form { display:flex; gap:10px; flex-wrap:wrap; }
+  input[type=url] { flex:1 1 260px; min-width:0; padding:14px 16px; border:1px solid var(--line); border-radius:12px; background:var(--field);
+          color:inherit; font:inherit; outline:none; transition:border-color .2s, box-shadow .2s; }
+  input[type=url]::placeholder { color:#6f6f80; }
+  input[type=url]:focus { border-color:var(--accent); box-shadow:0 0 0 4px rgba(30,215,96,.15); }
+  button, a.btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:14px 22px; border:0; border-radius:12px;
+          background:linear-gradient(135deg,var(--accent),#17b3a0); color:#06130b; font:inherit; font-weight:700; cursor:pointer;
+          text-decoration:none; transition:transform .15s, box-shadow .2s, opacity .2s; box-shadow:0 8px 22px rgba(30,215,96,.25); }
+  button:hover:not(:disabled), a.btn:hover { transform:translateY(-1px); box-shadow:0 12px 28px rgba(30,215,96,.35); }
+  button:active:not(:disabled) { transform:translateY(0); }
+  button:disabled { opacity:.45; cursor:default; box-shadow:none; }
+  a.btn { width:100%; margin-top:6px; }
+  .check { flex-basis:100%; display:flex; align-items:center; gap:12px; margin-top:6px; font-size:.9rem; color:var(--muted); cursor:pointer; user-select:none; }
+  .check input { position:absolute; opacity:0; pointer-events:none; }
+  .switch { flex:none; width:42px; height:24px; border-radius:99px; background:rgba(255,255,255,.12); position:relative; transition:background .2s; }
+  .switch::after { content:""; position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:#fff; transition:transform .2s; }
+  .check input:checked + .switch { background:var(--accent); }
+  .check input:checked + .switch::after { transform:translateX(18px); }
+  .check input:focus-visible + .switch { box-shadow:0 0 0 4px rgba(30,215,96,.25); }
+  .check em { font-style:normal; color:var(--text); opacity:.75; }
+  #status { margin-top:24px; padding:18px; border-radius:14px; background:var(--field); border:1px solid var(--line); font-size:.95rem; }
+  #msg { overflow-wrap:anywhere; }
+  .bar { height:10px; background:rgba(255,255,255,.08); border-radius:99px; overflow:hidden; margin:12px 0; }
+  .bar > div { height:100%; width:0; border-radius:99px; background:linear-gradient(90deg,var(--accent),#17b3a0,var(--accent2));
+               background-size:200% 100%; animation:flow 2.5s linear infinite; transition:width .4s ease; }
+  @keyframes flow { to { background-position:-200% 0; } }
+  .err { color:var(--err); }
+  .note { margin:14px 0 0; font-size:.9rem; color:var(--muted); }
   .note a { color:var(--accent); font-weight:600; }
-  .check { flex-basis:100%; display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--muted); cursor:pointer; }
-  .check input { flex:none; width:16px; height:16px; padding:0; accent-color:var(--accent); }
-  #warn { margin-bottom:14px; }
+  #warn { margin-bottom:14px; font-size:.9rem; }
   #failed { margin-top:14px; }
-  #failed details { border:1px solid var(--line); border-radius:8px; padding:8px 12px; margin-bottom:10px; }
+  #failed details { border:1px solid var(--line); border-radius:12px; padding:10px 14px; margin-bottom:10px; background:rgba(0,0,0,.15); }
   #failed summary { cursor:pointer; font-weight:600; }
   #failed ul { margin:8px 0 0; padding-left:18px; max-height:260px; overflow:auto; font-size:.9rem; }
   #failed li { margin-bottom:6px; overflow-wrap:anywhere; }
   #failed .why { color:var(--muted); font-size:.8rem; }
-  small { display:block; margin-top:24px; color:var(--muted); font-size:.8rem; }
+  #failed button { background:rgba(255,255,255,.08); color:var(--text); box-shadow:none; border:1px solid var(--line); }
+  small { display:block; margin-top:26px; color:#6f6f80; font-size:.78rem; text-align:center; }
+  @media (max-width:480px) { main { padding:26px 18px 20px; } button { width:100%; } }
+  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body>
 <main>
-  <h1>Playlist → MP3</h1>
-  <p class="sub">Pega el enlace de una playlist de YouTube o de Spotify y descarga todas las canciones en MP3 320 kbps dentro de un ZIP.</p>
+  <div class="head">
+    <div class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
+    <h1>Playlist <span>→ MP3</span></h1>
+  </div>
+  <p class="sub">Pega el enlace de una playlist de YouTube o de Spotify y descarga todas las canciones en MP3 dentro de un ZIP.</p>
+  <div class="chips"><span class="chip">YouTube</span><span class="chip">Spotify</span><span class="chip">MP3 320 kbps</span><span class="chip">ZIP</span></div>
   <form id="f">
     <input id="url" type="url" required placeholder="Enlace de YouTube o de Spotify">
     <button id="go">Convertir</button>
-    <label class="check"><input id="split" type="checkbox"> Separar en carpetas de 100 canciones dentro del ZIP</label>
+    <label class="check"><input id="split" type="checkbox"><span class="switch"></span><span>Separar en carpetas de 100 canciones <em>(ej. «Mi lista 001-100»)</em></span></label>
   </form>
   <p id="spotify" class="note" hidden></p>
   <div id="status" hidden>
