@@ -299,12 +299,13 @@ def windows_text(lines):
 
 
 def split_folder(job, filename):
-    """Carpeta dentro del ZIP ("001-100/", "101-200/"…) si se pidió separar de 100 en 100; si no, ninguna."""
+    """Carpeta dentro del ZIP ("prueba1987 001-100/", "prueba1987 101-200/"…) si se pidió separar de 100 en 100;
+    si no, ninguna. Lleva el nombre de la playlist para saber de qué lista son las canciones al juntar carpetas."""
     if not job.get("_split"):
         return ""
     total, width = job["_total"], job["_width"]
     start = (int(filename.split(" - ", 1)[0]) - 1) // SPLIT_SIZE * SPLIT_SIZE + 1
-    return f"{start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
+    return f"{job['_name']} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
 
 
 def download_and_zip(job, pending):
@@ -324,7 +325,7 @@ def download_and_zip(job, pending):
     name = job["_name"] + (" - recuperadas" if job.get("downloaded") else "")
     zpath = os.path.join(work, name + ".zip")
     used = set()
-    listing = []  # (carpeta, canción) para "lista de canciones.txt"
+    listing = []  # (carpeta, canción) para "<playlist>.txt"
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
         for f in mp3s:
             base = clean = safe_name(f[:-4], "Cancion")
@@ -335,14 +336,15 @@ def download_and_zip(job, pending):
             folder = split_folder(job, f)
             z.write(os.path.join(work, f), folder + clean + ".mp3")
             listing.append((folder.rstrip("/"), clean))
-        songs = [f"Lista de canciones ({len(listing)})"]
+        count = f"{len(listing)} {'canción' if len(listing) == 1 else 'canciones'}"
+        songs = [f"Lista de la playlist \"{job['_title']}\" - {count}"]
         prev = None
         for folder, song in listing:
             if folder != prev:  # con carpetas de 100, un encabezado por carpeta
                 songs += ["", f"== {folder} =="] if folder else [""]
                 prev = folder
             songs.append(song)
-        z.writestr("lista de canciones.txt", windows_text(songs))
+        z.writestr(name + ".txt", windows_text(songs))  # la lista se llama como la playlist
         if failed:
             lines = [f"{i}. {song}  ->  {reason}" for i, song, reason in failed]
             z.writestr("faltantes.txt", windows_text(["Canciones que no se pudieron bajar (número en la lista, nombre y motivo):", "", *lines]))
@@ -356,7 +358,7 @@ def run_job(job, url):
         prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
         title, items, fn, label = prepare(job, url, work)
         # Se guarda lo necesario para el botón "Reintentar las que faltaron"
-        job.update(_name=safe_name(title, "playlist"), _fn=fn, _label=label, _width=len(str(len(items))), _total=len(items))
+        job.update(_name=safe_name(title, "playlist"), _title=(title or "").strip() or "playlist", _fn=fn, _label=label, _width=len(str(len(items))), _total=len(items))
         download_and_zip(job, list(enumerate(items, 1)))
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
