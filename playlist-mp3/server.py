@@ -240,7 +240,7 @@ def youtube_match(artist, title, seconds, log):
 
 
 class SongLog:
-    """Logger de yt-dlp que guarda el último error de una canción, para explicar en faltantes.txt por qué faltó."""
+    """Logger de yt-dlp que guarda el último error de una canción, para explicar en la página por qué faltó."""
 
     def __init__(self):
         self.last = None
@@ -336,16 +336,20 @@ def windows_text(lines):
     return "\ufeff" + "\r\n".join(lines) + "\r\n"
 
 
-def split_folder(job, filename):
-    """Carpeta dentro del ZIP ("prueba1987 001-100/", "prueba1987 101-200/"…) si se pidió separar de 100 en 100;
-    si no, ninguna. Lleva el nombre de la playlist para saber de qué lista son las canciones al juntar carpetas.
-    Con varios enlaces cada uno empieza carpeta nueva, para que una carpeta nunca mezcle dos partes."""
-    if not job.get("_split"):
-        return ""
-    n, width = int(filename.split(" - ", 1)[0]), job["_width"]
-    first, last = next((a, b) for a, b in job["_parts"] if a <= n <= b)
-    start = first + (n - first) // SPLIT_SIZE * SPLIT_SIZE
-    return f"{job['_name']} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, last):0{width}d}/"
+def zip_layout(name, mp3s):
+    """Ruta de cada MP3 dentro del ZIP, siempre en carpetas de 100: "VitC 001-100/001 - Artista - Título.mp3".
+
+    Solo cuentan las canciones que sí se bajaron: se numeran seguido en el orden de la playlist (sin huecos por
+    las que faltaron), así cada carpeta trae exactamente 100 menos la última. Devuelve [(archivo, carpeta, canción)]."""
+    width = max(3, len(str(len(mp3s))))
+    total = len(mp3s)
+    layout = []
+    for n, f in enumerate(mp3s, 1):  # mp3s viene ordenado por el número que tenía en la playlist
+        start = (n - 1) // SPLIT_SIZE * SPLIT_SIZE + 1
+        folder = f"{name} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}"
+        song = f"{n:0{width}d} - {safe_name(f[:-4].split(' - ', 1)[-1], 'Cancion')}"
+        layout.append((f, folder, song))
+    return layout
 
 
 def download_and_zip(job, pending):
@@ -364,49 +368,40 @@ def download_and_zip(job, pending):
         os.remove(job["zip"])
     name = job["_name"] + (" - recuperadas" if job.get("downloaded") else "")
     zpath = os.path.join(work, name + ".zip")
-    used = set()
-    listing = []  # (carpeta, canción) para "<playlist>.txt"
+    layout = zip_layout(name, mp3s)
     with zipfile.ZipFile(zpath, "w", zipfile.ZIP_STORED) as z:  # el MP3 ya está comprimido
-        for f in mp3s:
-            base = clean = safe_name(f[:-4], "Cancion")
-            n = 2
-            while clean.lower() in used:  # dos títulos que quedan iguales tras limpiarlos
-                clean, n = f"{base} ({n})", n + 1
-            used.add(clean.lower())
-            folder = split_folder(job, f)
-            z.write(os.path.join(work, f), folder + clean + ".mp3")
-            listing.append((folder.rstrip("/"), clean))
-        count = f"{len(listing)} {'canción' if len(listing) == 1 else 'canciones'}"
-        songs = [f"Lista de la playlist \"{job['_title']}\" - {count}"]
+        for f, folder, song in layout:
+            z.write(os.path.join(work, f), f"{folder}/{song}.mp3")
+        # Una sola lista, "<nombre del ZIP>.txt": las que vienen, por carpeta, y al final las que no se pudieron bajar
+        plural = lambda n: f"{n} {'canción' if n == 1 else 'canciones'}"
+        lines = [f"{job['_title']}", f"{plural(len(layout))} en {len({f for _, f, _ in layout})} carpetas de {SPLIT_SIZE}"
+                 + (f" · {plural(len(failed))} no se pudieron bajar" if failed else "")]
         prev = None
-        for folder, song in listing:
-            if folder != prev:  # con carpetas de 100, un encabezado por carpeta
-                songs += ["", f"== {folder} =="] if folder else [""]
+        for _, folder, song in layout:
+            if folder != prev:
+                lines += ["", f"== {folder} =="]
                 prev = folder
-            songs.append(song)
-        z.writestr(name + ".txt", windows_text(songs))  # la lista se llama como la playlist
+            lines.append(song)
         if failed:
-            lines = [f"{i}. {song}  ->  {reason}" for i, song, reason in failed]
-            z.writestr("faltantes.txt", windows_text(["Canciones que no se pudieron bajar (número en la lista, nombre y motivo):", "", *lines]))
+            lines += ["", f"== No se pudieron bajar ({len(failed)}) =="] + [song for _, song, _ in failed]
+        z.writestr(name + ".txt", windows_text(lines))
     job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
 
 
-def run_job(job, urls):
-    """Lee cada enlace y junta todas sus canciones en un solo ZIP, numeradas seguidas: las del segundo enlace van
-    después de las del primero (101-200 si el primero tenía 100), así cada parte de una playlist partida en
-    listas de 100 cae en su carpeta "001-100", "101-200"…"""
+def run_job(job, urls, zip_name=""):
+    """Lee cada enlace y junta todas sus canciones en un solo ZIP, en orden: las del segundo enlace van después de
+    las del primero, así una playlist partida en listas de 100 vuelve a quedar entera. zip_name (opcional) da
+    nombre al ZIP, a sus carpetas y a la lista; si no, se usa el nombre del primer enlace."""
     work = tempfile.mkdtemp(prefix="pl2mp3-")
     job["dir"] = work
     try:
-        title, items, fns, labels, warnings, parts = None, [], [], [], [], []
+        title, items, fns, labels, warnings = None, [], [], [], []
         for k, url in enumerate(urls):
             if len(urls) > 1:
                 job["current"] = f"Leyendo el enlace {k + 1} de {len(urls)}…"
             prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
             part_title, part_items, fn, label = prepare(job, url, work)
-            title = title or part_title  # el ZIP y las carpetas se llaman como el primer enlace
-            if part_items:
-                parts.append((len(items) + 1, len(items) + len(part_items)))  # números (primero, último) de este enlace
+            title = title or part_title
             items += [(k, item) for item in part_items]
             fns.append(fn)
             labels.append(label)
@@ -421,9 +416,10 @@ def run_job(job, urls):
                               f"{'Si esa lista' if len(warnings) == 1 else 'Si alguna de esas listas'} tenía más, "
                               "las de después de la 100 no se bajaron: pártela en listas de 100 o menos.")
         # Se guarda lo necesario para el botón "Reintentar las que faltaron"
+        title = zip_name.strip() or title
         job.update(_name=safe_name(title, "playlist"), _title=(title or "").strip() or "playlist",
                    _fn=lambda prefix, it, log: fns[it[0]](prefix, it[1], log), _label=lambda it: labels[it[0]](it[1]),
-                   _width=len(str(len(items))), _total=len(items), _parts=parts)
+                   _width=len(str(len(items))))
         download_and_zip(job, list(enumerate(items, 1)))
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
@@ -481,9 +477,9 @@ class Handler(SimpleHTTPRequestHandler):
             where = "" if len(urls) == 1 else f" (línea {', '.join(map(str, bad))})"
             return self.send_json({"error": f"Pega un enlace de YouTube o de Spotify válido{where}."}, 400)
         job_id = uuid.uuid4().hex
-        JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None,
-                        "_split": bool(data.get("split"))}
-        threading.Thread(target=run_job, args=(JOBS[job_id], urls), daemon=True).start()
+        JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None}
+        zip_name = str(data.get("name") or "")[:80]
+        threading.Thread(target=run_job, args=(JOBS[job_id], urls, zip_name), daemon=True).start()
         self.send_json({"id": job_id})
 
     def redirect(self, location):

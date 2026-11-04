@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Playlist a MP3</title>
+<title>Spotify a ZipMP3</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <style>
@@ -36,14 +36,9 @@
   button.ghost, a.ghost { background:transparent; color:var(--pink); }
   button.ghost:hover:not(:disabled), a.ghost:hover { background:var(--pink-soft); color:var(--pink); border-color:var(--pink); }
   a.btn.wide { width:100%; margin-top:8px; }
-  .check { flex-basis:100%; display:flex; align-items:center; gap:12px; margin-top:6px; font-size:.9rem; color:var(--muted); cursor:pointer; user-select:none; }
-  .check input { position:absolute; opacity:0; pointer-events:none; }
-  .switch { flex:none; width:40px; height:22px; border-radius:99px; background:var(--line); position:relative; }
-  .switch::after { content:""; position:absolute; top:3px; left:3px; width:16px; height:16px; border-radius:50%; background:var(--muted); }
-  .check input:checked + .switch { background:var(--pink); }
-  .check input:checked + .switch::after { left:21px; background:#1a0d13; }
-  .check input:focus-visible + .switch { box-shadow:0 0 0 3px var(--pink-soft); }
-  .check em { font-style:normal; color:var(--text); opacity:.7; }
+  .field { flex-basis:100%; display:grid; gap:6px; margin-top:6px; }
+  .field .label { margin:0; }
+  .field .label em { font-style:normal; font-weight:500; letter-spacing:normal; text-transform:none; color:var(--muted); }
   .panel { margin-top:22px; padding:18px; border-radius:12px; background:var(--raised); border:1px solid var(--line); font-size:.93rem; }
   .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
   .panel-head strong { display:flex; align-items:center; gap:8px; }
@@ -80,15 +75,18 @@
 <main>
   <div class="head">
     <div class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
-    <h1>Playlist <span>→ MP3</span></h1>
+    <h1>Spotify <span>a ZipMP3</span></h1>
   </div>
-  <p class="sub">Pega el enlace de una playlist de YouTube o de Spotify y descarga todas las canciones en MP3 dentro de un ZIP.</p>
+  <p class="sub">Pega el enlace de una playlist de Spotify (o de YouTube) y descarga todas las canciones en MP3 dentro de un ZIP, ordenadas en carpetas de 100.</p>
   <label class="label" for="url">Enlaces de la playlist</label>
   <form id="f">
     <textarea id="url" rows="2" required spellcheck="false" placeholder="Enlace de YouTube o de Spotify (uno por línea)"></textarea>
     <button id="go">Convertir</button>
-    <p class="hint">¿Playlist de Spotify con más de 100 canciones? Pártela en listas de 100 y pega cada enlace en su propia línea, en orden: todo sale en un solo ZIP, numerado seguido (001-100, 101-200…).</p>
-    <label class="check"><input id="split" type="checkbox"><span class="switch"></span><span>Separar en carpetas de 100 canciones <em>(ej. «Mi lista 001-100»)</em></span></label>
+    <p class="hint">¿Playlist de Spotify con más de 100 canciones? Pártela en listas de 100 y pega cada enlace en su propia línea, en orden: todo sale en un solo ZIP.</p>
+    <div class="field">
+      <label class="label" for="name">Nombre del ZIP <em>(opcional)</em></label>
+      <input id="name" type="text" maxlength="80" autocomplete="off" placeholder="Ej. VitC → «VitC 001-100», «VitC 101-200»…">
+    </div>
   </form>
   <section id="spotify" class="panel" hidden></section>
   <div id="status" hidden>
@@ -107,7 +105,7 @@ $('f').onsubmit = async e => {
   $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = ''; $('warn').hidden = true; $('failed').hidden = true;
   $('msg').textContent = $('url').value.trim().split(/\s+/).length > 1 ? 'Leyendo los enlaces…' : 'Leyendo la playlist…'; $('fill').style.width = '0';
   try {
-    const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value, split: $('split').checked }) });
+    const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value, name: $('name').value }) });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error);
     sessionStorage.setItem('job', j.id);
@@ -140,7 +138,7 @@ async function poll(id, fails = 0) {
     $('done').innerHTML = s.ready ? `<a class="btn wide" href="/api/download/${id}">Descargar ${s.filename}</a>` : '';
     if (s.ready) $('done').firstChild.onclick = e => { e.target.textContent = 'Descargando…'; e.target.style.pointerEvents = 'none'; };
     $('warn').hidden = !s.missing;
-    if (s.missing) $('warn').textContent = `Faltaron ${s.missing} canciones.` + (s.ready ? ' La lista también va en faltantes.txt, dentro del ZIP.' : '');
+    if (s.missing) $('warn').textContent = `Faltaron ${s.missing} canciones.` + (s.ready ? ' Van al final de la lista .txt del ZIP.' : '');
     showFailed(id, s.failed || []);
     $('go').disabled = false; return;
   }

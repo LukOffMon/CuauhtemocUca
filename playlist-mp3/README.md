@@ -1,6 +1,21 @@
-# Playlist de YouTube o Spotify → MP3 (ZIP)
+# Spotify a ZipMP3
 
-Página sencilla: pegas el enlace de una playlist y te devuelve un `.zip` con todas las canciones en MP3 a 320 kbps (con título, artista y portada).
+Página sencilla: pegas el enlace de una playlist (de Spotify o de YouTube) y te devuelve un `.zip` con todas las canciones en MP3 a 320 kbps (con título, artista y portada).
+
+### Cómo viene el ZIP
+
+```
+VitC.zip
+├── VitC.txt          ← la lista: las canciones de cada carpeta y, al final, las que no se pudieron bajar
+├── VitC 001-100/     ← 001 - Artista - Título.mp3 … 100 - …
+├── VitC 101-200/
+├── VitC 201-300/
+└── VitC 301-359/     ← la última carpeta trae las que sobran
+```
+
+- Siempre en carpetas de 100, en el orden de la playlist (o de los enlaces, si pegaste varios).
+- Solo se numeran las canciones que sí se bajaron, así no quedan huecos y cada carpeta trae exactamente 100.
+- El ZIP, las carpetas y la lista se llaman como escribas en **Nombre del ZIP**; si lo dejas vacío, como la primera playlist.
 
 Acepta enlaces de YouTube y de Spotify (playlist, álbum o canción). Spotify no deja descargar su audio, así que el programa lee la lista de canciones de Spotify y baja cada una desde YouTube, eligiendo el resultado con la duración más parecida. Casi siempre es la versión correcta, pero de vez en cuando puede salir otra (en vivo, remix…). La playlist de Spotify tiene que ser pública. Sin claves, Spotify solo deja leer las primeras 100 canciones de cada lista.
 
@@ -19,7 +34,7 @@ Spotify solo deja leer por la API las playlists **tuyas** o en las que colaboras
 
 Ojo: Spotify solo deja usar su API si la cuenta que creó la app en developer.spotify.com tiene **Spotify Premium** activo. Sin Premium, el programa lee solo las primeras 100 canciones y lo avisa.
 
-**Sin Premium:** parte la playlist en listas de 100 o menos (en la app de Spotify selecciona un bloque de canciones, clic derecho → **Agregar a playlist** → **Nueva playlist**) y pega todos los enlaces en la página, uno por línea y en orden. Todo sale en un solo ZIP, numerado seguido: con **Separar en carpetas de 100** cada enlace va en su carpeta («Mi lista 001-100», «Mi lista 101-200»…). El ZIP y las carpetas se llaman como el primer enlace.
+**Sin Premium:** parte la playlist en listas de 100 o menos (en la app de Spotify selecciona un bloque de canciones, clic derecho → **Agregar a playlist** → **Nueva playlist**) y pega todos los enlaces en la página, uno por línea y en orden. Todo sale en un solo ZIP.
 
 `spotify.json` y `spotify_token.json` (la sesión guardada) son privados: no los compartas ni los subas a GitHub (ya están en `.gitignore`). Para cerrar la sesión, pulsa **Cerrar sesión** en la página.
 
