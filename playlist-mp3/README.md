@@ -17,6 +17,10 @@ Abre el convertidor: en la página aparece el recuadro **Conectar Spotify** con 
 
 Spotify solo deja leer por la API las playlists **tuyas** o en las que colaboras. Si la lista es de otra persona, cópiala: en la app de Spotify ábrela, selecciona todas las canciones (Ctrl+A), clic derecho → **Agregar a playlist** → **Nueva playlist**, y usa el enlace de tu copia.
 
+Ojo: Spotify solo deja usar su API si la cuenta que creó la app en developer.spotify.com tiene **Spotify Premium** activo. Sin Premium, el programa lee solo las primeras 100 canciones y lo avisa.
+
+**Sin Premium:** parte la playlist en listas de 100 o menos (en la app de Spotify selecciona un bloque de canciones, clic derecho → **Agregar a playlist** → **Nueva playlist**) y pega todos los enlaces en la página, uno por línea y en orden. Todo sale en un solo ZIP, numerado seguido: con **Separar en carpetas de 100** cada enlace va en su carpeta («Mi lista 001-100», «Mi lista 101-200»…). El ZIP y las carpetas se llaman como el primer enlace.
+
 `spotify.json` y `spotify_token.json` (la sesión guardada) son privados: no los compartas ni los subas a GitHub (ya están en `.gitignore`). Para cerrar la sesión, pulsa **Cerrar sesión** en la página.
 
 ## Cómo usarla

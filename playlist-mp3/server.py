@@ -34,6 +34,7 @@ REDIRECT_URI = f"http://127.0.0.1:{PORT}"  # tiene que ser idéntico al Redirect
 LOGIN_STATES = set()
 WORKERS = 6  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
 SPLIT_SIZE = 100  # canciones por carpeta cuando se marca "Separar en carpetas de 100"
+MAX_LINKS = 30  # enlaces que se pueden pegar juntos para un solo ZIP
 SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descargas (pestañas) a la vez
 RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
 RETRY_PAUSE = 15  # segundos de espera antes de cada vuelta extra
@@ -147,6 +148,10 @@ def spotify_api_get(path, token):
     return json.load(urllib.request.urlopen(req, timeout=20, context=SSL_CTX))
 
 
+class SpotifyPremiumRequired(Exception):
+    """Spotify bloquea su API si el dueño de la app (developer.spotify.com) no tiene Premium activo."""
+
+
 def spotify_api_tracks(kind, sid, token):
     """Lista completa con la API oficial de Spotify, página por página (sin el límite de 100)."""
     def track(t):
@@ -170,6 +175,8 @@ def spotify_api_tracks(kind, sid, token):
             page = spotify_api_get(page["next"], token) if page.get("next") else None
         return info["name"], tracks
     except urllib.error.HTTPError as e:
+        if e.code == 403 and b"premium" in e.read().lower():
+            raise SpotifyPremiumRequired from e
         if e.code in (401, 403):
             raise RuntimeError("Spotify solo deja leer playlists tuyas o en las que colaboras. "
                                "Copia las canciones a una playlist tuya y usa ese enlace (mira el README).") from e
@@ -182,6 +189,7 @@ def spotify_tracks(url):
     """Lee nombre y canciones (artista, título, segundos), más un aviso si la lista quedó cortada en 100."""
     kind, sid = SPOTIFY_RE.match(url).groups()
     keys = spotify_keys()
+    premium_needed = False
     if keys:
         token = spotify_user_token(*keys)
         if not token and kind != "playlist":  # álbumes y canciones se leen sin iniciar sesión
@@ -190,8 +198,11 @@ def spotify_tracks(url):
             except urllib.error.HTTPError as e:
                 raise RuntimeError("Spotify rechazó las claves de spotify.json. Revisa el Client ID y el Client Secret.") from e
         if token:
-            name, tracks = spotify_api_tracks(kind, sid, token)
-            return name, tracks, None
+            try:
+                name, tracks = spotify_api_tracks(kind, sid, token)
+                return name, tracks, None
+            except SpotifyPremiumRequired:
+                premium_needed = True  # se lee como sin claves (máximo 100 canciones)
     req = urllib.request.Request(f"https://open.spotify.com/embed/{kind}/{sid}", headers={"User-Agent": "Mozilla/5.0"})
     html = urllib.request.urlopen(req, timeout=20, context=SSL_CTX).read().decode()
     m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
@@ -204,6 +215,9 @@ def spotify_tracks(url):
         tracks.append((artist.replace(" ", " "), t.get("title") or t.get("name"), (t.get("duration") or 0) / 1000))
     if len(tracks) < 100:
         return entity.get("name") or "spotify", tracks, None
+    if premium_needed:
+        return entity.get("name"), tracks, ("Spotify solo dejó leer las primeras 100 canciones: su API exige que la cuenta "
+                                            "que creó la app en developer.spotify.com tenga Spotify Premium activo.")
     if keys:
         return entity.get("name"), tracks, "Spotify solo dejó leer las primeras 100 canciones. Pulsa \"Iniciar sesión con Spotify\" para bajar la lista completa."
     return entity.get("name"), tracks, "Spotify solo dejó leer las primeras 100 canciones. Para bajar la lista completa, crea spotify.json (mira el README)."
@@ -324,12 +338,14 @@ def windows_text(lines):
 
 def split_folder(job, filename):
     """Carpeta dentro del ZIP ("prueba1987 001-100/", "prueba1987 101-200/"…) si se pidió separar de 100 en 100;
-    si no, ninguna. Lleva el nombre de la playlist para saber de qué lista son las canciones al juntar carpetas."""
+    si no, ninguna. Lleva el nombre de la playlist para saber de qué lista son las canciones al juntar carpetas.
+    Con varios enlaces cada uno empieza carpeta nueva, para que una carpeta nunca mezcle dos partes."""
     if not job.get("_split"):
         return ""
-    total, width = job["_total"], job["_width"]
-    start = (int(filename.split(" - ", 1)[0]) - 1) // SPLIT_SIZE * SPLIT_SIZE + 1
-    return f"{job['_name']} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, total):0{width}d}/"
+    n, width = int(filename.split(" - ", 1)[0]), job["_width"]
+    first, last = next((a, b) for a, b in job["_parts"] if a <= n <= b)
+    start = first + (n - first) // SPLIT_SIZE * SPLIT_SIZE
+    return f"{job['_name']} {start:0{width}d}-{min(start + SPLIT_SIZE - 1, last):0{width}d}/"
 
 
 def download_and_zip(job, pending):
@@ -375,14 +391,39 @@ def download_and_zip(job, pending):
     job.update(status="done", zip=zpath, filename=name + ".zip", count=len(mp3s))
 
 
-def run_job(job, url):
+def run_job(job, urls):
+    """Lee cada enlace y junta todas sus canciones en un solo ZIP, numeradas seguidas: las del segundo enlace van
+    después de las del primero (101-200 si el primero tenía 100), así cada parte de una playlist partida en
+    listas de 100 cae en su carpeta "001-100", "101-200"…"""
     work = tempfile.mkdtemp(prefix="pl2mp3-")
     job["dir"] = work
     try:
-        prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
-        title, items, fn, label = prepare(job, url, work)
+        title, items, fns, labels, warnings, parts = None, [], [], [], [], []
+        for k, url in enumerate(urls):
+            if len(urls) > 1:
+                job["current"] = f"Leyendo el enlace {k + 1} de {len(urls)}…"
+            prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
+            part_title, part_items, fn, label = prepare(job, url, work)
+            title = title or part_title  # el ZIP y las carpetas se llaman como el primer enlace
+            if part_items:
+                parts.append((len(items) + 1, len(items) + len(part_items)))  # números (primero, último) de este enlace
+            items += [(k, item) for item in part_items]
+            fns.append(fn)
+            labels.append(label)
+            warning = job.pop("warning", None)
+            if warning:
+                warnings.append(k)
+        if len(urls) == 1 and warnings:
+            job["warning"] = warning + " También puedes partirla en listas de 100 o menos y pegar cada enlace en su propia línea."
+        elif warnings:
+            which = f"El enlace {warnings[0] + 1} llegó" if len(warnings) == 1 else f"Los enlaces {', '.join(str(k + 1) for k in warnings)} llegaron"
+            job["warning"] = (f"{which} a 100 canciones, el máximo que Spotify deja leer. "
+                              f"{'Si esa lista' if len(warnings) == 1 else 'Si alguna de esas listas'} tenía más, "
+                              "las de después de la 100 no se bajaron: pártela en listas de 100 o menos.")
         # Se guarda lo necesario para el botón "Reintentar las que faltaron"
-        job.update(_name=safe_name(title, "playlist"), _title=(title or "").strip() or "playlist", _fn=fn, _label=label, _width=len(str(len(items))), _total=len(items))
+        job.update(_name=safe_name(title, "playlist"), _title=(title or "").strip() or "playlist",
+                   _fn=lambda prefix, it, log: fns[it[0]](prefix, it[1], log), _label=lambda it: labels[it[0]](it[1]),
+                   _width=len(str(len(items))), _total=len(items), _parts=parts)
         download_and_zip(job, list(enumerate(items, 1)))
     except Exception as e:  # noqa: BLE001
         job.update(status="error", error=str(e))
@@ -430,13 +471,19 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path != "/api/start":
             return self.send_error(404)
         data = self.read_json()
-        url = (data.get("url") or "").strip()
-        if not (YOUTUBE_RE.match(url) or SPOTIFY_RE.match(url)):
-            return self.send_json({"error": "Pega un enlace de YouTube o de Spotify válido."}, 400)
+        urls = str(data.get("url") or "").split()  # uno o varios enlaces, uno por línea
+        if not urls:
+            return self.send_json({"error": "Pega un enlace de YouTube o de Spotify."}, 400)
+        if len(urls) > MAX_LINKS:
+            return self.send_json({"error": f"Pega como máximo {MAX_LINKS} enlaces a la vez."}, 400)
+        bad = [n for n, u in enumerate(urls, 1) if not (YOUTUBE_RE.match(u) or SPOTIFY_RE.match(u))]
+        if bad:
+            where = "" if len(urls) == 1 else f" (línea {', '.join(map(str, bad))})"
+            return self.send_json({"error": f"Pega un enlace de YouTube o de Spotify válido{where}."}, 400)
         job_id = uuid.uuid4().hex
         JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None,
                         "_split": bool(data.get("split"))}
-        threading.Thread(target=run_job, args=(JOBS[job_id], url), daemon=True).start()
+        threading.Thread(target=run_job, args=(JOBS[job_id], urls), daemon=True).start()
         self.send_json({"id": job_id})
 
     def redirect(self, location):
