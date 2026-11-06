@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Playlist (YouTube o Spotify) → MP3 (ZIP). Servidor mínimo: sirve index.html y una API de trabajos.
+"""Playlist (YouTube o Spotify) o lista de canciones pegada → MP3 (ZIP). Servidor mínimo: sirve index.html y una API de trabajos.
 
 Uso:  pip install -r requirements.txt   (y tener ffmpeg instalado)
       python3 server.py                 → http://127.0.0.1:8000
@@ -35,6 +35,7 @@ LOGIN_STATES = set()
 WORKERS = 6  # canciones que se bajan a la vez; con muchas más YouTube puede bloquear un rato
 SPLIT_SIZE = 100  # canciones por carpeta cuando se marca "Separar en carpetas de 100"
 MAX_LINKS = 30  # enlaces que se pueden pegar juntos para un solo ZIP
+MAX_SONGS = 1000  # canciones sueltas ("Artista – Título") que se pueden pegar juntas
 SLOTS = threading.Semaphore(WORKERS)  # límite total, aunque haya varias descargas (pestañas) a la vez
 RETRY_ROUNDS = 2  # vueltas extra para las canciones que fallaron
 RETRY_PAUSE = 15  # segundos de espera antes de cada vuelta extra
@@ -299,11 +300,8 @@ def download_parallel(job, pending, work, fn, label, width):
     return [(i, item, reasons[i]) for i, item in pending]
 
 
-def prepare_spotify(job, url, work):
-    name, tracks, warning = spotify_tracks(url)
-    if warning:
-        job["warning"] = warning
-
+def song_downloader(work):
+    """fn(prefijo, (artista, título, segundos), log): busca la canción en YouTube y la baja como MP3."""
     def one(prefix, track, log):
         artist, title, seconds = track
         video = youtube_match(artist, title, seconds, log)
@@ -316,7 +314,55 @@ def prepare_spotify(job, url, work):
         with yt_dlp.YoutubeDL(ydl_opts(work, prefix + "%(artist)s - %(title)s.%(ext)s", log, pre)) as ydl:
             ydl.download([video])
 
-    return name, tracks, one, lambda t: f"{t[0]} - {t[1]}"
+    return one
+
+
+def song_label(track):
+    return f"{track[0]} - {track[1]}"
+
+
+def prepare_spotify(job, url, work):
+    name, tracks, warning = spotify_tracks(url)
+    if warning:
+        job["warning"] = warning
+    return name, tracks, song_downloader(work), song_label
+
+
+def prepare_songs(job, songs, work):
+    """Canciones pegadas a mano ("Artista – Título"), sin pasar por Spotify. Sin duración, se usa el primer resultado."""
+    return "Lista de canciones", songs, song_downloader(work), song_label
+
+
+def parse_song(line):
+    """"12. Artista – Título" → ("Artista", "Título", 0), o None si la línea no trae artista y título."""
+    line = re.sub(r"^\s*\d+\s*[.)]\s+", "", line)  # numeración copiada de una lista: "12. ", "12) "
+    parts = re.split(r"\s+[–—-]\s+", line, maxsplit=1)
+    if len(parts) != 2 or not parts[0].strip() or not parts[1].strip():
+        return None
+    return parts[0].strip(), parts[1].strip(), 0
+
+
+def parse_sources(text):
+    """Texto pegado → [enlace o lista de canciones], en orden. Las canciones seguidas forman una sola lista.
+
+    Devuelve (fuentes, número de enlaces, líneas no válidas). Se saltan las líneas vacías y las que empiezan con #."""
+    sources, links, bad = [], 0, []
+    for n, raw in enumerate(text.splitlines(), 1):
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if YOUTUBE_RE.match(line) or SPOTIFY_RE.match(line):
+            sources.append(line)
+            links += 1
+            continue
+        song = parse_song(line)
+        if not song:
+            bad.append(n)
+        elif sources and isinstance(sources[-1], list):
+            sources[-1].append(song)
+        else:
+            sources.append([song])
+    return sources, links, bad
 
 
 def prepare_youtube(job, url, work):
@@ -389,9 +435,9 @@ def download_and_zip(job, pending):
 
 
 def run_job(job, urls, zip_name=""):
-    """Lee cada enlace y junta todas sus canciones en un solo ZIP, en orden: las del segundo enlace van después de
-    las del primero, así una playlist partida en listas de 100 vuelve a quedar entera. zip_name (opcional) da
-    nombre al ZIP, a sus carpetas y a la lista; si no, se usa el nombre del primer enlace."""
+    """Lee cada enlace (o lista de canciones pegada) y junta todas sus canciones en un solo ZIP, en orden: las del
+    segundo van después de las del primero, así una playlist partida en listas de 100 vuelve a quedar entera.
+    zip_name (opcional) da nombre al ZIP, a sus carpetas y a la lista; si no, se usa el nombre del primero."""
     work = tempfile.mkdtemp(prefix="pl2mp3-")
     job["dir"] = work
     try:
@@ -399,7 +445,10 @@ def run_job(job, urls, zip_name=""):
         for k, url in enumerate(urls):
             if len(urls) > 1:
                 job["current"] = f"Leyendo el enlace {k + 1} de {len(urls)}…"
-            prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
+            if isinstance(url, list):
+                prepare = prepare_songs
+            else:
+                prepare = prepare_spotify if SPOTIFY_RE.match(url) else prepare_youtube
             part_title, part_items, fn, label = prepare(job, url, work)
             title = title or part_title
             items += [(k, item) for item in part_items]
@@ -467,15 +516,19 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path != "/api/start":
             return self.send_error(404)
         data = self.read_json()
-        urls = str(data.get("url") or "").split()  # uno o varios enlaces, uno por línea
-        if not urls:
-            return self.send_json({"error": "Pega un enlace de YouTube o de Spotify."}, 400)
-        if len(urls) > MAX_LINKS:
+        # Uno por línea: enlaces de YouTube o Spotify, o canciones "Artista – Título"
+        urls, links, bad = parse_sources(str(data.get("url") or ""))
+        if not urls and not bad:
+            return self.send_json({"error": "Pega un enlace de YouTube o de Spotify, o canciones con el formato Artista – Título."}, 400)
+        if links > MAX_LINKS:
             return self.send_json({"error": f"Pega como máximo {MAX_LINKS} enlaces a la vez."}, 400)
-        bad = [n for n, u in enumerate(urls, 1) if not (YOUTUBE_RE.match(u) or SPOTIFY_RE.match(u))]
+        songs = sum(len(u) for u in urls if isinstance(u, list))
+        if songs > MAX_SONGS:
+            return self.send_json({"error": f"Pega como máximo {MAX_SONGS} canciones a la vez."}, 400)
         if bad:
-            where = "" if len(urls) == 1 else f" (línea {', '.join(map(str, bad))})"
-            return self.send_json({"error": f"Pega un enlace de YouTube o de Spotify válido{where}."}, 400)
+            shown = ", ".join(map(str, bad[:10])) + ("…" if len(bad) > 10 else "")
+            return self.send_json({"error": f"No entendí la línea {shown}. Cada línea debe ser un enlace de YouTube o de "
+                                            "Spotify, o una canción con el formato Artista – Título."}, 400)
         job_id = uuid.uuid4().hex
         JOBS[job_id] = {"status": "working", "current": None, "index": None, "total": None, "percent": None}
         zip_name = str(data.get("name") or "")[:80]

@@ -36,6 +36,10 @@ Ojo: Spotify solo deja usar su API si la cuenta que creó la app en developer.sp
 
 **Sin Premium:** parte la playlist en listas de 100 o menos (en la app de Spotify selecciona un bloque de canciones, clic derecho → **Agregar a playlist** → **Nueva playlist**) y pega todos los enlaces en la página, uno por línea y en orden. Todo sale en un solo ZIP.
 
+### Lista de canciones (sin Spotify)
+
+Si no tienes un enlace (o Spotify no deja leer la playlist), pega las canciones en el mismo cuadro, una por línea, con el formato `Artista – Título` (también vale `Artista - Título`; se ignoran la numeración tipo `12.` y las líneas que empiezan con `#`). Cada canción se busca directo en YouTube. Se pueden mezclar con enlaces: todo sale en un solo ZIP, en el orden en que lo pegaste. Como no hay duración de Spotify para comparar, se usa el primer resultado de YouTube, así que con artistas muy pequeños conviene revisar el resultado.
+
 `spotify.json` y `spotify_token.json` (la sesión guardada) son privados: no los compartas ni los subas a GitHub (ya están en `.gitignore`). Para cerrar la sesión, pulsa **Cerrar sesión** en la página.
 
 ## Cómo usarla

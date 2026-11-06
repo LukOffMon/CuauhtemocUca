@@ -77,12 +77,13 @@
     <div class="logo"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v10.55A4 4 0 1 0 14 17V7h4V3h-6z"/></svg></div>
     <h1>Spotify <span>a ZipMP3</span></h1>
   </div>
-  <p class="sub">Pega el enlace de una playlist de Spotify (o de YouTube) y descarga todas las canciones en MP3 dentro de un ZIP, ordenadas en carpetas de 100.</p>
-  <label class="label" for="url">Enlaces de la playlist</label>
+  <p class="sub">Pega el enlace de una playlist de Spotify (o de YouTube), o una lista de canciones, y descarga todas las canciones en MP3 dentro de un ZIP, ordenadas en carpetas de 100.</p>
+  <label class="label" for="url">Enlaces o canciones</label>
   <form id="f">
-    <textarea id="url" rows="2" required spellcheck="false" placeholder="Enlace de YouTube o de Spotify (uno por línea)"></textarea>
+    <textarea id="url" rows="2" required spellcheck="false" placeholder="Enlace de YouTube o de Spotify, o Artista – Título (uno por línea)"></textarea>
     <button id="go">Convertir</button>
     <p class="hint">¿Playlist de Spotify con más de 100 canciones? Pártela en listas de 100 y pega cada enlace en su propia línea, en orden: todo sale en un solo ZIP.</p>
+    <p class="hint">¿No está en Spotify o no puedes leer la playlist? Pega las canciones, una por línea, como <i>Artista – Título</i>: se buscan directo en YouTube.</p>
     <div class="field">
       <label class="label" for="name">Nombre del ZIP <em>(opcional)</em></label>
       <input id="name" type="text" maxlength="80" autocomplete="off" placeholder="Ej. VitC → «VitC 001-100», «VitC 101-200»…">
@@ -103,7 +104,8 @@ const $ = id => document.getElementById(id);
 $('f').onsubmit = async e => {
   e.preventDefault();
   $('go').disabled = true; $('status').hidden = false; $('msg').className = ''; $('done').innerHTML = ''; $('warn').hidden = true; $('failed').hidden = true;
-  $('msg').textContent = $('url').value.trim().split(/\s+/).length > 1 ? 'Leyendo los enlaces…' : 'Leyendo la playlist…'; $('fill').style.width = '0';
+  const lines = $('url').value.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  $('msg').textContent = lines.some(l => !/^https?:\/\//.test(l)) ? 'Leyendo la lista…' : lines.length > 1 ? 'Leyendo los enlaces…' : 'Leyendo la playlist…'; $('fill').style.width = '0';
   try {
     const r = await fetch('/api/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: $('url').value, name: $('name').value }) });
     const j = await r.json();
