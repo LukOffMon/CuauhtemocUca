@@ -44,6 +44,12 @@ body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opa
   background-size:240px 240px}
 button,input,textarea,select{font:inherit;color:inherit}
 button{cursor:pointer}
+/* Mobile first: sin retraso de doble toque, sin destello gris, sin zoom al escribir (inputs de 16px o más) */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+button,input,textarea,a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body{overscroll-behavior-y:none}
+button:active{transform:scale(.97)}
+@media (prefers-reduced-motion:reduce){button:active{transform:none}}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 [hidden]{display:none!important}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
@@ -53,14 +59,14 @@ button{cursor:pointer}
   border-bottom:1px solid var(--line)}
 .top-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:12px;padding-block:10px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand{display:flex;align-items:center;gap:9px;min-width:0;flex:none;white-space:nowrap}
 .brand img{flex:none;width:36px;height:36px;border-radius:10px}
-.brand b{font:800 26px/1 var(--display);letter-spacing:.02em;text-transform:uppercase;
+.brand b{font:800 clamp(22px,6.4vw,26px)/1 var(--display);letter-spacing:.02em;text-transform:uppercase;
   background:linear-gradient(90deg,var(--fg) 0%,var(--fg) 55%,var(--accent) 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
-.hello{margin-left:auto;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hello{margin-left:auto;min-width:0;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hello strong{color:var(--fg);font-weight:600}
 
-main{max-width:760px;margin:0 auto;padding-block:18px calc(96px + env(safe-area-inset-bottom,0px));
+main{max-width:760px;margin:0 auto;padding-block:16px calc(96px + env(safe-area-inset-bottom,0px));
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
   display:flex;flex-direction:column;gap:16px}
 
@@ -86,7 +92,7 @@ h1,h2,h3{margin:0;text-wrap:balance}
 
 .btn{border:1px solid var(--line);background:var(--surface-2);border-radius:11px;padding:10px 14px;font-weight:600;
   display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px}
-.btn:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}
+@media (hover:hover){.btn:hover{border-color:color-mix(in srgb,var(--accent) 50%,var(--line))}}
 .btn.primary{background:var(--accent);color:var(--ink);border-color:var(--accent)}
 .btn.ghost{background:none}
 .btn.danger{color:var(--bad)}
@@ -95,19 +101,22 @@ h1,h2,h3{margin:0;text-wrap:balance}
 .btn.sm{min-height:34px;padding:6px 10px;font-size:13px;border-radius:9px}
 .btn svg{width:18px;height:18px;flex:none}
 .icon-btn{border:1px solid transparent;background:none;border-radius:9px;width:36px;height:36px;display:inline-grid;place-items:center;color:var(--muted)}
-.icon-btn:hover{border-color:var(--line);color:var(--fg)}
+@media (hover:hover){.icon-btn:hover{border-color:var(--line);color:var(--fg)}}
 .icon-btn svg{width:18px;height:18px}
 
 .field{display:flex;flex-direction:column;gap:5px;min-width:0}
 .field label{font-size:12px;font-weight:600;color:var(--muted)}
-.inp{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px}
+.inp{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-height:46px;font-size:16px}
+.inp[type="date"],.inp[type="time"]{-webkit-appearance:none;appearance:none;min-width:0;display:block;text-align:left}
 .inp:focus{border-color:var(--accent);outline:none}
 textarea.inp{resize:vertical;min-height:64px}
-.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:10px}
 
 /* Sesión */
 .session-head{display:flex;flex-direction:column;gap:12px}
-.timer{font:700 40px/1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.when summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--muted);padding:4px 0;list-style-position:inside}
+.when[open] summary{margin-bottom:10px}
+.timer{font:700 34px/1 var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
 .timer small{font-size:14px;color:var(--muted);font-weight:500;margin-left:6px}
 .live-dot{width:9px;height:9px;border-radius:50%;background:var(--bad);display:inline-block;animation:pulse 1.4s infinite}
 @keyframes pulse{50%{opacity:.25}}
@@ -116,10 +125,32 @@ textarea.inp{resize:vertical;min-height:64px}
 .ex{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .ex-head{display:flex;gap:8px;align-items:flex-start;padding:12px 12px 6px 14px}
 .ex-num{font:800 22px/44px var(--display);color:var(--accent);min-width:22px}
-.ex-name{flex:1;min-width:0;background:none;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:8px 0;
-  font:700 19px/1.2 var(--body);min-height:44px}
+.ex-name{flex:1;min-width:0;background:none;border:0;border-bottom:1px dashed var(--line);border-radius:0;padding:9px 0 7px;
+  font:700 18px/1.25 var(--body);min-height:44px;resize:none;overflow:hidden;field-sizing:content;display:block}
 .ex-name:focus{outline:none;border-bottom-color:var(--accent)}
-.ex-tools{display:flex;gap:2px}
+.ex-tools{display:flex;gap:0}
+.ex-tools .icon-btn{width:34px;height:40px}
+/* hecho: la tarjeta se pliega a una línea con el resumen */
+.done-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--line);background:none;display:grid;place-items:center;color:var(--muted);flex:none}
+.done-btn svg{width:20px;height:20px}
+.done-btn[aria-pressed="true"]{background:var(--good);border-color:var(--good);color:#06210f}
+.ex.done{opacity:.92;border-color:color-mix(in srgb,var(--good) 35%,var(--line))}
+.ex-mini{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px 10px 14px;width:100%;
+  background:none;border:0;text-align:left}
+.ex-mini .nm{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ex-mini .sm{font:500 12.5px var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* barra de la sesión en curso, fija sobre las pestañas */
+.livebar{position:fixed;left:0;right:0;bottom:calc(62px + env(safe-area-inset-bottom,0px));z-index:25;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-top:1px solid var(--line)}
+.livebar-in{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding-block:8px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.livebar .tm{font:700 18px var(--mono);font-variant-numeric:tabular-nums}
+.livebar .pg{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--muted);font-weight:600}
+.livebar .bar{height:5px;border-radius:9px;background:var(--surface-2);overflow:hidden}
+.livebar .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-2),var(--accent));border-radius:9px;transition:width .3s}
+.livebar .btn{min-height:42px;padding:8px 14px}
+body.is-live main{padding-bottom:calc(150px + env(safe-area-inset-bottom,0px))}
+body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .hint{padding:0 14px 8px 44px;font-size:12.5px;color:var(--muted);min-height:4px}
 .hint b{color:var(--fg);font-weight:600}
 .sets{padding:4px 12px 12px}
@@ -135,9 +166,10 @@ textarea.inp{resize:vertical;min-height:64px}
 .unit[data-u="lb"]{color:var(--new)}
 .unit[data-u="indf"]{color:var(--muted)}
 .unit[data-u="pl"]{color:var(--accent-2)}
-.ex-foot{display:flex;gap:8px;padding:0 12px 12px;flex-wrap:wrap}
+.ex-foot{display:flex;gap:4px;padding:0 8px 10px 12px;align-items:center}
+.ex-foot .spacer{flex:1}
 .ex-note{padding:0 12px 6px 44px}
-.ex-note .inp{min-height:36px;font-size:13.5px;padding:7px 10px;background:color-mix(in srgb,var(--accent-2) 10%,var(--bg));
+.ex-note .inp{min-height:40px;font-size:16px;padding:7px 10px;background:color-mix(in srgb,var(--accent-2) 10%,var(--bg));
   border-color:color-mix(in srgb,var(--accent-2) 30%,var(--line));color:var(--fg)}
 .ex-note .inp::placeholder{color:var(--muted)}
 .routines{display:flex;flex-direction:column;gap:10px}
@@ -164,6 +196,7 @@ textarea.inp{resize:vertical;min-height:64px}
 .retro-item:first-child{border-top:0}
 .retro-item .d{grid-column:1/-1;font-size:13px;color:var(--muted)}
 .retro-item b{font-weight:600;min-width:0;overflow-wrap:anywhere}
+.retro-item .chip{align-self:start}
 .headline{font:800 26px/1.1 var(--display);text-transform:uppercase;letter-spacing:.01em}
 
 /* Semana */
@@ -184,7 +217,7 @@ textarea.inp{resize:vertical;min-height:64px}
 .hist{display:flex;flex-direction:column;gap:10px}
 .hist-item{display:grid;grid-template-columns:58px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;width:100%;
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px}
-.hist-item:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+@media (hover:hover){.hist-item:hover{border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}}
 .date-box{display:flex;flex-direction:column;align-items:center;border-radius:10px;background:var(--surface-2);padding:6px 0}
 .date-box .d{font:800 26px/1 var(--display)}
 .date-box .m{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
@@ -226,11 +259,14 @@ textarea.inp{resize:vertical;min-height:64px}
 
 /* Hoja / modal */
 .sheet-wrap{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;width:100%;max-width:760px;max-height:88vh;overflow:auto;
+.sheet{background:var(--surface);border:1px solid var(--line);border-bottom:0;border-radius:20px 20px 0 0;width:100%;max-width:760px;max-height:88vh;max-height:88dvh;overscroll-behavior:contain;overflow:auto;
   padding:20px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
   display:flex;flex-direction:column;gap:14px}
 @media (min-width:700px){.sheet-wrap{align-items:center}.sheet{border-radius:20px;border-bottom:1px solid var(--line)}}
 
+.sheet-actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-20px - env(safe-area-inset-bottom,0px));
+  padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);
+  display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:60;
   background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);
   box-shadow:0 8px 24px rgba(0,0,0,.3)}
@@ -813,6 +849,7 @@ function sessionsByDate(){ const m = new Map(); for(const s of db.sessions){ if(
 /* ================= Interfaz ================= */
 const ui = {view:'hoy', sid:null, cal:null};
 const ICON = {
+  check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>',
   up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 15l6-6 6 6"/></svg>',
   down:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>',
@@ -837,14 +874,39 @@ function applyTheme(){
 }
 function renderHello(){
   const n = db.profile.name.trim();
-  $('#hello').innerHTML = n ? `Hola, <strong>${esc(n)}</strong>` : '';
+  $('#hello').innerHTML = n ? `Hola, <strong>${esc(n.split(/\s+/)[0])}</strong>` : '';
 }
 function render(){
   document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.v === ({sesion:'historial', rutina:'hoy'}[ui.view] || ui.view) ? 'page' : 'false'));
   const app = $('#app');
   app.innerHTML = ({hoy:viewHoy, historial:viewHist, calendario:viewCal, ajustes:viewAjustes, sesion:viewSesion, rutina:viewRutina}[ui.view] || viewHoy)();
   renderHello();
+  renderLivebar();
+  document.querySelectorAll('.ex-name').forEach(fit);
 }
+function liveProgress(s){ const named = s.exercises.filter(e => e.name.trim() || validSets(e).length); return [named.filter(e => e.done).length, named.length]; }
+function renderLivebar(){
+  const s = activeS(), show = !!s && ui.view === 'hoy';
+  document.body.classList.toggle('is-live', show);
+  let bar = $('#livebar');
+  if(!show){ bar?.remove(); return; }
+  if(!bar){ bar = document.createElement('div'); bar.id = 'livebar'; bar.className = 'livebar'; document.body.appendChild(bar); }
+  const [d, n] = liveProgress(s);
+  bar.innerHTML = `<div class="livebar-in">
+    <span class="tm" data-timer>${clock(duration(s))}</span>
+    <div class="pg"><span>${d} de ${n} ejercicios hechos</span><div class="bar"><i style="width:${n ? d/n*100 : 0}%"></i></div></div>
+    <button class="btn primary" data-act="finish">${ICON.flag} Terminar</button></div>`;
+  keepAwake(true);
+}
+/* pantalla encendida mientras entrenas (si el teléfono lo permite) */
+let wake = null;
+async function keepAwake(on){
+  try{
+    if(on && !wake && 'wakeLock' in navigator && document.visibilityState === 'visible'){ wake = await navigator.wakeLock.request('screen'); wake.addEventListener('release', () => { wake = null; }); }
+    if(!on && wake){ await wake.release(); wake = null; }
+  }catch(e){ wake = null; }
+}
+document.addEventListener('visibilitychange', () => { if(!document.hidden && activeS()) keepAwake(true); });
 function go(v, sid){ ui.view = v; ui.sid = sid || null; render(); scrollTo({top:0}); }
 
 /* ---- Entrenar ---- */
@@ -887,7 +949,8 @@ function viewHoy(){
     <section class="hero">
       <div class="eyebrow">${esc(fdateLong(today()))}</div>
       <h1 class="h-display">${fin.length ? 'Listo para entrenar' : 'Tu primera sesión'}</h1>
-      <button class="btn primary big" data-act="start">${ICON.plus} Sesión libre</button>
+      ${db.routines[0] ? `<button class="btn primary big" data-act="start-routine" data-id="${db.routines[0].id}">${ICON.play} Empezar ${esc(db.routines[0].name)}</button>` : ''}
+      <button class="btn ${db.routines[0] ? '' : 'primary big'}" data-act="start">${ICON.plus} Sesión libre</button>
       ${last ? `<button class="btn big" data-act="repeat" data-id="${last.id}">${ICON.copy} Repetir la última: ${esc(last.title || fdateShort(last.date))}</button>` : ''}
       <button class="btn ghost" data-act="import">${ICON.imp} Importar o pegar (.hiks / texto)</button>
     </section>
@@ -933,25 +996,31 @@ function setRow(ex, st, i){
   const ind = st.u === 'indf';
   return `<div class="set-row">
     <span class="set-i">${i+1}</span>
-    <input class="inp" inputmode="numeric" placeholder="reps" value="${esc(st.reps)}" data-f="reps" data-ex="${ex.id}" data-i="${i}" aria-label="Repeticiones serie ${i+1}">
+    <input class="inp" inputmode="numeric" enterkeyhint="next" autocomplete="off" placeholder="reps" value="${esc(st.reps)}" data-f="reps" data-ex="${ex.id}" data-i="${i}" aria-label="Repeticiones serie ${i+1}">
     <span class="set-x">×</span>
-    <input class="inp" inputmode="decimal" placeholder="${ind ? 'sin peso' : st.u === 'pl' ? 'placas' : 'peso'}" value="${ind ? '' : esc(st.w)}" ${ind ? 'disabled' : ''} data-f="w" data-ex="${ex.id}" data-i="${i}" aria-label="Peso serie ${i+1}">
+    <input class="inp" inputmode="decimal" enterkeyhint="next" autocomplete="off" placeholder="${ind ? 'sin peso' : st.u === 'pl' ? 'placas' : 'peso'}" value="${ind ? '' : esc(st.w)}" ${ind ? 'disabled' : ''} data-f="w" data-ex="${ex.id}" data-i="${i}" aria-label="Peso serie ${i+1}">
     <button class="unit" data-act="unit" data-u="${st.u}" data-ex="${ex.id}" data-i="${i}" title="${UNIT_TITLE}">${st.u}</button>
     <button class="icon-btn" data-act="del-set" data-ex="${ex.id}" data-i="${i}" aria-label="Quitar serie ${i+1}">${ICON.x}</button>
   </div>`;
 }
-function exCard(s, ex, i, n){
+function exCard(s, ex, i, n, live){
+  const doneBtn = live ? `<button class="done-btn" data-act="done" data-ex="${ex.id}" aria-pressed="${!!ex.done}" aria-label="${ex.done ? 'Marcar como pendiente' : 'Marcar como hecho'}">${ICON.check}</button>` : '';
+  if(live && ex.done){
+    const sum = validSets(ex).map(setTxt).join(' · ') || 'sin series';
+    return `<article class="ex done" data-exid="${ex.id}"><div class="row" style="gap:0;flex-wrap:nowrap;padding-right:10px">
+      <button class="ex-mini" data-act="expand" data-ex="${ex.id}" aria-label="Abrir ${esc(ex.name)}">
+        <span class="ex-num" style="line-height:1">${i+1}</span>
+        <span style="min-width:0"><div class="nm">${esc(ex.name || 'Ejercicio')}</div><div class="sm">${esc(sum)}</div></span>
+        <span></span>
+      </button>${doneBtn}</div></article>`;
+  }
   return `<article class="ex" data-exid="${ex.id}">
     <div class="ex-head">
       <span class="ex-num">${i+1}</span>
-      <input class="ex-name" list="ex-names" placeholder="Nombre del ejercicio" value="${esc(ex.name)}" data-f="name" data-ex="${ex.id}" aria-label="Nombre del ejercicio">
-      <div class="ex-tools">
-        <button class="icon-btn" data-act="mv" data-d="-1" data-ex="${ex.id}" ${i === 0 ? 'disabled' : ''} aria-label="Subir">${ICON.up}</button>
-        <button class="icon-btn" data-act="mv" data-d="1" data-ex="${ex.id}" ${i === n-1 ? 'disabled' : ''} aria-label="Bajar">${ICON.down}</button>
-        <button class="icon-btn" data-act="del-ex" data-ex="${ex.id}" aria-label="Quitar ejercicio">${ICON.trash}</button>
-      </div>
+      <textarea class="ex-name" rows="1" placeholder="Nombre del ejercicio" data-f="name" data-ex="${ex.id}" aria-label="Nombre del ejercicio" enterkeyhint="done">${esc(ex.name)}</textarea>
+      ${doneBtn}
     </div>
-    <div class="ex-note"><input class="inp" placeholder="Notas del ejercicio: UNI, altura H12, agarre, asiento…" value="${esc(ex.note)}" data-f="note" data-ex="${ex.id}" aria-label="Notas del ejercicio"></div>
+    <div class="ex-note"><input class="inp" placeholder="Notas: UNI, H12, agarre…" value="${esc(ex.note)}" data-f="note" data-ex="${ex.id}" aria-label="Notas del ejercicio"></div>
     <div class="hint" data-hint="${ex.id}">${hintHTML(s, ex)}</div>
     <div class="sets">
       <div class="set-row head"><span></span><span style="text-align:center">Reps</span><span></span><span style="text-align:center">Peso</span><span style="text-align:center">Unidad</span><span></span></div>
@@ -959,6 +1028,12 @@ function exCard(s, ex, i, n){
     </div>
     <div class="ex-foot">
       <button class="btn sm" data-act="add-set" data-ex="${ex.id}">${ICON.plus} Serie</button>
+      <span class="spacer"></span>
+      <div class="ex-tools">
+        <button class="icon-btn" data-act="mv" data-d="-1" data-ex="${ex.id}" ${i === 0 ? 'disabled' : ''} aria-label="Subir ejercicio">${ICON.up}</button>
+        <button class="icon-btn" data-act="mv" data-d="1" data-ex="${ex.id}" ${i === n-1 ? 'disabled' : ''} aria-label="Bajar ejercicio">${ICON.down}</button>
+        <button class="icon-btn" data-act="del-ex" data-ex="${ex.id}" aria-label="Quitar ejercicio">${ICON.trash}</button>
+      </div>
     </div>
   </article>`;
 }
@@ -979,15 +1054,17 @@ function editor(s, mode){
       <div class="row">
         ${live ? '<span class="live-dot" aria-hidden="true"></span><span class="eyebrow">Sesión en curso</span>' : `<span class="eyebrow">${esc(fdateLong(s.date))}</span>`}
         <span class="spacer"></span>
-        ${live ? `<div class="timer" data-timer>${clock(dur)}</div>` : `<span class="chip igual">${fmtMin(dur)}</span>`}
+        ${live ? '' : `<span class="chip igual">${fmtMin(dur)}</span>`}
       </div>
       <input class="inp" style="font-weight:700;font-size:17px" placeholder="Título (ej. Pierna, Empuje, Full body)" value="${esc(s.title)}" data-f="s-title" aria-label="Título de la sesión">
       ${s.routineNote ? `<div><span class="tagline">${esc(s.routineNote)}</span></div>` : ''}
+      ${live ? '<details class="when"><summary>Fecha y hora de inicio</summary>' : ''}
       <div class="grid-2">
         <div class="field"><label for="s-date">Fecha</label><input class="inp" type="date" id="s-date" value="${s.date}" data-f="s-date"></div>
         <div class="field"><label for="s-start">Inicio</label><input class="inp" type="time" id="s-start" value="${s.start}" data-f="s-start"></div>
         ${live ? '' : `<div class="field"><label for="s-end">Fin</label><input class="inp" type="time" id="s-end" value="${s.end}" data-f="s-end"></div>`}
       </div>
+      ${live ? '</details>' : ''}
     </section>`;
   const tail = routine ? `
       <button class="btn primary big" data-act="start-routine" data-id="${s.id}">${ICON.play} Empezar esta rutina</button>
@@ -1015,7 +1092,7 @@ function editor(s, mode){
   return `
     ${head}
     <datalist id="ex-names">${names.map(n => `<option value="${esc(n)}">`).join('')}</datalist>
-    ${s.exercises.map((ex, i) => exCard(s, ex, i, s.exercises.length)).join('')}
+    ${s.exercises.map((ex, i) => exCard(s, ex, i, s.exercises.length, live)).join('')}
     <section class="card stack">
       <div class="add-ex">
         <input class="inp" id="new-ex" list="ex-names" placeholder="Agregar ejercicio…" aria-label="Nuevo ejercicio" enterkeyhint="done">
@@ -1029,10 +1106,12 @@ function editor(s, mode){
 function shortMin(m){ m = Math.round(m||0); return m < 60 ? `${m}m` : `${Math.floor(m/60)}h${pad(m%60)}`; }
 function clock(min){ const t = Math.max(0, Math.floor((min||0)*60)); const h = Math.floor(t/3600), m = Math.floor(t%3600/60), sec = t%60; return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`; }
 function retroHTML(R){
-  const items = R.items.map(it => `<div class="retro-item"><b>${esc(it.name)}</b><span class="chip ${it.st}">${STLABEL[it.st]}</span><span class="d">${esc(it.d)}${it.prevDate ? ` <span class="num">(vs. ${fdateShort(it.prevDate)})</span>` : ''}</span></div>`).join('');
+  /* en el celular: detalle solo de lo que cambió; lo nuevo y lo igual se agrupan en una línea */
+  const group = (st, label) => { const g = R.items.filter(i => i.st === st); return g.length ? `<div class="retro-item"><b>${esc(g.map(i => i.name).join(', '))}</b><span class="chip ${st}">${label}${g.length > 1 ? ` · ${g.length}` : ''}</span></div>` : ''; };
+  const items = R.items.filter(it => it.st === 'mejoro' || it.st === 'bajo').map(it => `<div class="retro-item"><b>${esc(it.name)}</b><span class="chip ${it.st}">${STLABEL[it.st]}</span><span class="d">${esc(it.d)}${it.prevDate ? ` <span class="num">(vs. ${fdateShort(it.prevDate)})</span>` : ''}</span></div>`).join('');
   return `<div class="headline">${esc(R.headline)}${R.items.length && R.cnt.mejoro ? ' ejercicios' : ''}</div>
     ${R.sub ? `<div class="muted">${esc(R.sub)}</div>` : ''}
-    ${items ? `<div class="retro-list">${items}</div>` : ''}`;
+    ${items || R.items.length ? `<div class="retro-list">${items}${group('igual', 'Igual')}${group('nuevo', 'Nuevo')}</div>` : ''}`;
 }
 
 /* ---- Bitácora ---- */
@@ -1199,7 +1278,7 @@ function armConfirm(btn){
 function finishSession(){
   const s = activeS(); if(!s) return;
   s.end = nowHM(); s.finished = true; delete s.startedAt; db.active = null;
-  s.exercises = s.exercises.map(e => ({...e, sets: validSets(e)})).filter(e => e.name.trim() || e.sets.length);
+  s.exercises = s.exercises.map(({done, ...e}) => ({...e, sets: validSets(e)})).filter(e => e.name.trim() || e.sets.length);
   saveNow();
   ui.view = 'sesion'; ui.sid = s.id; render(); scrollTo({top:0});
   showRetro(s);
@@ -1212,11 +1291,11 @@ function showRetro(s){
     <div class="row"><span class="eyebrow">Sesión terminada · ${fmtMin(duration(s))}</span><span class="spacer"></span><button class="icon-btn" data-close aria-label="Cerrar">${ICON.x}</button></div>
     ${retroHTML(R)}
     ${weekCard(R.week).replace('<section class="card stack">', '<section class="stack" style="border-top:1px solid var(--line);padding-top:14px">')}
-    <div class="grid-2">
-      <button class="btn primary" data-act="pdf" data-id="${s.id}">${ICON.pdf} Descargar PDF</button>
-      <button class="btn" data-act="hiks" data-id="${s.id}">${ICON.file} Archivo .hiks</button>
+    <div class="sheet-actions">
+      <button class="btn primary" data-act="pdf" data-id="${s.id}">${ICON.pdf} PDF</button>
+      <button class="btn" data-act="hiks" data-id="${s.id}">${ICON.file} .hiks</button>
+      <button class="btn ghost" data-close>Cerrar</button>
     </div>
-    <button class="btn ghost" data-close>Cerrar</button>
   </div>`;
   wrap.addEventListener('click', e => { if(e.target === wrap || e.target.closest('[data-close]')) wrap.remove(); });
   document.body.appendChild(wrap);
@@ -1246,8 +1325,15 @@ document.addEventListener('click', e => {
       const w = b.parentElement.querySelector('[data-f="w"]'); w.disabled = st.u === 'indf'; w.placeholder = st.u === 'indf' ? 'sin peso' : st.u === 'pl' ? 'placas' : 'peso'; w.value = st.u === 'indf' ? '' : st.w; break; }
     case 'del-ex': { if(!armConfirm(b)) return; s.exercises = s.exercises.filter(x => x !== ex); saveNow(); render(); break; }
     case 'mv': { const i = s.exercises.indexOf(ex), j = i + (+b.dataset.d); if(j < 0 || j >= s.exercises.length) return; [s.exercises[i], s.exercises[j]] = [s.exercises[j], s.exercises[i]]; saveNow(); render(); break; }
-    case 'finish': finishSession(); break;
-    case 'discard': { const cur = activeS(); db.sessions = db.sessions.filter(x => x !== cur); db.active = null; saveNow(); go('hoy'); toast('Sesión descartada'); break; }
+    case 'finish': keepAwake(false); finishSession(); break;
+    case 'done': {
+      ex.done = !ex.done; saveNow(); render();
+      if(ex.done){ const nx = s.exercises.find((e, k) => k > s.exercises.indexOf(ex) && !e.done) || s.exercises.find(e => !e.done);
+        const el = nx && document.querySelector(`[data-exid="${nx.id}"]`); el?.scrollIntoView({block:'start', behavior:'smooth'}); }
+      else document.querySelector(`[data-exid="${ex.id}"]`)?.scrollIntoView({block:'center'});
+      break; }
+    case 'expand': ex.done = false; saveNow(); render(); document.querySelector(`[data-exid="${ex.id}"]`)?.scrollIntoView({block:'center'}); break;
+    case 'discard': { keepAwake(false); const cur = activeS(); db.sessions = db.sessions.filter(x => x !== cur); db.active = null; saveNow(); go('hoy'); toast('Sesión descartada'); break; }
     case 'open': go('sesion', b.dataset.id); break;
     case 'pdf': exportPDF(getS(b.dataset.id)); break;
     case 'hiks': exportHiks(getS(b.dataset.id)); break;
@@ -1293,7 +1379,24 @@ document.addEventListener('change', e => {
   if(el.dataset.f === 'name'){ const [s, ex] = findEx(el.dataset.ex); const h = document.querySelector(`[data-hint="${ex.id}"]`); if(h) h.innerHTML = hintHTML(s, ex); }
   if(el.dataset.f === 's-end' || el.dataset.f === 's-start' || el.dataset.f === 's-date'){ if(ui.view === 'sesion') render(); }
 });
+/* al tocar reps o peso se selecciona el número: lo que escribas lo reemplaza */
+const selAll = el => { try{ el.setSelectionRange(0, el.value.length); }catch(_){ try{ el.select(); }catch(__){} } };
+document.addEventListener('focusin', e => { const el = e.target, f = el.dataset?.f; if(f !== 'reps' && f !== 'w') return; el._fresh = true; selAll(el); requestAnimationFrame(() => selAll(el)); setTimeout(() => { selAll(el); el._fresh = false; }, 120); });
+document.addEventListener('pointerup', e => { if(e.target._fresh){ e.preventDefault(); selAll(e.target); } });
+document.addEventListener('mouseup', e => { if(e.target._fresh) e.preventDefault(); });
+/* el nombre del ejercicio crece en varias líneas si es largo */
+const fit = el => { if(el.classList?.contains('ex-name') && !CSS.supports('field-sizing', 'content')){ el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } };
+document.addEventListener('input', e => fit(e.target));
 document.addEventListener('keydown', e => {
+  const f = e.target.dataset?.f;
+  if(e.key === 'Enter' && (f === 'reps' || f === 'w')){
+    e.preventDefault();
+    const all = [...document.querySelectorAll(`[data-exid="${e.target.dataset.ex}"] .set-row:not(.head) .inp:not(:disabled)`)];
+    const nx = all[all.indexOf(e.target) + 1];
+    if(nx) nx.focus(); else e.target.blur();
+    return;
+  }
+  if(e.key === 'Enter' && e.target.classList.contains('ex-name')){ e.preventDefault(); e.target.blur(); return; }
   if(e.key === 'Enter' && e.target.id === 'new-ex'){ e.preventDefault(); addExercise(); }
   if(e.key === 'Enter' && e.target.id === 'welcome-name'){ e.preventDefault(); $('[data-act="save-name"]').click(); }
 });
@@ -1332,7 +1435,7 @@ $('#file').addEventListener('change', async e => {
   const f = e.target.files[0]; e.target.value = ''; if(!f) return;
   try{ handleImportText(await f.text()); }catch(err){ toast('No se pudo leer el archivo'); }
 });
-setInterval(() => { const t = document.querySelector('[data-timer]'); const s = activeS(); if(t && s) t.textContent = clock(duration(s)); }, 1000);
+setInterval(() => { const s = activeS(); if(!s) return; document.querySelectorAll('[data-timer]').forEach(t => t.textContent = clock(duration(s))); }, 1000);
 
 /* ================= Inicio ================= */
 applyTheme();
