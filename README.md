@@ -22,11 +22,13 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 
 ## Astra Hik's
 
-`astra-hiks/index.html`: bitácora de entrenamiento (ejercicios, series, peso en kg, lb o indf). Sin cuentas: todo se guarda en el navegador.
+`astra-hiks/index.html`: bitácora de entrenamiento (ejercicios, series, peso en kg, lb, placas o indf). Sin cuentas: todo se guarda en el dispositivo.
 **https://lukoffmon.github.io/CuauhtemocUca/astra-hiks/**
 
-- Retro al terminar cada sesión (mejoró / igual / bajó contra la vez anterior) y resumen de la semana contra la anterior.
-- PDF detallado por sesión, con la retro y un calendario del mes (días que asististe, días que no y cuánto duró cada sesión).
-- Archivo `.hiks` (texto simple) para exportar una sesión o un respaldo, editarlo fuera y volver a importarlo.
-- 8 temas de color, nombre personalizado y funciona sin internet una vez abierta.
-- `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (licencia MIT), incluido para generar el PDF sin depender de un CDN.
+- Rutinas base: viene con **full Body x3**; al empezarla carga tus últimos números de cada ejercicio. Se pueden crear, editar, exportar y pegar rutinas.
+- Notas por ejercicio (UNI, altura H12, agarre…), siempre visibles y copiadas a cada sesión.
+- Retro al terminar cada sesión (mejoró / igual / bajó) y resumen de la semana contra la anterior.
+- PDF detallado por sesión con retro y calendario del mes (asistencia y duración).
+- Archivo `.hiks` (texto simple) para exportar, editar fuera y volver a importar; también acepta pegar listas tipo "• Ejercicio / 143Lb x 8".
+- Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js`.
+- `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (MIT). `fonts/` son Big Shoulders Display, Archivo y JetBrains Mono (OFL), guardadas localmente.
