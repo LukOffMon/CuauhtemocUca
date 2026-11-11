@@ -3,7 +3,7 @@
 // Cuando hay internet, el navegador revisa si hay una versión nueva de este archivo; si la hay,
 // la descarga completa en segundo plano y la app avisa para aplicarla (o se aplica sola al reabrir).
 // Cambia VERSION en cada actualización para que los teléfonos la reciban.
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const CACHE = 'astra-hiks-' + VERSION;
 const CORE = [
     './', 'index.html', 'manifest.webmanifest',

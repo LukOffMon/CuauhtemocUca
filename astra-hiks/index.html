@@ -375,7 +375,7 @@ const THEMES = {
 };
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-function blankDB(){ return {v:2, profile:{name:'', theme:'astra', unit:'kg'}, sessions:[], routines:[], seeded:[], active:null}; }
+function blankDB(){ return {v:2, profile:{name:'', theme:'astra', unit:'kg', sound:true}, sessions:[], routines:[], seeded:[], active:null}; }
 /* Rutina base: "full Body x3". Notación de la rutina original: UNI = unilateral, H# = altura/ajuste de la máquina,
    "P" en el peso = placas (pl). */
 const SEED_ROUTINES = [{
@@ -1359,6 +1359,15 @@ function viewAjustes(){
       </div>
     </section>
     <section class="card stack">
+      <div class="field"><label>Sonido al abrir la app</label>
+        <div class="row">
+          <div class="seg">${[['on','Sí'],['off','No']].map(([k, l]) => `<button data-act="sound" data-v="${k}" aria-pressed="${(p.sound !== false) === (k === 'on')}">${l}</button>`).join('')}</div>
+          <button class="btn sm" data-act="sound-test">${ICON.play} Escuchar</button>
+        </div>
+        <span class="muted" style="font-size:12.5px">Acompaña la nebulosa de entrada. Si el teléfono está en silencio o el navegador bloquea el audio, la app abre sin sonido.</span>
+      </div>
+    </section>
+    <section class="card stack">
       <h2 class="h-sec">Tema de color</h2>
       <div class="themes">${themes}</div>
     </section>
@@ -1521,6 +1530,8 @@ document.addEventListener('click', e => {
     case 'del-session': { const snap = JSON.stringify(db); db.sessions = db.sessions.filter(x => x.id !== b.dataset.id); saveNow(); go('historial'); toastUndo('Sesión borrada', snap); break; }
     case 'cal': { const c = ui.cal; let m = c.m + (+b.dataset.d), y = c.y; if(m < 0){ m = 11; y--; } if(m > 11){ m = 0; y++; } ui.cal = {y, m}; render(); break; }
     case 'theme': db.profile.theme = b.dataset.t; saveNow(); applyTheme(); render(); break;
+    case 'sound': db.profile.sound = b.dataset.v === 'on'; saveNow(); render(); if(db.profile.sound) playIntro(true); break;
+    case 'sound-test': playIntro(true); break;
     case 'unit-pref': db.profile.unit = b.dataset.u; saveNow(); render(); break;
     case 'wipe': db = blankDB(); saveNow(); applyTheme(); go('hoy'); toast('Datos borrados'); break;
   }
@@ -1606,11 +1617,67 @@ $('#file').addEventListener('change', async e => {
 });
 setInterval(() => { const s = activeS(); if(!s) return; document.querySelectorAll('[data-timer]').forEach(t => t.textContent = clock(duration(s))); }, 1000);
 
+/* ================= Sonido de entrada =================
+   Sintetizado en el momento (sin archivos): un soplo que crece mientras se forma la nebulosa,
+   un acorde suave de fondo y un destello de campanitas cuando aparece el logo. Dura ~1.6 s. */
+function astraChime(ctx, t0, dest){
+  const out = ctx.createGain(); out.gain.value = 0.8;
+  const comp = ctx.createDynamicsCompressor(); out.connect(comp); comp.connect(dest || ctx.destination);
+  // eco espacial
+  const dl = ctx.createDelay(1); dl.delayTime.value = 0.17;
+  const fb = ctx.createGain(); fb.gain.value = 0.38; const wet = ctx.createGain(); wet.gain.value = 0.32;
+  dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(out);
+  // 1) soplo cósmico: ruido filtrado que sube de grave a agudo (0 – 1.1 s)
+  const len = Math.floor(ctx.sampleRate * 1.3), buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  for(let i = 0; i < len; i++) d[i] = Math.random()*2 - 1;
+  const nz = ctx.createBufferSource(); nz.buffer = buf;
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.4;
+  bp.frequency.setValueAtTime(220, t0); bp.frequency.exponentialRampToValueAtTime(2800, t0 + 0.95);
+  const ng = ctx.createGain(); ng.gain.setValueAtTime(0.0001, t0);
+  ng.gain.exponentialRampToValueAtTime(0.16, t0 + 0.55); ng.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.15);
+  nz.connect(bp); bp.connect(ng); ng.connect(out); nz.start(t0); nz.stop(t0 + 1.3);
+  // 2) acorde de fondo (La mayor, muy suave)
+  for(const [f, det] of [[220, -4], [329.63, 3], [554.37, -2]]){
+    const o = ctx.createOscillator(); o.type = 'sine'; o.frequency.value = f; o.detune.value = det;
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0 + 0.1);
+    g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.5); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 1.6);
+    o.connect(g); g.connect(out); o.start(t0 + 0.1); o.stop(t0 + 1.65);
+  }
+  // 3) campanitas cuando aparece el logo (0.38 s) y una más con el nombre (0.6 s)
+  [[880, .38], [1318.5, .45], [1760, .52], [2217.5, .62]].forEach(([f, at], i) => {
+    const t = t0 + at;
+    for(const [mul, vol, type] of [[1, 0.085, 'sine'], [2.01, 0.02, 'triangle']]){
+      const o = ctx.createOscillator(); o.type = type; o.frequency.value = f * mul;
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol * (i === 3 ? 0.8 : 1), t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
+      o.connect(g); g.connect(out); g.connect(dl); o.start(t); o.stop(t + 0.8);
+    }
+  });
+}
+/* Los navegadores no dejan sonar nada hasta que tocas la pantalla. Se intenta al abrir (funciona en la app
+   instalada en Android y en navegadores que ya te conocen); si está bloqueado y tocas durante la animación, suena en ese momento. */
+function playIntro(force){
+  if(!force && db.profile.sound === false) return;
+  const AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
+  let ctx; try{ ctx = new AC(); }catch(e){ return; }
+  let played = false;
+  const go = () => { if(played || ctx.state !== 'running') return; played = true; astraChime(ctx, ctx.currentTime + 0.03); setTimeout(() => ctx.close().catch(() => {}), 2600); };
+  if(ctx.state === 'running') return go();
+  ctx.resume().then(go).catch(() => {});
+  if(force) return;
+  /* el navegador habilita el audio al levantar el dedo (touchend / click), no al apoyarlo */
+  const EVS = ['touchend', 'pointerup', 'click', 'keydown'];
+  const unlock = () => { ctx.resume().then(go).catch(() => {}); };
+  EVS.forEach(ev => addEventListener(ev, unlock, {capture:true, passive:true}));
+  setTimeout(() => { EVS.forEach(ev => removeEventListener(ev, unlock, {capture:true})); if(!played) ctx.close().catch(() => {}); }, 1600);
+}
+
 /* ================= Inicio ================= */
 applyTheme();
 render();
 (() => {
   const sp = $('#splash'); if(!sp) return;
+  playIntro(false);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const wait = Math.max(0, (reduce ? 150 : 950) - (performance.now() - (window.__t0 || 0)));
   setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 450); }, wait);
@@ -1628,12 +1695,13 @@ function offerUpdate(worker){
   const t = document.createElement('button');
   t.className = 'toast update'; t.style.border = '0'; t.style.cursor = 'pointer';
   t.textContent = 'Nueva versión lista · Toca para actualizar';
-  t.addEventListener('click', () => { saveNow(); worker.postMessage('apply-update'); });
+  t.addEventListener('click', () => { saveNow(); window.__applyingUpdate = true; worker.postMessage('apply-update'); });
   document.body.appendChild(t);
 }
 if('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')){
   let reloading = false;
-  navigator.serviceWorker.addEventListener('controllerchange', () => { if(reloading) return; reloading = true; saveNow(); location.reload(); });
+  /* recarga solo cuando tú aplicas una actualización (no en la primera visita, cuando la copia sin conexión se instala) */
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if(reloading || !window.__applyingUpdate) return; reloading = true; saveNow(); location.reload(); });
   navigator.serviceWorker.register('sw.js').then(reg => {
     const watch = w => w && w.addEventListener('statechange', () => { if(w.state === 'installed' && navigator.serviceWorker.controller) offerUpdate(w); });
     if(reg.waiting && navigator.serviceWorker.controller) offerUpdate(reg.waiting);
