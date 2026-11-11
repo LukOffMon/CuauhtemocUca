@@ -19,3 +19,14 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 ## Relación de trabajos
 
 `trabajos/index.html`: lista de trabajos de la casa para marcar como hechos o pendientes. Se guarda en el navegador de cada dispositivo.
+
+## Astra Hik's
+
+`astra-hiks/index.html`: bitácora de entrenamiento (ejercicios, series, peso en kg, lb o indf). Sin cuentas: todo se guarda en el navegador.
+**https://lukoffmon.github.io/CuauhtemocUca/astra-hiks/**
+
+- Retro al terminar cada sesión (mejoró / igual / bajó contra la vez anterior) y resumen de la semana contra la anterior.
+- PDF detallado por sesión, con la retro y un calendario del mes (días que asististe, días que no y cuánto duró cada sesión).
+- Archivo `.hiks` (texto simple) para exportar una sesión o un respaldo, editarlo fuera y volver a importarlo.
+- 8 temas de color, nombre personalizado y funciona sin internet una vez abierta.
+- `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (licencia MIT), incluido para generar el PDF sin depender de un CDN.
