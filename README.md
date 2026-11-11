@@ -30,5 +30,8 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Retro al terminar cada sesión (mejoró / igual / bajó) y resumen de la semana contra la anterior.
 - PDF detallado por sesión con retro y calendario del mes (asistencia y duración).
 - Archivo `.hiks` (texto simple) para exportar, editar fuera y volver a importar; también acepta pegar listas tipo "• Ejercicio / 143Lb x 8".
+- Récords personales en la retro y en el PDF; pestaña *Progreso* con la evolución de cada ejercicio.
+- En el celular, el PDF y los `.hiks` se abren en *Compartir* (Archivos, WhatsApp, Drive…). Borrar se puede deshacer.
+- Animación de entrada (nebulosa) solo al abrir la app.
 - Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js`.
 - `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (MIT). `fonts/` son Big Shoulders Display, Archivo y JetBrains Mono (OFL), guardadas localmente.

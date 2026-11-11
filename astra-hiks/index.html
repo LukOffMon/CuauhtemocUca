@@ -197,6 +197,14 @@ body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .retro-item .d{grid-column:1/-1;font-size:13px;color:var(--muted)}
 .retro-item b{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .retro-item .chip{align-self:start}
+.retro-group{border-top:1px solid var(--line);padding:10px 0}
+.retro-group summary{display:flex;justify-content:space-between;align-items:center;gap:10px;cursor:pointer;list-style:none;min-height:32px}
+.retro-group summary::-webkit-details-marker{display:none}
+.retro-group summary b::after{content:" ›";color:var(--muted)}
+.retro-group[open] summary b::after{content:" ⌄"}
+.retro-group .names{font-size:13px;color:var(--muted);padding-top:6px;line-height:1.6}
+.pr{display:inline-block;font:700 11px/1 var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--ink);background:var(--accent);
+  border-radius:999px;padding:3px 7px;margin-left:4px;vertical-align:2px}
 .headline{font:800 26px/1.1 var(--display);text-transform:uppercase;letter-spacing:.01em}
 
 /* Semana */
@@ -225,6 +233,14 @@ body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
 .hist-item .s{font-size:12.5px;color:var(--muted)}
 .hist-item .r{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12.5px}
 .month-label{margin-top:8px}
+.seg.wide{display:grid;grid-template-columns:1fr 1fr;width:100%}
+.seg.wide button{font:700 13px var(--body);text-transform:none;letter-spacing:.02em}
+.prog{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;background:var(--surface);
+  border:1px solid var(--line);border-radius:var(--r);padding:12px}
+.prog .t{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prog .s{font-size:12.5px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.spark{display:block}
+@media (max-width:380px){.spark{width:64px}}
 
 /* Calendario */
 .cal-nav{display:flex;align-items:center;gap:8px}
@@ -264,6 +280,8 @@ body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   display:flex;flex-direction:column;gap:14px}
 @media (min-width:700px){.sheet-wrap{align-items:center}.sheet{border-radius:20px;border-bottom:1px solid var(--line)}}
 
+.toast.undo{display:flex;align-items:center;gap:14px;padding:8px 8px 8px 16px}
+.toast.undo button{border:0;background:var(--accent);color:var(--ink);font-weight:700;border-radius:9px;padding:8px 12px;min-height:38px}
 .sheet-actions{position:sticky;bottom:calc(-20px - env(safe-area-inset-bottom,0px));margin:0 -16px calc(-20px - env(safe-area-inset-bottom,0px));
   padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);
   display:grid;grid-template-columns:1fr 1fr auto;gap:8px}
@@ -280,9 +298,44 @@ body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   .set-row{grid-template-columns:22px minmax(0,1fr) 10px minmax(0,1.3fr) 54px 28px;gap:4px}
   .h-display{font-size:30px}
 }
+
+/* Pantalla de entrada: nebulosa Astra (~1 s). Solo transform y opacity: fluida en cualquier teléfono. */
+#splash{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:#0c0720;overflow:hidden;
+  transition:opacity .38s ease, visibility .38s}
+#splash.out{opacity:0;visibility:hidden;pointer-events:none}
+#splash .neb{position:relative;width:min(78vw,340px);aspect-ratio:1}
+#splash .cl{position:absolute;inset:0;border-radius:50%;opacity:0;animation:cloud 1.1s cubic-bezier(.2,.7,.2,1) forwards}
+#splash .c1{background:radial-gradient(closest-side,rgba(167,123,255,.85),rgba(110,60,220,.35) 55%,transparent);transform:scale(.4) rotate(0deg);inset:4% 10% 18% 4%}
+#splash .c2{background:radial-gradient(closest-side,rgba(255,212,71,.75),rgba(255,160,60,.22) 50%,transparent);inset:30% 6% 6% 34%;animation-delay:.08s}
+#splash .c3{background:radial-gradient(closest-side,rgba(255,122,200,.55),rgba(167,123,255,.15) 60%,transparent);inset:14% 30% 26% 0;animation-delay:.16s}
+#splash .c4{background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,236,170,.45) 30%,transparent 70%);inset:36%;animation-delay:.22s}
+#splash .ring{position:absolute;inset:0;animation:spin 6s linear infinite}
+#splash .ring i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;opacity:0;animation:tw 1.2s ease forwards}
+#splash .logo{position:absolute;inset:30%;width:40%;height:40%;border-radius:22%;opacity:0;transform:scale(.6);
+  animation:pop .55s .35s cubic-bezier(.2,1.4,.4,1) forwards;box-shadow:0 0 40px rgba(255,212,71,.35)}
+#splash .nm{position:absolute;left:0;right:0;bottom:-18%;text-align:center;font:800 28px/1 'Big Shoulders Display',Impact,sans-serif;
+  letter-spacing:.14em;text-transform:uppercase;color:#f7f4ff;opacity:0;transform:translateY(8px);animation:rise .5s .5s ease forwards}
+#splash .nm b{color:#ffd447;font-weight:800}
+@keyframes cloud{0%{opacity:0;transform:scale(.4) rotate(-40deg)}60%{opacity:1}100%{opacity:1;transform:scale(1) rotate(0deg)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes tw{0%{opacity:0;transform:scale(.2)}60%{opacity:1;transform:scale(1.6)}100%{opacity:.8;transform:scale(1)}}
+@keyframes pop{to{opacity:1;transform:scale(1)}}
+@keyframes rise{to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){#splash *{animation-duration:.01s!important;animation-delay:0s!important}#splash .ring{animation:none}}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true">
+  <div class="neb">
+    <span class="cl c1"></span><span class="cl c3"></span><span class="cl c2"></span><span class="cl c4"></span>
+    <span class="ring"><i style="left:8%;top:30%;animation-delay:.3s"></i><i style="left:88%;top:22%;animation-delay:.45s"></i><i style="left:76%;top:86%;animation-delay:.38s"></i><i style="left:20%;top:80%;animation-delay:.52s;background:#ffd447"></i><i style="left:52%;top:4%;animation-delay:.6s;background:#c9a8ff"></i><i style="left:96%;top:58%;animation-delay:.5s"></i></span>
+    <img class="logo" src="icon.svg" alt="">
+    <div class="nm">Astra <b>Hik's</b></div>
+  </div>
+</div>
+<script>/* la nebulosa solo aparece al abrir la app, no al recargar por una actualización */
+try{ if(sessionStorage.getItem('astra-splash')){ document.getElementById('splash').remove(); } else sessionStorage.setItem('astra-splash','1'); }catch(e){}
+window.__t0 = performance.now();</script>
 <header class="top"><div class="top-in">
   <div class="brand">
     <img src="icon.svg" alt="" width="36" height="36">
@@ -301,7 +354,7 @@ body.is-live .toast{bottom:calc(140px + env(safe-area-inset-bottom,0px))}
   <button class="tab" data-act="nav" data-v="ajustes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>Perfil</button>
 </div></nav>
 
-<input type="file" id="file" accept=".hiks,.txt,.json,text/plain,application/json" hidden>
+<input type="file" id="file" hidden>
 
 <script>
 'use strict';
@@ -482,16 +535,30 @@ function prevExercise(s, name){
   for(const x of list){ const e = x.exercises.find(e => norm(e.name) === k && validSets(e).length); if(e) return {s:x, ex:e}; }
   return null;
 }
+/* mejor marca previa de un ejercicio (en kg, y en placas por separado) */
+function priorBest(s, name){
+  const k = norm(name), key = sortKey(s); let top = NaN, pl = NaN, reps = 0;
+  for(const x of db.sessions){
+    if(x.id === s.id || sortKey(x) >= key) continue;
+    for(const e of x.exercises){ if(norm(e.name) !== k) continue; const st = exStats(e);
+      if(!isNaN(st.top) && !(st.top <= top)) top = st.top; if(!isNaN(st.pl) && !(st.pl <= pl)) pl = st.pl; reps = Math.max(reps, st.maxReps); }
+  }
+  return {top, pl, reps};
+}
 function retro(s){
   const items = [];
   for(const ex of s.exercises){
     if(!ex.name.trim() || !validSets(ex).length) continue;
     const prev = prevExercise(s, ex.name);
     const c = exStats(ex), p = prev ? exStats(prev.ex) : null;
-    items.push({name: ex.name.trim(), prevDate: prev?.s.date, ...compare(c, p)});
+    const it = {name: ex.name.trim(), prevDate: prev?.s.date, ...compare(c, p)};
+    if(p){ const b = priorBest(s, ex.name);
+      it.pr = (c.weighted && !isNaN(b.top) && c.top > b.top + 0.05) || (!isNaN(c.pl) && !isNaN(b.pl) && c.pl > b.pl) || (!c.weighted && isNaN(c.pl) && c.maxReps > b.reps && b.reps > 0); }
+    items.push(it);
   }
   const cnt = {mejoro:0, igual:0, bajo:0, nuevo:0};
   items.forEach(i => cnt[i.st]++);
+  const prs = items.filter(i => i.pr).length;
   let headline;
   if(!items.length) headline = 'Sesión sin series registradas';
   else if(cnt.mejoro) headline = `Mejoraste en ${cnt.mejoro} de ${items.length}`;
@@ -503,7 +570,8 @@ function retro(s){
   if(cnt.igual) parts.push(`${cnt.igual} siguen igual`);
   if(cnt.bajo) parts.push(`${cnt.bajo} bajaron`);
   if(cnt.nuevo) parts.push(`${cnt.nuevo} nuevos`);
-  return {items, cnt, headline, sub: parts.join(' · '), week: weekSummary(s.date)};
+  if(prs) parts.unshift(`${prs} récord${prs > 1 ? 's' : ''} personal${prs > 1 ? 'es' : ''}`);
+  return {items, cnt, prs, headline, sub: parts.join(' · '), week: weekSummary(s.date)};
 }
 function bestOf(list){
   /* mejor resultado de un ejercicio dentro de varias sesiones */
@@ -657,6 +725,17 @@ function importSessions(list){
 }
 
 /* ================= Descargas ================= */
+/* En el celular abre "Compartir" (guardar en Archivos, WhatsApp, Drive…); si no se puede, descarga normal */
+async function deliver(name, blob, label){
+  try{
+    const file = new File([blob], name, {type: blob.type || 'application/octet-stream'});
+    if(matchMedia('(pointer:coarse)').matches && navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:name});
+      toast(`${label} listo`); return;
+    }
+  }catch(e){ if(e && e.name === 'AbortError') return; }
+  download(name, blob); toast(`${label} descargado`);
+}
 function download(name, blob){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = name;
@@ -665,12 +744,14 @@ function download(name, blob){
 }
 const slug = s => norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
 function fileBase(s){ return `astra-hiks_${s.date}${s.title ? '_' + slug(s.title) : ''}`; }
-function exportHiks(s){ download(`${fileBase(s)}.hiks`, new Blob([toHiks([s])], {type:'text/plain;charset=utf-8'})); toast('Archivo .hiks descargado'); }
+function exportHiks(s){ deliver(`${fileBase(s)}.hiks`, new Blob([toHiks([s])], {type:'text/plain'}), 'Archivo .hiks'); }
 function exportAll(){
   const list = sorted().filter(s => s.finished);
-  if(!list.length) return toast('Todavía no hay sesiones terminadas');
-  download(`astra-hiks_respaldo_${today()}.hiks`, new Blob([toHiks(list)], {type:'text/plain;charset=utf-8'}));
-  toast(`Respaldo con ${list.length} sesiones descargado`);
+  if(!list.length && !db.routines.length) return toast('Todavía no hay nada que respaldar');
+  /* el respaldo incluye también tus rutinas */
+  const all = [...db.routines.map(r => ({...r, isRoutine:true})), ...list];
+  db.lastBackup = Date.now(); saveNow();
+  deliver(`astra-hiks_respaldo_${today()}.hiks`, new Blob([toHiks(all)], {type:'text/plain'}), `Respaldo (${list.length} sesiones)`);
 }
 
 /* ================= PDF ================= */
@@ -773,7 +854,7 @@ async function exportPDF(s){
     const c = COL[it.st];
     doc.setDrawColor(...c); doc.setLineWidth(.4); doc.roundedRect(M, y - 4, 26, 6, 3, 3, 'S');
     text(STLABEL[it.st].toUpperCase(), M + 13, y + .3, {b:1, s:7.5, c, a:'center'});
-    text(it.name, M + 32, y, {b:1, s:10.5}); y += 4.8;
+    text(it.name + (it.pr ? '   * Récord personal' : ''), M + 32, y, {b:1, s:10.5}); y += 4.8;
     doc.setFont('helvetica','normal'); doc.setTextColor(...MUTED); doc.text(dl2, M + 32, y); y += dl2.length*4.5 + 3;
   });
   // Semana
@@ -841,13 +922,31 @@ async function exportPDF(s){
     text(`Astra Hik's  ·  ${db.profile.name || 'Bitácora'}  ·  ${fdateShort(s.date)}`, M, H - 8, {s:8, c:MUTED});
     text(`Página ${p} de ${pages}`, W - M, H - 8, {s:8, c:MUTED, a:'right'});
   }
-  doc.save(`${fileBase(s)}.pdf`);
-  toast('PDF descargado');
+  deliver(`${fileBase(s)}.pdf`, doc.output('blob'), 'PDF');
 }
 function sessionsByDate(){ const m = new Map(); for(const s of db.sessions){ if(!m.has(s.date)) m.set(s.date, []); m.get(s.date).push(s); } return m; }
 
 /* ================= Interfaz ================= */
-const ui = {view:'hoy', sid:null, cal:null};
+let installEvt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+function installCard(compact){
+  if(isStandalone()) return '';
+  if(installEvt) return `<section class="card row" style="flex-wrap:nowrap"><img src="icon.svg" alt="" width="44" height="44" style="border-radius:12px;flex:none">
+    <div style="min-width:0;flex:1"><b>Instala Astra Hik's</b><div class="muted" style="font-size:13px">Se abre como app, a pantalla completa y sin internet.</div></div>
+    <button class="btn primary sm" data-act="install">Instalar</button></section>`;
+  if(isIOS() && !compact) return `<section class="card stack"><b>Instálala en tu iPhone</b>
+    <div class="muted" style="font-size:13.5px">En Safari toca <b>Compartir</b> y luego <b>Agregar a pantalla de inicio</b>. Así se abre como app, sin internet, y Safari no borra tus datos aunque pases días sin abrirla.</div></section>`;
+  return '';
+}
+function backupCard(){
+  const n = db.sessions.filter(s => s.finished).length, last = db.lastBackup || 0;
+  if(n < 3 || Date.now() - last < 14*864e5) return '';
+  return `<section class="card row" style="flex-wrap:nowrap;border-color:color-mix(in srgb,var(--accent) 45%,var(--line))">
+    <div style="min-width:0;flex:1"><b>Respalda tu bitácora</b><div class="muted" style="font-size:13px">${n} sesiones viven solo en este teléfono.${last ? ` Último respaldo: ${fdateShort(dstr(new Date(last)))}.` : ''}</div></div>
+    <div class="stack" style="gap:6px"><button class="btn primary sm" data-act="export-all">Respaldar</button><button class="btn ghost sm" data-act="backup-later">Luego</button></div></section>`;
+}
+const ui = {view:'hoy', sid:null, cal:null, histTab:'ses'};
 const ICON = {
   check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></svg>',
@@ -955,7 +1054,9 @@ function viewHoy(){
       <button class="btn ghost" data-act="import">${ICON.imp} Importar o pegar (.hiks / texto)</button>
     </section>
     ${routinesHTML()}
+    ${backupCard()}
     ${weekCard(w)}
+    ${installCard(true)}
   `;
 }
 function weekCard(w){
@@ -1107,18 +1208,70 @@ function shortMin(m){ m = Math.round(m||0); return m < 60 ? `${m}m` : `${Math.fl
 function clock(min){ const t = Math.max(0, Math.floor((min||0)*60)); const h = Math.floor(t/3600), m = Math.floor(t%3600/60), sec = t%60; return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`; }
 function retroHTML(R){
   /* en el celular: detalle solo de lo que cambió; lo nuevo y lo igual se agrupan en una línea */
-  const group = (st, label) => { const g = R.items.filter(i => i.st === st); return g.length ? `<div class="retro-item"><b>${esc(g.map(i => i.name).join(', '))}</b><span class="chip ${st}">${label}${g.length > 1 ? ` · ${g.length}` : ''}</span></div>` : ''; };
-  const items = R.items.filter(it => it.st === 'mejoro' || it.st === 'bajo').map(it => `<div class="retro-item"><b>${esc(it.name)}</b><span class="chip ${it.st}">${STLABEL[it.st]}</span><span class="d">${esc(it.d)}${it.prevDate ? ` <span class="num">(vs. ${fdateShort(it.prevDate)})</span>` : ''}</span></div>`).join('');
+  const group = (st, label) => { const g = R.items.filter(i => i.st === st); if(!g.length) return '';
+    return `<details class="retro-group"><summary><b>${g.length} ${label}</b><span class="chip ${st}">${STLABEL[st]}</span></summary>
+      <div class="names">${esc(g.map(i => i.name).join(' · '))}</div></details>`; };
+  const items = R.items.filter(it => it.st === 'mejoro' || it.st === 'bajo').map(it => `<div class="retro-item"><b>${esc(it.name)}${it.pr ? ' <span class="pr">★ Récord</span>' : ''}</b><span class="chip ${it.st}">${STLABEL[it.st]}</span><span class="d">${esc(it.d)}${it.prevDate ? ` <span class="num">(vs. ${fdateShort(it.prevDate)})</span>` : ''}</span></div>`).join('');
   return `<div class="headline">${esc(R.headline)}${R.items.length && R.cnt.mejoro ? ' ejercicios' : ''}</div>
     ${R.sub ? `<div class="muted">${esc(R.sub)}</div>` : ''}
-    ${items || R.items.length ? `<div class="retro-list">${items}${group('igual', 'Igual')}${group('nuevo', 'Nuevo')}</div>` : ''}`;
+    ${items || R.items.length ? `<div class="retro-list">${items}${group('igual', R.cnt.igual > 1 ? 'siguen igual' : 'sigue igual')}${group('nuevo', R.cnt.nuevo > 1 ? 'nuevos' : 'nuevo')}</div>` : ''}`;
 }
 
 /* ---- Bitácora ---- */
+function exerciseSeries(){
+  const m = new Map();
+  for(const s of sorted()) for(const e of s.exercises){
+    if(!e.name.trim() || !validSets(e).length) continue;
+    const k = norm(e.name); if(!m.has(k)) m.set(k, {name:e.name.trim(), pts:[]});
+    const st = exStats(e);
+    m.get(k).pts.push({date:s.date, st, sets:validSets(e)});
+  }
+  /* primero lo que cambió en su última vez (mejoró, bajó), luego lo nuevo y lo que sigue igual */
+  const rank = {mejoro:0, bajo:1, nuevo:2, igual:3};
+  const st = x => { const n = x.pts.length; return compare(x.pts[n-1].st, n > 1 ? x.pts[n-2].st : null).st; };
+  return [...m.values()].sort((a, b) => rank[st(a)] - rank[st(b)] || b.pts[b.pts.length-1].date.localeCompare(a.pts[a.pts.length-1].date) || a.name.localeCompare(b.name, 'es'));
+}
+function spark(vals){
+  const v = vals.filter(x => !isNaN(x)); if(v.length < 2) return '';
+  const w = 96, h = 30, lo = Math.min(...v), hi = Math.max(...v), span = hi - lo || 1;
+  const pts = v.map((x, i) => [2 + i*(w-4)/(v.length-1), h - 3 - (x-lo)/span*(h-6)]);
+  const d = pts.map(p => p.map(n => n.toFixed(1)).join(',')).join(' ');
+  const [lx, ly] = pts[pts.length-1];
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true">
+    <polygon points="2,${h} ${d} ${lx.toFixed(1)},${h}" fill="var(--accent-2)" opacity=".18"/>
+    <polyline points="${d}" fill="none" stroke="var(--accent-2)" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="3" fill="var(--accent)"/></svg>`;
+}
+function viewProgress(){
+  const list = exerciseSeries();
+  if(!list.length) return '<div class="card empty">Cuando termines sesiones aquí verás cómo avanza cada ejercicio.</div>';
+  return '<div class="hist">' + list.map(x => {
+    const last = x.pts[x.pts.length-1], prev = x.pts[x.pts.length-2];
+    const r = compare(last.st, prev ? prev.st : null);
+    const useKg = last.st.weighted, usePl = !useKg && !isNaN(last.st.pl);
+    const val = p => useKg ? p.st.top : usePl ? p.st.pl : p.st.reps;
+    const eu = last.st.unit === 'lb' || last.st.unit === 'kg' ? last.st.unit : undefined;
+    const fmt = v => useKg ? fw(v, eu) : usePl ? `${fmtNum(v)} pl` : `${fmtNum(v)} reps`;
+    const vals = x.pts.slice(-12).map(val), best = Math.max(...x.pts.map(val).filter(v => !isNaN(v)));
+    return `<div class="prog">
+      <div style="min-width:0"><div class="t">${esc(x.name)}</div>
+        <div class="s"><span class="num">${fmt(val(last))}</span> · mejor ${fmt(best)} · ${x.pts.length} ${x.pts.length > 1 ? 'veces' : 'vez'}</div></div>
+      ${spark(vals) || '<span></span>'}
+      <span class="chip ${r.st}">${STLABEL[r.st]}</span>
+    </div>`;
+  }).join('') + '</div>';
+}
 function viewHist(){
+  const tabs = `<div class="seg wide" role="tablist">
+    <button data-act="hist-tab" data-t="ses" aria-pressed="${ui.histTab !== 'ex'}">Sesiones</button>
+    <button data-act="hist-tab" data-t="ex" aria-pressed="${ui.histTab === 'ex'}">Progreso</button></div>`;
+  if(ui.histTab === 'ex') return `<div class="row"><h1 class="h-display">Bitácora</h1></div>${tabs}${viewProgress()}`;
+  return `<div class="row"><h1 class="h-display">Bitácora</h1><span class="spacer"></span><button class="btn sm" data-act="import">${ICON.imp} Importar</button><button class="btn sm" data-act="export-all">${ICON.file} Respaldo</button></div>${tabs}${viewSessions()}`;
+}
+function viewSessions(){
   const list = sorted().reverse();
-  if(!list.length) return `<h1 class="h-display">Bitácora</h1><div class="card empty">Aún no hay sesiones. Empieza una en <b>Entrenar</b> o importa un archivo .hiks.<div style="margin-top:14px"><button class="btn" data-act="import">${ICON.imp} Importar .hiks</button></div></div>`;
-  let html = `<div class="row"><h1 class="h-display">Bitácora</h1><span class="spacer"></span><button class="btn sm" data-act="import">${ICON.imp} Importar</button><button class="btn sm" data-act="export-all">${ICON.file} Respaldo</button></div><div class="hist">`;
+  if(!list.length) return `<div class="card empty">Aún no hay sesiones. Empieza una en <b>Entrenar</b> o importa un archivo .hiks.<div style="margin-top:14px"><button class="btn" data-act="import">${ICON.imp} Importar .hiks</button></div></div>`;
+  let html = `<div class="hist">`;
   let curM = '';
   for(const s of list){
     const d = pdate(s.date), mk = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
@@ -1197,11 +1350,12 @@ function viewAjustes(){
       <span class="nm">${t.name}</span></button>`).join('');
   return `
     <h1 class="h-display">Perfil</h1>
+    ${installCard(false)}
     <section class="card stack">
       <div class="field"><label for="p-name">Tu nombre</label><input class="inp" id="p-name" value="${esc(p.name)}" placeholder="Cómo quieres que te llame" data-f="p-name"></div>
       <div class="field"><label>Unidad para mostrar totales y comparaciones</label>
         <div class="seg">${['kg','lb'].map(u => `<button data-act="unit-pref" data-u="${u}" aria-pressed="${dispUnit() === u}">${u}</button>`).join('')}</div>
-        <span class="muted" style="font-size:12.5px">Cada serie guarda su propia unidad (kg, lb o indf). Las nuevas series empiezan con la de la serie anterior.</span>
+        <span class="muted" style="font-size:12.5px">Cada serie guarda su propia unidad (kg, lb, pl = placas o indf). Las nuevas series empiezan con la de la serie anterior.</span>
       </div>
     </section>
     <section class="card stack">
@@ -1210,7 +1364,7 @@ function viewAjustes(){
     </section>
     <section class="card stack">
       <h2 class="h-sec">Tus datos</h2>
-      <p class="muted" style="margin:0">No hay cuentas ni servidores: todo vive en este navegador. Descarga un respaldo de vez en cuando o para pasarlo a otro dispositivo.</p>
+      <p class="muted" style="margin:0">No hay cuentas ni servidores: todo vive en este teléfono. Descarga un respaldo de vez en cuando o para pasarlo a otro dispositivo. El respaldo incluye sesiones y rutinas.${db.lastBackup ? ` Último respaldo: ${fdateShort(dstr(new Date(db.lastBackup)))}.` : ''}</p>
       <div class="grid-2">
         <button class="btn" data-act="export-all">${ICON.file} Descargar respaldo .hiks</button>
         <button class="btn" data-act="import">${ICON.imp} Importar .hiks</button>
@@ -1289,6 +1443,7 @@ function showRetro(s){
   wrap.className = 'sheet-wrap';
   wrap.innerHTML = `<div class="sheet" role="dialog" aria-modal="true" aria-label="Retroalimentación">
     <div class="row"><span class="eyebrow">Sesión terminada · ${fmtMin(duration(s))}</span><span class="spacer"></span><button class="icon-btn" data-close aria-label="Cerrar">${ICON.x}</button></div>
+    ${duration(s) > 150 ? `<p class="muted" style="margin:0;font-size:13px">¿Duró de verdad ${fmtMin(duration(s))}? Si olvidaste terminar, corrige la hora de fin en la sesión.</p>` : ''}
     ${retroHTML(R)}
     ${weekCard(R.week).replace('<section class="card stack">', '<section class="stack" style="border-top:1px solid var(--line);padding-top:14px">')}
     <div class="sheet-actions">
@@ -1299,7 +1454,18 @@ function showRetro(s){
   </div>`;
   wrap.addEventListener('click', e => { if(e.target === wrap || e.target.closest('[data-close]')) wrap.remove(); });
   document.body.appendChild(wrap);
+  buzz([20, 60, 20]);
+  setTimeout(() => loadPDF().catch(() => {}), 300);
 }
+/* borrar con "Deshacer": guarda una copia antes del cambio */
+function toastUndo(msg, snap){
+  document.querySelectorAll('.toast:not(.update)').forEach(t => t.remove());
+  const t = document.createElement('div'); t.className = 'toast undo'; t.setAttribute('role', 'status');
+  t.innerHTML = `<span>${esc(msg)}</span><button type="button">Deshacer</button>`;
+  t.querySelector('button').addEventListener('click', () => { const v = ui.view, id = ui.sid; db = JSON.parse(snap); saveNow(); t.remove(); ui.view = v; ui.sid = id; render(); toast('Listo, se recuperó'); });
+  document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+}
+const buzz = ms => { try{ navigator.vibrate?.(ms); }catch(e){} };
 function toast(msg){
   document.querySelectorAll('.toast:not(.update)').forEach(t => t.remove());
   const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
@@ -1317,23 +1483,26 @@ document.addEventListener('click', e => {
     case 'repeat': { if(activeS()) { toast('Ya tienes una sesión en curso'); go('hoy'); break; } newSession(getS(b.dataset.id)); toast('Sesión copiada: ajusta los números de hoy'); break; }
     case 'save-name': { const v = $('#welcome-name').value.trim(); if(!v) return toast('Escribe tu nombre'); db.profile.name = v; saveNow(); render(); toast(`Listo, ${v}`); break; }
     case 'add-ex': addExercise(); break;
-    case 'add-set': { const last = ex.sets[ex.sets.length - 1]; ex.sets.push(last ? {...last} : {reps:'', w:'', u:dispUnit()}); saveNow(); render();
+    case 'add-set': { buzz(8); const last = ex.sets[ex.sets.length - 1]; ex.sets.push(last ? {...last} : {reps:'', w:'', u:dispUnit()}); saveNow(); render();
       const rows = document.querySelectorAll(`[data-exid="${ex.id}"] [data-f="reps"]`); rows[rows.length - 1]?.focus(); break; }
-    case 'del-set': ex.sets.splice(+b.dataset.i, 1); saveNow(); render(); break;
+    case 'del-set': { const snap = JSON.stringify(db); ex.sets.splice(+b.dataset.i, 1); saveNow(); render(); toastUndo('Serie quitada', snap); break; }
     case 'unit': { const st = ex.sets[+b.dataset.i]; st.u = UNITS[(UNITS.indexOf(st.u)+1) % UNITS.length]; save();
       b.dataset.u = st.u; b.textContent = st.u;
       const w = b.parentElement.querySelector('[data-f="w"]'); w.disabled = st.u === 'indf'; w.placeholder = st.u === 'indf' ? 'sin peso' : st.u === 'pl' ? 'placas' : 'peso'; w.value = st.u === 'indf' ? '' : st.w; break; }
-    case 'del-ex': { if(!armConfirm(b)) return; s.exercises = s.exercises.filter(x => x !== ex); saveNow(); render(); break; }
+    case 'del-ex': { const snap = JSON.stringify(db); s.exercises = s.exercises.filter(x => x !== ex); saveNow(); render(); toastUndo(`${ex.name || 'Ejercicio'} quitado`, snap); break; }
     case 'mv': { const i = s.exercises.indexOf(ex), j = i + (+b.dataset.d); if(j < 0 || j >= s.exercises.length) return; [s.exercises[i], s.exercises[j]] = [s.exercises[j], s.exercises[i]]; saveNow(); render(); break; }
+    case 'hist-tab': ui.histTab = b.dataset.t; render(); break;
+    case 'install': installApp(); break;
+    case 'backup-later': db.lastBackup = Date.now() - 7*864e5; saveNow(); render(); break;
     case 'finish': keepAwake(false); finishSession(); break;
     case 'done': {
-      ex.done = !ex.done; saveNow(); render();
+      ex.done = !ex.done; buzz(ex.done ? 18 : 8); saveNow(); render();
       if(ex.done){ const nx = s.exercises.find((e, k) => k > s.exercises.indexOf(ex) && !e.done) || s.exercises.find(e => !e.done);
         const el = nx && document.querySelector(`[data-exid="${nx.id}"]`); el?.scrollIntoView({block:'start', behavior:'smooth'}); }
       else document.querySelector(`[data-exid="${ex.id}"]`)?.scrollIntoView({block:'center'});
       break; }
     case 'expand': ex.done = false; saveNow(); render(); document.querySelector(`[data-exid="${ex.id}"]`)?.scrollIntoView({block:'center'}); break;
-    case 'discard': { keepAwake(false); const cur = activeS(); db.sessions = db.sessions.filter(x => x !== cur); db.active = null; saveNow(); go('hoy'); toast('Sesión descartada'); break; }
+    case 'discard': { keepAwake(false); const snap = JSON.stringify(db); setTimeout(() => toastUndo('Sesión descartada', snap), 0); const cur = activeS(); db.sessions = db.sessions.filter(x => x !== cur); db.active = null; saveNow(); go('hoy'); toast('Sesión descartada'); break; }
     case 'open': go('sesion', b.dataset.id); break;
     case 'pdf': exportPDF(getS(b.dataset.id)); break;
     case 'hiks': exportHiks(getS(b.dataset.id)); break;
@@ -1344,12 +1513,12 @@ document.addEventListener('click', e => {
     case 'start-routine': { if(activeS()){ toast('Ya tienes una sesión en curso'); go('hoy'); break; } newSession(getR(b.dataset.id), true); toast('Rutina cargada con tus últimos números'); break; }
     case 'edit-routine': go('rutina', b.dataset.id); break;
     case 'new-routine': { const r = {id:uid(), name:'Nueva rutina', note:'', exercises:[]}; db.routines.push(r); saveNow(); go('rutina', r.id); setTimeout(() => { const i = $('[data-f="r-name"]'); i?.focus(); i?.select(); }, 50); break; }
-    case 'routine-hiks': { const r = getR(b.dataset.id); download(`astra-hiks_rutina_${slug(r.name) || 'rutina'}.hiks`, new Blob([toHiks([{...r, isRoutine:true}])], {type:'text/plain;charset=utf-8'})); toast('Rutina exportada'); break; }
-    case 'del-routine': db.routines = db.routines.filter(r => r.id !== b.dataset.id); saveNow(); go('hoy'); toast('Rutina borrada'); break;
+    case 'routine-hiks': { const r = getR(b.dataset.id); deliver(`astra-hiks_rutina_${slug(r.name) || 'rutina'}.hiks`, new Blob([toHiks([{...r, isRoutine:true}])], {type:'text/plain'}), 'Rutina'); break; }
+    case 'del-routine': { const snap = JSON.stringify(db); db.routines = db.routines.filter(r => r.id !== b.dataset.id); saveNow(); go('hoy'); toastUndo('Rutina borrada', snap); break; }
     case 'save-routine': { const src = getS(b.dataset.id); const r = {id:uid(), name: src.title || `Rutina ${fdateShort(src.date)}`, note: src.routineNote || '',
         exercises: src.exercises.filter(e => e.name.trim()).map(e => ({id:uid(), name:e.name, note:e.note, sets:validSets(e).map(st => ({...st}))}))};
       db.routines.push(r); saveNow(); go('rutina', r.id); toast('Rutina creada'); break; }
-    case 'del-session': db.sessions = db.sessions.filter(x => x.id !== b.dataset.id); saveNow(); go('historial'); toast('Sesión borrada'); break;
+    case 'del-session': { const snap = JSON.stringify(db); db.sessions = db.sessions.filter(x => x.id !== b.dataset.id); saveNow(); go('historial'); toastUndo('Sesión borrada', snap); break; }
     case 'cal': { const c = ui.cal; let m = c.m + (+b.dataset.d), y = c.y; if(m < 0){ m = 11; y--; } if(m > 11){ m = 0; y++; } ui.cal = {y, m}; render(); break; }
     case 'theme': db.profile.theme = b.dataset.t; saveNow(); applyTheme(); render(); break;
     case 'unit-pref': db.profile.unit = b.dataset.u; saveNow(); render(); break;
@@ -1440,6 +1609,16 @@ setInterval(() => { const s = activeS(); if(!s) return; document.querySelectorAl
 /* ================= Inicio ================= */
 applyTheme();
 render();
+(() => {
+  const sp = $('#splash'); if(!sp) return;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const wait = Math.max(0, (reduce ? 150 : 950) - (performance.now() - (window.__t0 || 0)));
+  setTimeout(() => { sp.classList.add('out'); setTimeout(() => sp.remove(), 450); }, wait);
+})();
+/* Instalar en la pantalla de inicio: en iPhone es lo que evita que Safari borre los datos tras días sin abrirla */
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if(ui.view === 'ajustes' || ui.view === 'hoy') render(); });
+addEventListener('appinstalled', () => { installEvt = null; toast('App instalada'); render(); });
+async function installApp(){ if(!installEvt) return; installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt = null; render(); }
 /* Sin conexión y actualizaciones: la app vive en el teléfono y se actualiza sola cuando hay internet */
 function updateNet(){ const n = $('#net'); if(n) n.hidden = navigator.onLine; }
 addEventListener('online', updateNet); addEventListener('offline', updateNet); updateNet();
