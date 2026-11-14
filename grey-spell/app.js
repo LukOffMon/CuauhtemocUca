@@ -1,4 +1,4 @@
-/* Grey~Spell — motor y app. Cuatro cursos, todo en este navegador (localStorage). */
+/* Grey~Spell — motor y app. Seis cursos, todo en este navegador (localStorage). */
 (function () {
 'use strict';
 const GS = window.GS;
@@ -21,30 +21,38 @@ const META = {
   fr: { id: 'fr', name: 'Francés', adj: 'francés', flag: '🇫🇷', voice: 'fr-FR', keys: 'é è ê à â ç î ï ô û ù ë œ'.split(' '), arts: [['le', 'la'], ['un', 'une']], art: /^(le|la|les|l'|un|une|des|du|de la|de l')\s*/, hi: [['Bonjour !', '¡Hola!'], ['Allez, on y va !', '¡Vamos!'], ['Magnifique !', '¡Magnífico!'], ['Oh là là !', '¡Ay, caramba!'], ['Tu es génial !', '¡Eres genial!']] },
   pt: { id: 'pt', name: 'Portugués', adj: 'portugués', flag: '🇧🇷', voice: 'pt-BR', keys: 'á à â ã é ê í ó ô õ ú ç'.split(' '), arts: [['o', 'a'], ['um', 'uma']], art: /^(o|a|os|as|um|uma|uns|umas)\s+/, hi: [['Olá!', '¡Hola!'], ['Vamos lá!', '¡Vamos!'], ['Que legal!', '¡Qué padre!'], ['Beleza!', '¡Órale!'], ['Você é demais!', '¡Eres lo máximo!']] },
   sv: { id: 'sv', name: 'Sueco', adj: 'sueco', flag: '🇸🇪', voice: 'sv-SE', keys: 'å ä ö é'.split(' '), arts: [['en', 'ett']], art: /^(en|ett)\s+/, hi: [['Hej!', '¡Hola!'], ['Bra jobbat!', '¡Buen trabajo!'], ['Fika?', '¿Un cafecito?'], ['Lagom!', '¡Lo justo!'], ['Heja!', '¡Ánimo!']] },
-  ru: { id: 'ru', name: 'Ruso', adj: 'ruso', flag: '🇷🇺', voice: 'ru-RU', keys: CYR, cyr: true, arts: [], art: /^$/, hi: [['Привет!', '¡Hola!'], ['Молодец!', '¡Bien hecho!'], ['Давай!', '¡Dale!'], ['Ура!', '¡Hurra!'], ['Отлично!', '¡Excelente!']] }
+  ru: { id: 'ru', name: 'Ruso', adj: 'ruso', flag: '🇷🇺', voice: 'ru-RU', keys: CYR, cyr: true, arts: [], art: /^$/, hi: [['Привет!', '¡Hola!'], ['Молодец!', '¡Bien hecho!'], ['Давай!', '¡Dale!'], ['Ура!', '¡Hurra!'], ['Отлично!', '¡Excelente!']] },
+  de: { id: 'de', name: 'Alemán', adj: 'alemán', flag: '🇩🇪', voice: 'de-DE', keys: 'ä ö ü ß'.split(' '), arts: [['der', 'die', 'das']], art: /^(der|die|das|den|dem|des|ein|eine|einen|einem|einer|eines)\s+/, gl: ['masculino · der', 'femenino · die', 'neutro · das'], gq: '¿Der, die o das?', hi: [['Hallo!', '¡Hola!'], ["Los geht's!", '¡Vámonos!'], ['Super gemacht!', '¡Súper bien hecho!'], ['Wunderbar!', '¡Maravilloso!'], ['Du schaffst das!', '¡Tú puedes!']] },
+  en: { id: 'en', name: 'Inglés', adj: 'inglés', flag: '🇺🇸', voice: 'en-US', keys: [], arts: [], art: /^(the|a|an)\s+/, ex: expandEn, hi: [['Hello!', '¡Hola!'], ["Let's go!", '¡Vamos!'], ['Awesome!', '¡Increíble!'], ['Nailed it!', '¡Lo clavaste!'], ['You got this!', '¡Tú puedes!']] }
 };
-const CIDS = ['fr', 'pt', 'sv', 'ru'];
+META.sv.gl = ['en-ord', 'ett-ord']; META.sv.gq = '¿En o ett?';
+const CIDS = ['fr', 'pt', 'sv', 'ru', 'de', 'en'];
 CIDS.forEach(id => { if (window.GSF) META[id].flag = window.GSF(id); });
 /* Tema por curso: mascota (cuerpo, cara, sombrero) y color de acento de la app. Claro / oscuro. */
 const THEME = {
   fr: { pet: 'Grisou', body: ['#9CA2AD', '#A9AFBA'], dark: ['#737A86', '#7E8592'], face: 'stache', hat: null, acc: [['#3046E8', '#1F31B8', '#E2E6FF'], ['#7A8EFF', '#4E61D9', '#222A4C']] },
   pt: { pet: 'Verdinho', body: ['#3FAF6E', '#4FC07E'], dark: ['#2A7F4F', '#33905C'], face: 'smile', hat: 'straw', acc: [['#0F8F5B', '#0A6B44', '#DCF3E8'], ['#47CF8D', '#2B9A63', '#16392A']] },
   sv: { pet: 'Blåbär', body: ['#5B8BD6', '#6C9AE2'], dark: ['#3D67AA', '#4673B8'], face: 'beard', hat: 'viking', acc: [['#1D6FC2', '#14508F', '#DFEBFA'], ['#6AA8F0', '#3F7CC4', '#1B2D45']] },
-  ru: { pet: 'Misha', body: ['#D25A4E', '#DD6A5E'], dark: ['#9E3E35', '#A84A40'], face: 'cheeks', hat: 'ushanka', acc: [['#C9372F', '#962620', '#FBE3E1'], ['#FF7B70', '#C24A42', '#3A1E1C']] }
+  ru: { pet: 'Misha', body: ['#D25A4E', '#DD6A5E'], dark: ['#9E3E35', '#A84A40'], face: 'cheeks', hat: 'ushanka', acc: [['#C9372F', '#962620', '#FBE3E1'], ['#FF7B70', '#C24A42', '#3A1E1C']] },
+  de: { pet: 'Brezel', body: ['#C08A4E', '#CC965A'], dark: ['#8E6236', '#9A6C3E'], face: 'brows', hat: 'alpine', acc: [['#B45F06', '#874604', '#FCEBD5'], ['#F4A445', '#C27A1E', '#3A2A15']] },
+  en: { pet: 'Sunny', body: ['#F0A23B', '#F7B04C'], dark: ['#B9741F', '#C47F28'], face: 'grin', hat: 'phones', acc: [['#6B3FD4', '#4E2AA3', '#ECE4FF'], ['#A98BFF', '#7A5CE0', '#2A2245']] }
 };
 const isDark = () => S.set.theme === 'dark' || (S.set.theme === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
 const PET = () => THEME[S.cur].pet;
 const TR = { а: 'a', б: 'b', в: 'v', г: 'g', д: 'd', е: 'e', ё: 'e', ж: 'zh', з: 'z', и: 'i', й: 'y', к: 'k', л: 'l', м: 'm', н: 'n', о: 'o', п: 'p', р: 'r', с: 's', т: 't', у: 'u', ф: 'f', х: 'h', ц: 'ts', ч: 'ch', ш: 'sh', щ: 'sch', ъ: '', ы: 'y', ь: '', э: 'e', ю: 'yu', я: 'ya' };
 const translit = s => s.replace(/[а-яё]/g, c => TR[c] ?? c).replace(/kh/g, 'h').replace(/shch/g, 'sch').replace(/j/g, 'y').replace(/iy\b/g, 'y').replace(/yy/g, 'y');
 
-const norm = s => String(s).toLowerCase().replace(/[’‘`´]/g, "'").replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/ё/g, 'е')
+const norm = s => String(s).toLowerCase().replace(/[’‘`´]/g, "'").replace(/œ/g, 'oe').replace(/æ/g, 'ae').replace(/ß/g, 'ss').replace(/ё/g, 'е')
   .replace(/\([^)]*\)/g, ' ').replace(/[.,!?¿¡;:«»"“”—–\-…]/g, ' ').replace(/\s+/g, ' ').trim();
+/* Inglés: «I'm» = «I am», «don't» = «do not»… se aceptan ambas formas. */
+const EN_C = [[/\bcan't\b/g, 'cannot'], [/\bcan not\b/g, 'cannot'], [/\bwon't\b/g, 'will not'], [/\bain't\b/g, 'is not'], [/n't\b/g, ' not'], [/'re\b/g, ' are'], [/'ve\b/g, ' have'], [/'ll\b/g, ' will'], [/'m\b/g, ' am'], [/'d\b/g, ' would'], [/\b(it|that|what|there|he|she|who|where|how|here)'s\b/g, '$1 is'], [/\bgonna\b/g, 'going to'], [/\bwanna\b/g, 'want to'], [/\bgotta\b/g, 'got to']];
+function expandEn(s) { EN_C.forEach(([r, v]) => { s = s.replace(r, v); }); return s.replace(/\s+/g, ' ').trim(); }
 const deacc = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC');
 function lev(a, b) { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
 const ESART = /^(el|la|los|las|lo|un|una|unos|unas)\s+/;
 function grade(input, answers, strict) {
-  const a = norm(input); if (!a) return { ok: false };
-  const N = answers.map(norm), Mm = META[cur()];
+  const Mm = META[cur()], xn = Mm.ex ? s => Mm.ex(norm(s)) : norm, a = xn(input); if (!a) return { ok: false };
+  const N = answers.map(xn);
   if (N.includes(a)) return { ok: true };
   if (Mm.cyr) { const ta = translit(a); for (let i = 0; i < N.length; i++) if (translit(N[i]) === ta || translit(deacc(N[i])) === ta) return { ok: true, note: answers[i] }; }
   if (strict) return { ok: false };
@@ -164,7 +172,7 @@ function course(id) {
   const units = src.units.map((u, i) => {
     const words = u.w.trim().split('\n').map((line, j) => {
       const parts = line.split('='), tx = parts[0].trim(), alts = (parts[1] || '').split('/').map(s => s.trim()).filter(Boolean);
-      let gender = null; Mm.arts.forEach(pair => { if (tx.startsWith(pair[0] + ' ')) gender = 0; else if (tx.startsWith(pair[1] + ' ')) gender = 1; });
+      let gender = null; Mm.arts.forEach(set => set.forEach((a, k) => { if (gender == null && tx.startsWith(a + ' ')) gender = k; }));
       const w = { id: id + ':' + i + ':' + j, c: id, u: i, fr: tx, es: alts[0], alts, em: parts[2] && parts[2].trim(), gender, g: 0 };
       WMAP[w.id] = w; return w;
     });
@@ -190,8 +198,8 @@ const freshC = () => ({ nodes: {}, floor: 0, words: {}, mist: [], cert: {}, les:
 const fresh = () => ({
   v: 2, name: '', created: Date.now(), xp: 0, gems: 60, streak: 0, best: 0, last: null, freezes: 1, days: {}, goal: 20, cur: 'fr', C: {},
   ach: {}, own: {}, wear: {}, logo: 'clasico', plate: 'grafito', boost: 0, onb: false, offL: 0, offS: 0,
-  st: { cards: 0, chests: 0, les: 0, perf: 0, ex: 0, ok: 0, conj: 0, dict: 0, speak: 0, ms: 0, speed: 0, early: 0, night: 0, wknd: 0, goalDays: 0, exam: 0, jump: 0, shop: 0, combo: 0, table: 0, cert: 0, logo: 0, share: 0, phon: 0 },
-  set: { sound: true, rate: 0.9, listen: true, speak: true, theme: 'auto', auto: true, strict: false, haptic: true, mvoice: true }, cards: {}, q: null, miles: {}
+  st: { cards: 0, chests: 0, les: 0, perf: 0, ex: 0, ok: 0, conj: 0, dict: 0, speak: 0, ms: 0, speed: 0, early: 0, night: 0, wknd: 0, goalDays: 0, exam: 0, jump: 0, shop: 0, combo: 0, table: 0, cert: 0, logo: 0, share: 0, phon: 0, surv: 0, turbo: 0, hands: 0, reto: 0 },
+  set: { sound: true, rate: 0.9, listen: true, speak: true, theme: 'auto', auto: true, strict: false, haptic: true, mvoice: true, mono: false, turbo: true }, reto: null, cards: {}, q: null, miles: {}
 });
 function migrate(o) {
   const st = Object.assign(fresh(), o);
@@ -320,6 +328,7 @@ const ICO = {
   share: '<path d="M12 3v12M7 8l5-5 5 5M5 14v6h14v-6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
   down: '<path d="M12 4v12M7 11l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
   cert: '<rect x="3" y="4" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="16" cy="15" r="3" fill="currentColor"/><path d="M14.5 17.5L14 22l2-1 2 1-.5-4.5M7 8h7M7 11h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+  banana: '<path d="M5 15.5c5.5 3.8 12.6.2 13.4-8.6" fill="none" stroke="currentColor" stroke-width="4.4" stroke-linecap="round"/><path d="M18.2 6.6l.7-3M4.6 15.2l-1.4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
   swap: '<path d="M7 4L3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 Object.assign(ICO, window.GSI || {});
@@ -363,6 +372,8 @@ function mascot(o = {}) {
     : face === 'smile' ? R(6, 5, 4, 1, 'pix') + R(5, 4, 1, 1, 'pix') + R(10, 4, 1, 1, 'pix') + R(3, 4, 1, 1, 'gold') + R(12, 4, 1, 1, 'gold')
     : face === 'beard' ? R(6, 4, 4, 1, 'blond') + R(3, 5, 10, 1, 'blond') + R(4, 6, 8, 1, 'blond') + R(6, 7, 4, 1, 'blond')
     : face === 'cheeks' ? R(3, 4, 2, 1, 'pink') + R(11, 4, 2, 1, 'pink') + R(7, 5, 2, 1, 'pix')
+    : face === 'brows' ? R(4, 1, 3, 1, 'pix') + R(9, 1, 3, 1, 'pix') + R(6, 5, 4, 1, 'pix') + R(3, 4, 1, 1, 'pink') + R(12, 4, 1, 1, 'pink')
+    : face === 'grin' ? R(5, 4, 6, 1, 'pix') + R(6, 4, 4, 1, 'white') + R(6, 5, 4, 1, 'pix') + R(3, 4, 1, 1, 'pink') + R(12, 4, 1, 1, 'pink')
     : R(5, 4, 6, 1, 'pix') + R(3, 5, 2, 1, 'pix') + R(11, 5, 2, 1, 'pix') + R(2, 4, 1, 1, 'pix') + R(13, 4, 1, 1, 'pix');
   const arms = '<g class="m-armL">' + R(0, 3, 2, 2, 'mascot') + '</g><g class="m-armR">' + R(14, 3, 2, 2, 'mascot') + '</g>' + (anim === 'none' ? '' : '<g class="m-armRup">' + R(14, 1, 2, 2, 'mascot') + R(15, -1, 1, 2, 'mascot') + '</g><g class="m-armLup">' + R(0, 1, 2, 2, 'mascot') + R(0, -1, 1, 2, 'mascot') + '</g>');
   let acc = '', fx = '';
@@ -374,6 +385,8 @@ function mascot(o = {}) {
   else if (!o.plain && th.hat === 'straw') acc += R(1, -1, 14, 1, 'tan') + R(4, -3, 8, 2, 'tan') + R(4, -2, 8, 1, 'green2') + R(5, -4, 6, 1, 'tan');
   else if (!o.plain && th.hat === 'viking') acc += R(3, -2, 10, 2, 'steel') + R(5, -3, 6, 1, 'steel') + R(7, -1, 2, 1, 'gold') + R(1, -2, 2, 1, 'white') + R(0, -4, 1, 2, 'white') + R(13, -2, 2, 1, 'white') + R(15, -4, 1, 2, 'white');
   else if (!o.plain && th.hat === 'ushanka') acc += R(2, -2, 12, 2, 'fur') + R(3, -3, 10, 1, 'fur') + R(1, 0, 2, 3, 'fur') + R(13, 0, 2, 3, 'fur') + R(7, -2, 2, 1, 'gold');
+  else if (!o.plain && th.hat === 'alpine') acc += R(2, -1, 12, 1, 'green2') + R(4, -3, 8, 2, 'green2') + R(4, -2, 8, 1, 'tan') + R(5, -4, 6, 1, 'green2') + R(11, -5, 1, 2, 'red') + R(12, -6, 1, 1, 'red');
+  else if (!o.plain && th.hat === 'phones') acc += R(3, -2, 10, 1, 'pix') + R(2, -1, 1, 1, 'pix') + R(13, -1, 1, 1, 'pix') + R(1, 0, 2, 3, 'navy') + R(13, 0, 2, 3, 'navy') + R(1, 1, 1, 1, 'acc') + R(14, 1, 1, 1, 'acc');
   if (wear.scarf) acc += [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13].map(x => R(x, 6, 1, 1, x % 3 === 0 ? 'navy' : x % 3 === 1 ? 'white' : 'red')).join('') + R(8, 7, 1, 1, 'red') + R(8, 8, 1, 1, 'navy');
   if (wear.mono) acc += [[9, 1], [10, 1], [11, 1], [9, 4], [11, 4], [11, 2], [11, 3], [9, 2]].map(([x, y]) => R(x, y, 1, 1, 'gold')).join('');
   if (wear.glasses) acc += R(3, 1, 4, 1, 'pix') + R(9, 1, 4, 1, 'pix') + R(7, 2, 2, 1, 'pix') + R(3, 2, 1, 2, 'pix') + R(12, 2, 1, 2, 'pix');
@@ -402,6 +415,10 @@ function distract(correct, pool, key, n = 3) { const seen = new Set([norm(correc
 function pickWord(ws) { const list = ws.map(w => { const s = strength(w.id); return [w, s < 0 ? 5 : Math.pow(7 - s, 1.6)]; }); return wpick(list); }
 const sentPool = u => { const U = CD().units; let p = U[u].sents.slice(); if (u > 0) p = p.concat(U[u - 1].sents); if (u + 1 < U.length) p = p.concat(U[u + 1].sents.slice(0, 3)); return p; };
 const L = () => M().adj;
+/* Modo Mono: cada ejercicio de escribir se cambia por su versión de tocar. La certificación no cambia. */
+let RIGOR = false;
+const mono = () => !!S.set.mono && !RIGOR;
+const MONOK = { tef: 'mef', tfe: 'mfe', dw: 'lw', ds: 'lt' };
 const X = {
   intro: w => ({ t: 'intro', w, key: 'in' + w.id }),
   mcFrEs(w, pool) { const ds = distract(w.es, pool, 'es'); if (ds.length < 3) return null; return { t: 'choice', kind: 'Traduce', q: '¿Qué significa?', big: w.fr, audio: w.fr, opts: shuffle([w.es, ...ds.map(d => d.es)]), ans: w.es, wid: [w.id], key: 'mfe' + w.id }; },
@@ -417,7 +434,7 @@ const X = {
   tilesFrEs(s, pool) { const ans = toks(s.es); if (ans.length > 15) return null; const extra = distract('', pool.flatMap(x => toks(x.es)).filter(t => !ans.map(norm).includes(norm(t))), null, 3); return { t: 'tiles', kind: 'Traduce', q: 'Traduce esta frase', big: s.fr, audio: s.fr, answer: ans, bank: shuffle([...ans, ...extra]), lang: 'es', sid: s.id, key: 'tfs' + s.id }; },
   listenTiles(s, pool) { if (!listenOn()) return null; const ans = toks(s.fr); if (ans.length > 15) return null; const extra = distract('', pool.flatMap(x => toks(x.fr)).filter(t => !ans.map(norm).includes(norm(t))), null, 2); return { t: 'tiles', kind: 'Escucha', q: 'Toca lo que escuchas', listen: true, audio: s.fr, answer: ans, bank: shuffle([...ans, ...extra]), lang: 'fr', sid: s.id, key: 'lt' + s.id }; },
   pairs(ws) { const sel = [], sf = new Set(), se = new Set(); for (const w of shuffle(ws)) { const a = norm(w.fr), b = norm(w.es); if (sf.has(a) || se.has(b)) continue; sf.add(a); se.add(b); sel.push(w); if (sel.length === 5) break; } if (sel.length < 4) return null; return { t: 'pairs', kind: 'Parejas', q: 'Toca los pares', pairs: sel, wid: sel.map(w => w.id), key: 'pr' + sel.map(w => w.id).join() }; },
-  gender(w) { if (w.gender == null) return null; const pair = M().arts.find(p => w.fr.startsWith(p[0] + ' ') || w.fr.startsWith(p[1] + ' ')); if (!pair) return null; const noun = w.fr.slice(w.fr.indexOf(' ') + 1); const ans = pair[w.gender] + ' ' + noun; return { t: 'choice', kind: 'Género', q: S.cur === 'sv' ? '¿En o ett?' : '¿Masculino o femenino?', big: noun, sub: w.es, opts: [pair[0] + ' ' + noun, pair[1] + ' ' + noun], optSay: true, ans, wid: [w.id], key: 'g' + w.id }; },
+  gender(w) { if (w.gender == null) return null; const pair = M().arts.find(p => p.some(a => w.fr.startsWith(a + ' '))); if (!pair) return null; const noun = w.fr.slice(w.fr.indexOf(' ') + 1); const ans = pair[w.gender] + ' ' + noun; return { t: 'choice', kind: 'Género', q: M().gq || '¿Masculino o femenino?', big: noun, sub: w.es, opts: pair.map(a => a + ' ' + noun), optSay: true, ans, wid: [w.id], key: 'g' + w.id }; },
   cloze(s, unit) {
     const T = toks(s.fr), keys = unit.keys.map(norm);
     let idx = T.map((t, i) => keys.includes(norm(t)) ? i : -1).filter(i => i >= 0), opts;
@@ -431,6 +448,7 @@ const X = {
   speak: (text, es) => speakOn() ? { t: 'speak', kind: 'Pronunciación', q: 'Lee en voz alta', text, es, key: 'sp' + text } : null,
   read(unit) { const ss = unit.sents; if (ss.length < 5) return null; const start = rnd(ss.length - 3), part = ss.slice(start, start + 4), hi = rnd(part.length), s = part[hi]; const ds = distract(s.es, ss.filter(x => x.id !== s.id), 'es', 3); if (ds.length < 3) return null; return { t: 'read', kind: 'Lectura', q: '¿Qué significa la frase resaltada?', passage: part.map(x => x.fr), hi, opts: shuffle([s.es, ...ds.map(d => d.es)]), ans: s.es, sid: s.id, key: 'rd' + s.id }; },
   conj(v, t, typeMode) {
+    if (mono()) typeMode = false;
     const p = t === 'ger' ? 2 : rnd(6), fem = (p === 2 || p === 5) && Math.random() < 0.35, ans = conj(v.inf, t, p, fem);
     const answers = [ans]; if ([0, 1, 3, 4].includes(p)) { const alt = conj(v.inf, t, p, true); if (alt !== ans) answers.push(alt); }
     const base = { kind: 'Conjugación', big: t === 'ger' ? v.inf : (fem ? PRF : PR)[p] + '  ·  ' + v.inf, sub: (v.es ? v.es + ' · ' : '') + TN[t], conj: 1, key: 'cj' + v.inf + t + p + fem };
@@ -439,8 +457,8 @@ const X = {
     const ds = distract(ans, pool, null, 3); if (ds.length < 3) return null;
     return Object.assign(base, { t: 'choice', q: 'Elige la conjugación correcta', opts: shuffle([ans, ...ds]), optSay: true, ans });
   },
-  table(v, t) { if (t === 'ger') t = 'pres'; return { t: 'table', kind: 'Tabla completa', q: 'Conjuga ' + v.inf + ' en ' + TN[t], sub: v.es, rows: [0, 1, 2, 3, 4, 5].map(p => ({ label: PR[p], answers: [conj(v.inf, t, p, false), conj(v.inf, t, p, true)] })), conj: 1, key: 'tb' + v.inf + t }; },
-  number(L2) { const max = [20, 100, 1000, 10000, 10000][L2 - 1] || 100; const n = rnd(max); if (listenOn() && Math.random() < 0.6) return { t: 'type', kind: 'Números', q: 'Escribe en cifras el número que escuchas', listen: true, audio: frNum(n), answers: [String(n), frNum(n)], lang: 'num', key: 'nl' + n }; const set = new Set([n]); [1, -1, 10, -10, 20, 100].forEach(d => { if (n + d >= 0) set.add(n + d); }); const ds = shuffle([...set].filter(x => x !== n)).slice(0, 3); return { t: 'choice', kind: 'Números', q: '¿Cómo se escribe este número?', big: fmt(n), opts: shuffle([n, ...ds].map(frNum)), optSay: true, ans: frNum(n), key: 'nc' + n }; },
+  table(v, t) { if (mono()) return X.conj(v, t, false); if (t === 'ger') t = 'pres'; return { t: 'table', kind: 'Tabla completa', q: 'Conjuga ' + v.inf + ' en ' + TN[t], sub: v.es, rows: [0, 1, 2, 3, 4, 5].map(p => ({ label: PR[p], answers: [conj(v.inf, t, p, false), conj(v.inf, t, p, true)] })), conj: 1, key: 'tb' + v.inf + t }; },
+  number(L2) { const max = [20, 100, 1000, 10000, 10000][L2 - 1] || 100; const n = rnd(max); if (listenOn() && !mono() && Math.random() < 0.6) return { t: 'type', kind: 'Números', q: 'Escribe en cifras el número que escuchas', listen: true, audio: frNum(n), answers: [String(n), frNum(n)], lang: 'num', key: 'nl' + n }; const set = new Set([n]); [1, -1, 10, -10, 20, 100].forEach(d => { if (n + d >= 0) set.add(n + d); }); const ds = shuffle([...set].filter(x => x !== n)).slice(0, 3); return { t: 'choice', kind: 'Números', q: '¿Cómo se escribe este número?', big: fmt(n), opts: shuffle([n, ...ds].map(frNum)), optSay: true, ans: frNum(n), key: 'nc' + n }; },
   ff() { const F = CD().ff; if (F.length < 4) return null; const f = pick(F); if (Math.random() < 0.55) { const ds = distract(f.real, [f.trap, ...shuffle(F.filter(x => x !== f).map(x => x.real))], null, 3); return { t: 'choice', kind: 'Trampa', q: '¿Qué significa realmente?', big: f.fr, audio: f.fr, opts: shuffle([f.real, ...ds]), ans: f.real, key: 'ff' + f.fr }; } const truth = Math.random() < 0.3; return { t: 'choice', kind: 'Trampa', q: '¿Verdadero o falso?', big: '«' + f.fr + '» significa «' + (truth ? f.real : f.trap) + '»', audio: f.fr, opts: ['Verdadero', 'Falso'], ans: truth ? 'Verdadero' : 'Falso', reveal: f.fr + ' = ' + f.real, key: 'ffb' + f.fr }; },
   cult() { const C = CD().cult; if (!C.length) return null; const c = pick(C); return { t: 'choice', kind: 'Cultura', q: c.q, opts: shuffle([c.a, ...c.w]), ans: c.a, key: 'cu' + c.q }; },
   idiom() { const I = CD().idioms; return I.length ? X.mcFrEs(pick(I), I) : null; },
@@ -450,11 +468,11 @@ const X = {
 /* ---- armado de lecciones ---- */
 function genSet(kinds, n, make) { const out = [], used = new Set(); let guard = 0, ks = kinds.slice(); while (out.length < n && guard++ < n * 15) { const k = wpick(ks); if (!k) break; let it = null; try { it = make(k); } catch (e) { it = null; } if (!it || used.has(it.key)) continue; used.add(it.key); out.push(it); if (k === 'pairs' || k === 'tb') ks = ks.filter(x => x[0] !== k); } return out; }
 function wordItem(k, w, pool) {
-  if (!w) return null;
+  if (!w) return null; if (mono()) k = MONOK[k] || k;
   switch (k) { case 'mfe': return X.mcFrEs(w, pool); case 'mef': return X.mcEsFr(w, pool); case 'pic': return X.pic(w, pool); case 'lw': return X.listenWord(w, pool); case 'tef': return X.typeEsFr(w); case 'tfe': return X.typeFrEs(w); case 'dw': return X.dictWord(w); case 'gen': return X.gender(w); case 'spw': return X.speak(w.fr, w.es); default: return null; }
 }
 function sentItem(k, s, unit, pool) {
-  if (!s) return null;
+  if (!s) return null; if (mono()) k = MONOK[k] || k;
   switch (k) { case 'tsf': return X.tilesEsFr(s, pool); case 'tfs': return X.tilesFrEs(s, pool); case 'lt': return X.listenTiles(s, pool); case 'ds': return X.dictSent(s); case 'tf': return X.tf(s, pool); case 'cz': return X.cloze(s, unit); case 'fx': return X.fixSent(s, unit); case 'ls': return X.listenSent(s, pool); case 'sps': return X.speak(s.fr, s.es); default: return null; }
 }
 const WORDK = ['mfe', 'mef', 'pic', 'lw', 'tef', 'tfe', 'dw', 'gen', 'spw'];
@@ -518,6 +536,8 @@ function practiceLesson(mode) {
   else if (mode === 'errores') { const ms = CS().mist.slice(0, 30); items = genSet([['x', 1]], 12, () => { const m = pick(ms); if (!m) return null; if (m.k === 'w') return wordItem(pick(['tef', 'mef', 'mfe', 'dw']), WMAP[m.id], pool); const s = SMAP[m.id]; return s ? sentItem(pick(['tsf', 'tfs', 'cz', 'ds']), s, U[s.u], sentPool(s.u)) : null; }); }
   else if (mode === 'escucha') items = genSet([['lw', 2], ['ls', 2], ['dw', 2], ['ds', 2], ['lt', 2], ['num', S.cur === 'fr' ? 1 : 0], ['ph', 1]], 12, k => k === 'num' ? X.number(3) : k === 'ph' ? X.phon() : (k === 'lw' || k === 'dw') ? wordItem(k, pick(allW), pool) : sentItem(k, pick(allS), u0, allS));
   else if (mode === 'conj' || mode === 'tabla') { const vs = us.flatMap(u => U[u].verbs.map(v => [v, U[u].tenses])); const extra = [['être', 'ser/estar'], ['avoir', 'tener'], ['aller', 'ir'], ['faire', 'hacer'], ['parler', 'hablar'], ['finir', 'terminar']].map(([inf, es]) => [{ inf, es }, ['pres']]); const src = vs.concat(extra); items = mode === 'tabla' ? Array.from({ length: 5 }, () => { const [v, ts] = pick(src); return X.table(v, pick(ts)); }) : genSet([['c', 2], ['t', 1.5]], 12, k => { const [v, ts] = pick(src); return X.conj(v, pick(ts), k === 't'); }); }
+  else if (mode === 'mono') items = genSet([['pic', 3], ['mfe', 2], ['mef', 2], ['lw', 1.5], ['pairs', 1], ['tsf', 1.5], ['lt', 1]], 8, k => k === 'pairs' ? X.pairs(allW) : ['tsf', 'lt'].includes(k) ? (s => sentItem(k, s, U[s.u], sentPool(s.u)))(pick(allS)) : wordItem(k, pickWord(allW), pool));
+  else if (mode === 'reto') items = mixed(u0, allW, allS, 4, 15, 0.2);
   else if (mode === 'numeros') items = genSet([['n', 1]], 12, () => X.number(1 + rnd(5)));
   else if (mode === 'habla') items = genSet([['s', 3], ['w', 1]], 10, k => { if (k === 's') { const s = pick(allS); return X.speak(s.fr, s.es); } const w = pick(allW); return X.speak(w.fr, w.es); });
   else if (mode === 'ff') items = genSet([['f', 1]], 12, () => X.ff());
@@ -526,12 +546,22 @@ function practiceLesson(mode) {
   if (!items.length) items = mixed(u0, allW, allS, Lv, 10);
   return { items, ctx: { type: 'practice', mode } };
 }
+/* ---- supervivencia: 3 vidas, sin fin; cada 6 aciertos sube la dificultad ---- */
+function survBatch(n) {
+  const U = CD().units, us = availUnits(), seen = Object.keys(CS().words).filter(id => WMAP[id]).map(id => WMAP[id]);
+  const allW = seen.length >= 8 ? seen : us.flatMap(u => U[u].words), allS = us.flatMap(u => U[u].sents), pool = allW.length >= 8 ? allW : poolAround(0);
+  const tier = Math.min(3, Math.floor((LS && LS.ctx.surv ? LS.ok : 0) / 6)), on = c => c ? 1 : 0;
+  const kinds = [['mfe', 3], ['mef', 2.5], ['pic', tier < 2 ? 1.5 : 0.3], ['lw', 1.2], ['pairs', on(tier < 2) * 0.6], ['tsf', on(tier >= 1) * 2], ['tfs', on(tier >= 1) * 1.5], ['cz', on(tier >= 1) * 1.5], ['lt', on(tier >= 1)], ['tef', on(tier >= 2) * 2.5], ['dw', on(tier >= 2) * 1.2], ['fx', on(tier >= 2)], ['ds', on(tier >= 3) * 1.5]];
+  return genSet(kinds, n, k => k === 'pairs' ? X.pairs(allW) : WORDK.includes(k) ? wordItem(k, pickWord(allW), pool) : (s => s ? sentItem(k, s, U[s.u], sentPool(s.u)) : null)(pick(allS)));
+}
+const survLesson = () => ({ items: survBatch(6), ctx: { type: 'surv', surv: true, mode: 'surv' } });
 function jumpLesson(u) {
   const U = CD().units.slice(Math.max(0, u - 6), u);
   const items = genSet([['tef', 2], ['tsf', 3], ['mef', 1], ['cz', 2], ['cj', S.cur === 'fr' ? 2 : 0], ['ds', 1]], 16, k => { const unit = pick(U); if (k === 'cj') return unit.verbs.length ? X.conj(pick(unit.verbs), pick(unit.tenses), Math.random() < 0.5) : null; if (k === 'tef' || k === 'mef') return wordItem(k, pick(unit.words), poolAround(unit.i)); return sentItem(k, pick(unit.sents), unit, sentPool(unit.i)); });
   return { items, ctx: { type: 'jump', u, exam: true } };
 }
-function certLesson(lv) {
+function certLesson(lv) { RIGOR = true; try { return certLesson0(lv); } finally { RIGOR = false; } }
+function certLesson0(lv) {
   const U = CD().units.filter(x => x.lv === lv);
   const items = genSet([['tef', 3], ['tsf', 4], ['tfs', 2], ['ds', 2], ['dw', 1], ['cz', 3], ['fx', 2], ['rd', 2], ['cjt', S.cur === 'fr' ? 3 : 0], ['tb', S.cur === 'fr' ? 1 : 0], ['lt', 1.5], ['ff', 1]], 30, k => {
     const unit = pick(U);
@@ -652,10 +682,15 @@ function viewAprender() {
 function viewPracticar() {
   const due = dueWords().length, mist = CS().mist.length, lw = learned(), fr = S.cur === 'fr';
   const P = (mode, em, t, d, tag) => '<button class="pcard" data-prac="' + mode + '"><span class="pi">' + ico(em) + '</span><span><b>' + t + '</b><small>' + d + '</small>' + (tag ? '<span class="tag">' + tag + '</span>' : '') + '</span></button>';
-  return '<div class="sec-h"><div><h2>Practicar ' + M().flag + '</h2><p>Lecciones ilimitadas que cuentan para tu meta.</p></div></div><div class="grid2">' +
+  return '<div class="sec-h"><div><h2>Practicar ' + M().flag + '</h2><p>Modos de juego y entrenamiento. Todo suma XP para tu meta.</p></div></div><div class="grid2">' +
+    P('surv', 'heart', 'Supervivencia', 'Tres vidas, sin fin. Cada 6 aciertos sube la dificultad.', 'Récord: ' + S.st.surv) +
+    P('reto', 'sparkle', 'Reto del día', '15 preguntas de todo lo que llevas. La primera vez del día: XP doble.', S.reto === dkey() ? 'Hecho hoy' : '+25 croissants') +
+    P('hands', 'escucha', 'Manos libres', 'Escucha y repite sin tocar nada. Para el camión o la cocina.', HAS_TTS ? (dueWords().length ? dueWords().length + ' por repasar' : '') : 'Sin voz en este navegador') +
+    P('mono', 'banana', 'Modo Mono', 'Tres minutos solo tocando: imágenes, audio y parejas.', S.set.mono ? 'Activo en todo' : '') +
+    P('speed', 'timer', 'Contrarreloj', '60 segundos. ¿Cuántas aciertas?', 'Récord: ' + S.st.speed) +
+    '</div><div class="sec-h"><div><h2>Entrenamiento</h2></div></div><div class="grid2">' +
     P('srs', 'brain', 'Repaso inteligente', 'Las palabras que estás por olvidar.', due ? due + ' para hoy' : lw + ' aprendidas') +
     P('errores', 'target', 'Tus errores', 'Vuelve a lo que fallaste hasta dominarlo.', mist ? mist + ' pendientes' : 'Sin pendientes') +
-    P('speed', 'timer', 'Contrarreloj', '60 segundos. ¿Cuántas aciertas?', 'Récord: ' + S.st.speed) +
     (fr ? P('conj', 'repaso', 'Conjugador', 'Todos los tiempos que ya viste.', S.st.conj + ' aciertos') + P('tabla', 'grid', 'Tablas completas', 'Las 6 personas de un verbo, sin pistas.', S.st.table + ' tablas') + P('numeros', 'hash', 'Números', 'Soixante-dix, quatre-vingts…', '') : '') +
     P('fonetica', 'lips', 'Fonética', 'Los sonidos que no existen en español.', CD().phon.length + ' sonidos') +
     P('escucha', 'escucha', 'Oído fino', 'Dictados y comprensión auditiva.', listenOn() ? '' : 'Activa el audio en Perfil') +
@@ -754,7 +789,8 @@ const ACH = [
   ['w50', 'book', 'Vocabulario', '50 palabras aprendidas', () => [learnedAll(), 50], 20], ['w300', 'book2', 'Diccionario andante', '300 palabras', () => [learnedAll(), 300], 60], ['w1000', 'book2', 'Enciclopedia', '1 000 palabras', () => [learnedAll(), 1000], 200], ['w3000', 'brain', 'Memoria políglota', '3 000 palabras', () => [learnedAll(), 3000], 500],
   ['u1', 'cap', 'Unidad 1', 'Aprueba un examen de unidad', () => [maxUnits(), 1], 15], ['A1', 'cap', 'Nivel A1', 'Termina A1 en algún idioma', () => [maxUnits(), 8], 100], ['B1', 'cap', 'Nivel B1', 'Termina B1', () => [maxUnits(), 24], 200], ['C1', 'cap', 'Nivel C1', 'Termina C1', () => [maxUnits(), 40], 400], ['C2', 'trophy2', 'Maestría', 'Completa las 48 unidades', () => [maxUnits(), 48], 1000],
   ['cert1', 'medal', 'Certificado', 'Aprueba una certificación', () => [S.st.cert, 1], 50], ['cert6', 'cert', 'Seis sellos', 'Aprueba 6 certificaciones', () => [S.st.cert, 6], 300],
-  ['poly2', 'cultura', 'Bilingüe en camino', 'Practica 2 idiomas', () => [CIDS.filter(id => S.C[id] && S.C[id].les > 0).length, 2], 30], ['poly4', 'map', 'Políglota', 'Practica los 4 idiomas', () => [CIDS.filter(id => S.C[id] && S.C[id].les > 0).length, 4], 120],
+  ['poly2', 'cultura', 'Bilingüe en camino', 'Practica 2 idiomas', () => [CIDS.filter(id => S.C[id] && S.C[id].les > 0).length, 2], 30], ['poly4', 'map', 'Políglota', 'Practica 4 idiomas', () => [CIDS.filter(id => S.C[id] && S.C[id].les > 0).length, 4], 120], ['poly6', 'crown', 'Hiperpolíglota', 'Practica los 6 idiomas', () => [CIDS.filter(id => S.C[id] && S.C[id].les > 0).length, 6], 250],
+  ['surv25', 'heart', 'Sobreviviente', '25 aciertos en Supervivencia', () => [S.st.surv, 25], 40], ['turbo10', 'bolt', 'Turbo', '10 lecciones en Turbo', () => [S.st.turbo, 10], 30], ['hands1', 'escucha', 'Oído de camión', 'Termina una ronda de Manos libres', () => [S.st.hands, 1], 10], ['reto7', 'sparkle', 'Retador', 'Supera 7 retos del día', () => [S.st.reto, 7], 40],
   ['g7', 'target', 'Constancia', 'Cumple tu meta 7 veces', () => [S.st.goalDays, 7], 30], ['g30', 'target', 'Disciplina', 'Cumple tu meta 30 veces', () => [S.st.goalDays, 30], 100],
   ['early', 'sun', 'Madrugador', 'Una lección antes de las 7 a. m.', () => [S.st.early, 1], 10], ['night', 'moon', 'Búho', 'Una lección después de las 11 p. m.', () => [S.st.night, 1], 10], ['wknd', 'calendar', 'Guerrero de finde', '20 lecciones en fin de semana', () => [S.st.wknd, 20], 20],
   ['cj100', 'repaso', 'Conjugador', '100 conjugaciones correctas', () => [S.st.conj, 100], 30], ['cj1k', 'gear', 'Máquina verbal', '1 000 conjugaciones', () => [S.st.conj, 1000], 120], ['tb25', 'grid', 'Tabla perfecta', '25 tablas correctas', () => [S.st.table, 25], 60],
@@ -800,6 +836,7 @@ function viewPerfil() {
     '<div class="set-row"><label>Meta diaria<small>Lecciones por día. El plan de 4 años es de 20.</small></label>' + goalSeg + '</div>' +
     '<div class="set-row"><label>Velocidad de voz<small>' + (HAS_TTS ? (v ? 'Voz: ' + esc(v.name) : 'Voz del sistema') : 'Tu navegador no tiene voz') + '</small></label>' + seg('rate', [[0.7, 'Lenta'], [0.9, 'Normal'], [1.05, 'Rápida']]) + '</div>' +
     '<div class="set-row"><label>Tema<small>Claro, oscuro o el de tu sistema.</small></label>' + seg('theme', [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']]) + '</div>' +
+    sw('mono', 'Modo Mono', 'Todo se contesta tocando, sin teclado. Las certificaciones siguen siendo rigurosas.') + sw('turbo', 'Turbo de dominio', 'Una lección perfecta cuenta doble en tu camino: avanzas más rápido en lo que ya dominas.') +
     sw('strict', 'Modo riguroso', 'Acentos, artículos y ortografía exactos en todo. Exámenes y certificaciones siempre lo son.') +
     sw('mvoice', 'Voz de la mascota', PET() + ' te habla en español: te felicita, te corrige y te lee las guías.') + sw('sound', 'Efectos de sonido', 'Ding al acertar, buzz al fallar.') + sw('haptic', 'Vibración', 'En celulares compatibles.') + sw('auto', 'Audio automático', 'Pronuncia al aparecer cada palabra.') + sw('listen', 'Ejercicios de escucha', 'Dictados y comprensión auditiva.') + sw('speak', 'Ejercicios de pronunciación', 'Usan el micrófono si tu navegador lo permite.') +
     '</div>' + (installEvt ? '<div class="sec-h"><div><h2>Instalar</h2></div></div><div class="card"><div class="set-row"><label>Grey~Spell como app<small>Ícono en tu pantalla de inicio y funciona sin internet.</small></label><button class="btn sm" data-act="install">Instalar</button></div></div>' : '') +
@@ -873,14 +910,16 @@ let LS = null;
 function startLesson(pack) {
   if (!pack.items.length) { toast('alert', 'No hay ejercicios disponibles', 'Activa audio o pronunciación en Perfil'); return; }
   closeModal(); if (HAS_TTS) try { speechSynthesis.cancel(); } catch (e) { /* nada */ }
-  LS = { ctx: pack.ctx, queue: pack.items.slice(), total: pack.items.length, step: 0, graded: 0, ok: 0, combo: 0, maxCombo: 0, t0: Date.now(), retry: !pack.ctx.exam, strict: !!pack.ctx.exam || S.set.strict, cur: null, state: 'ask', sel: null, again: new Set() };
+  LS = { ctx: pack.ctx, queue: pack.items.slice(), total: pack.items.length, step: 0, graded: 0, ok: 0, combo: 0, maxCombo: 0, t0: Date.now(), retry: !pack.ctx.exam && !pack.ctx.surv, strict: !!pack.ctx.exam || S.set.strict, cur: null, state: 'ask', sel: null, again: new Set(), lives: 3 };
   const el = $('#lesson'); el.hidden = false; document.body.style.overflow = 'hidden';
-  const label = pack.ctx.cert ? 'Certificación ' + pack.ctx.lv : pack.ctx.type === 'jump' ? 'Prueba de salto' : pack.ctx.exam ? 'Examen' : '';
+  const label = pack.ctx.surv ? '' : pack.ctx.cert ? 'Certificación ' + pack.ctx.lv : pack.ctx.type === 'jump' ? 'Prueba de salto' : pack.ctx.exam ? 'Examen' : '';
   el.innerHTML = '<div class="l-top"><button class="l-x" data-act="quit" aria-label="Salir de la lección">' + ico('x') + '</button><div class="l-prog" role="progressbar" aria-label="Progreso"><i></i></div><div class="l-combo" id="lcombo">' + (label ? '<span class="xtag">' + label + '</span>' : '') + '</div></div><div class="l-body"><div class="l-inner" id="lbody"></div></div><div class="l-foot" id="lfoot"></div>';
   next();
 }
-function progress() { $('#lesson .l-prog i').style.width = (LS.step / LS.total * 100) + '%'; const c = $('#lcombo'); if (!LS.ctx.exam) c.innerHTML = LS.combo >= 3 ? '<span class="combo">' + ico('flame') + '×' + LS.combo + '</span>' : ''; }
-function next() { if (!LS.queue.length) return finishLesson(); LS.cur = LS.queue.shift(); LS.state = 'ask'; LS.sel = null; progress(); renderItem(); }
+function progress() {
+  if (LS.ctx.surv) { $('#lesson .l-prog i').style.width = (LS.ok % 6) / 6 * 100 + '%'; $('#lcombo').innerHTML = '<span class="lives" role="img" aria-label="' + LS.lives + ' vidas">' + [0, 1, 2].map(i => ico(i < LS.lives ? 'heart' : 'heartbreak', i < LS.lives ? 'on' : 'off')).join('') + '</span><span class="xtag">' + LS.ok + '</span>'; return; }
+  $('#lesson .l-prog i').style.width = (LS.step / LS.total * 100) + '%'; const c = $('#lcombo'); if (!LS.ctx.exam) c.innerHTML = LS.combo >= 3 ? '<span class="combo">' + ico('flame') + '×' + LS.combo + '</span>' : ''; }
+function next() { if (LS.ctx.surv) { if (LS.lives <= 0) return finishLesson(); if (LS.queue.length < 2) LS.queue.push(...survBatch(6)); } if (!LS.queue.length) return finishLesson(); LS.cur = LS.queue.shift(); LS.state = 'ask'; LS.sel = null; progress(); renderItem(); }
 function foot(mode, data = {}) {
   if (mode === 'none') return;
   const f = $('#lfoot'); f.className = 'l-foot' + (mode === 'ok' ? ' ok' : mode === 'bad' ? ' bad' : ''); const it = LS.cur;
@@ -901,7 +940,7 @@ function promptHTML(it) {
   return '<div class="prompt"><div class="pm" id="pmasc">' + mascot({ mood: 'think' }) + '</div><div class="bubble">' + (it.audio ? '<div class="bline">' + sayBtn(it.audio) + big + '</div>' : big) + (it.sub ? '<small>' + esc(it.sub) + '</small>' : '') + '</div></div>';
 }
 function keyboard(lang) {
-  if (lang !== 'fr') return '';
+  if (lang !== 'fr' || (!M().cyr && !M().keys.length)) return '';
   if (M().cyr) { const rows = ['й ц у к е н г ш щ з х ъ', 'ф ы в а п р о л д ж э', 'я ч с м и т ь б ю ё']; return '<div class="kbd">' + rows.map(r => '<div>' + r.split(' ').map(c => '<button data-acc="' + c + '">' + c + '</button>').join('') + '</div>').join('') + '<div><button class="wide" data-acc=" ">espacio</button><button data-act="bksp" aria-label="Borrar">⌫</button></div><small class="sub">También puedes escribir en letras latinas: privet = привет</small></div>'; }
   return '<div class="accents">' + M().keys.map(c => '<button data-acc="' + c + '">' + c + '</button>').join('') + '</div>';
 }
@@ -910,7 +949,7 @@ function renderItem() {
   let h = '<div class="l-kind">' + esc(it.kind || '') + '</div>';
   if (it.t === 'intro') {
     const w = it.w;
-    b.innerHTML = '<div class="l-kind">Palabra nueva</div><h2 class="l-q">Aprende esta palabra</h2><div class="intro pop-in">' + (w.em ? '<div class="em">' + w.em + '</div>' : '<div class="intro-m">' + mascot({ mood: 'happy', anim: 'wave' }) + '</div>') + '<div class="bline">' + sayBtn(w.fr) + '<div class="big">' + esc(w.fr) + '</div></div>' + (M().cyr ? '<div class="sub mono">' + esc(translit(norm(w.fr))) + '</div>' : '') + '<div class="intro-es">' + esc(w.alts.join(' · ')) + '</div>' + (w.gender != null ? '<span class="gtag">' + (S.cur === 'sv' ? (w.gender ? 'ett-ord' : 'en-ord') : w.gender ? 'femenino' : 'masculino') + '</span>' : '') + sayBtn(w.fr, true) + '</div>';
+    b.innerHTML = '<div class="l-kind">Palabra nueva</div><h2 class="l-q">Aprende esta palabra</h2><div class="intro pop-in">' + (w.em ? '<div class="em">' + w.em + '</div>' : '<div class="intro-m">' + mascot({ mood: 'happy', anim: 'wave' }) + '</div>') + '<div class="bline">' + sayBtn(w.fr) + '<div class="big">' + esc(w.fr) + '</div></div>' + (M().cyr ? '<div class="sub mono">' + esc(translit(norm(w.fr))) + '</div>' : '') + '<div class="intro-es">' + esc(w.alts.join(' · ')) + '</div>' + (w.gender != null ? '<span class="gtag">' + (M().gl || ['masculino', 'femenino'])[w.gender] + '</span>' : '') + sayBtn(w.fr, true) + '</div>';
     foot('go', { label: 'Lo tengo' }); if (S.set.auto) grisou(pick(['Palabra nueva.', 'Mira esta palabra.', 'Esta te va a servir.']), w.fr); return;
   }
   if (it.t === 'note') { const u = CD().units[it.u]; b.innerHTML = '<div class="l-kind">Guía rápida</div><h2 class="l-q">' + esc(u.gt) + '</h2><div class="prompt"><div class="pm">' + mascot({ mood: 'happy', anim: 'wave' }) + '</div><div class="bubble small-b">Te explico rápido. <button class="btn ghost sm" data-act="readnote" data-u="' + it.u + '">' + ico('voice') + 'Escuchar a ' + PET() + '</button></div></div><div class="card">' + md(u.note) + '</div>'; foot('go', { label: '¡Entendido!' }); return; }
@@ -951,7 +990,7 @@ function check() {
   resolve(ok, msg);
 }
 function resolve(ok, msg) {
-  const it = LS.cur; LS.state = ok ? 'ok' : 'bad'; LS.graded++; S.st.ex++; const C = CS(); C.ex++;
+  const it = LS.cur; if (!ok && LS.ctx.surv) LS.lives = Math.max(0, LS.lives - 1); LS.state = ok ? 'ok' : 'bad'; LS.graded++; S.st.ex++; const C = CS(); C.ex++;
   if (ok) { LS.ok++; S.st.ok++; C.ok++; LS.combo++; LS.maxCombo = Math.max(LS.maxCombo, LS.combo); S.st.combo = Math.max(S.st.combo, LS.combo); LS.step++; SFX.ok(); if (it.conj) S.st.conj++; if (it.dict) S.st.dict++; if (it.phon) S.st.phon++; }
   else { LS.combo = 0; SFX.bad(); if (LS.retry && !LS.again.has(it.key)) { LS.again.add(it.key); LS.queue.push(it); } else LS.step++; const lb = $('#lbody'); if (lb && !RM()) { lb.classList.remove('shake-x'); void lb.offsetWidth; lb.classList.add('shake-x'); } }
   (it.wid || []).forEach(id => { touchWord(id, ok); if (!ok) addMistake('w', id); else if (LS.ctx.mode === 'errores') dropMistake('w', id); });
@@ -965,6 +1004,7 @@ function resolve(ok, msg) {
   progress(); foot(ok ? 'ok' : 'bad', { msg, title }); save();
 }
 function finishLesson() {
+  if (LS.ctx.surv) return survEnd();
   const Ls = LS, ctx = Ls.ctx, acc = Ls.graded ? Ls.ok / Ls.graded : 1, ms = Date.now() - Ls.t0;
   const need = ctx.cert ? CERT_PASS : PASS, passed = !ctx.exam || acc >= need;
   S.st.ms += ms; const t = dkey(), day = S.days[t] || (S.days[t] = { l: 0, x: 0 }); day.ms = (day.ms || 0) + ms;
@@ -977,13 +1017,14 @@ function finishLesson() {
   const perfect = Ls.graded > 0 && Ls.ok === Ls.graded && Ls.again.size === 0;
   let xp = 10 + (perfect ? 5 : 0) + Math.floor(Ls.maxCombo / 5) + (ctx.exam ? 10 : 0) + (ctx.cert ? 40 : 0);
   if (S.boost > Date.now()) xp *= 2;
-  const gems = 2 + (perfect ? 3 : 0) + (ctx.exam ? 5 : 0) + (ctx.cert ? 50 : 0), before = day.l, lvBefore = lvlInfo().lv;
+  const reto = ctx.mode === 'reto' && S.reto !== t; if (reto) { xp *= 2; S.reto = t; S.st.reto++; }
+  const gems = 2 + (perfect ? 3 : 0) + (ctx.exam ? 5 : 0) + (ctx.cert ? 50 : 0) + (reto ? 25 : 0), before = day.l, lvBefore = lvlInfo().lv;
   day.l++; day.x += xp; day.c = day.c || {}; day.c[S.cur] = (day.c[S.cur] || 0) + 1; S.xp += xp; S.gems += gems; S.st.les++; CS().les++; if (perfect) S.st.perf++;
   const hr = new Date().getHours(), wd = new Date().getDay(); if (hr < 7) S.st.early++; if (hr >= 23) S.st.night++; if (wd === 0 || wd === 6) S.st.wknd++;
   let extended = false; if (S.last !== t) { S.streak = (S.last && dayDiff(S.last, t) === 1) ? S.streak + 1 : 1; S.last = t; extended = true; S.best = Math.max(S.best, S.streak); }
   const goalHit = before < S.goal && day.l >= S.goal; if (goalHit) { S.st.goalDays++; S.gems += 10; }
-  let newCard = null;
-  if (ctx.type === 'node') { const k = ctx.u + '-' + ctx.ni, was = CS().nodes[k] || 0; CS().nodes[k] = Math.min(PER_NODE, was + 1); if (ctx.exam) S.st.exam++; if (ctx.exam && was < PER_LEVEL && CS().nodes[k] >= PER_LEVEL && !S.cards[S.cur + ':' + ctx.u]) { S.cards[S.cur + ':' + ctx.u] = Date.now(); S.st.cards++; S.gems += 20; newCard = ctx.u; } }
+  let newCard = null, turbo = false;
+  if (ctx.type === 'node') { const k = ctx.u + '-' + ctx.ni, was = CS().nodes[k] || 0; turbo = perfect && !ctx.exam && Ls.graded >= 6 && S.set.turbo && was + 1 < PER_NODE; if (turbo) S.st.turbo++; CS().nodes[k] = Math.min(PER_NODE, was + (turbo ? 2 : 1)); if (ctx.exam) S.st.exam++; if (ctx.exam && was < PER_LEVEL && CS().nodes[k] >= PER_LEVEL && !S.cards[S.cur + ':' + ctx.u]) { S.cards[S.cur + ':' + ctx.u] = Date.now(); S.st.cards++; S.gems += 20; newCard = ctx.u; } }
   qbump('xp', xp); qbump('les', 1); if (perfect) qbump('perf', 1); qbump('combo', Ls.maxCombo, true);
   const lvAfter = lvlInfo().lv, lvUp = lvAfter > lvBefore; if (lvUp) S.gems += 15 * lvAfter;
   const MILES = [3, 7, 14, 30, 50, 100, 200, 365, 500, 1000]; let mile = null; if (extended && MILES.includes(S.streak) && !S.miles[S.streak]) { mile = S.streak; S.miles[mile] = Date.now(); S.gems += mile * 5; if (S.freezes < 3) S.freezes++; }
@@ -992,11 +1033,11 @@ function finishLesson() {
   save(); SFX.done(); confetti();
   grisou((ctx.cert ? '¡Aprobaste la certificación!' : ctx.exam ? '¡Aprobaste el examen!' : perfect ? '¡Lección perfecta!' : '¡Lección completada!') + ' Ganaste ' + xp + ' puntos de experiencia.');
   const mins = Math.floor(ms / 60000), secs = Math.round(ms % 60000 / 1000);
-  const title = ctx.cert ? 'Certificación ' + ctx.lv + ' aprobada' : ctx.type === 'jump' ? '¡Salto aprobado!' : ctx.exam ? '¡Examen aprobado!' : perfect ? '¡Lección perfecta!' : '¡Lección completada!';
+  const title = reto ? '¡Reto del día superado!' : ctx.cert ? 'Certificación ' + ctx.lv + ' aprobada' : ctx.type === 'jump' ? '¡Salto aprobado!' : ctx.exam ? '¡Examen aprobado!' : perfect ? '¡Lección perfecta!' : '¡Lección completada!';
   $('#lbody').innerHTML = '<div class="result"><div class="rm">' + mascot({ mood: 'happy', anim: 'cheer', wear: ctx.cert ? { crown: 1 } : undefined }) + '</div><h1>' + title + '</h1>' +
     (ctx.type === 'jump' ? '<p class="sub">Desbloqueaste la unidad ' + (ctx.u + 1) + ' y todo lo anterior.</p>' : ctx.cert ? '<p class="sub">Tu sello ' + M().flag + ' ' + ctx.lv + ' ya aparece en tu placa.</p>' : '') +
     '<div class="rstats"><div class="rs" style="--c:var(--gold)"><small>XP</small><b>+' + xp + '</b></div><div class="rs" style="--c:var(--ok)"><small>Precisión</small><b>' + Math.round(acc * 100) + '%</b></div><div class="rs" style="--c:var(--acc)"><small>Tiempo</small><b>' + mins + ':' + String(secs).padStart(2, '0') + '</b></div></div>' +
-    '<p class="sub ih center-ih">+' + gems + ' ' + ico('croissant') + ' · Hoy: ' + day.l + '/' + S.goal + (Ls.maxCombo >= 5 ? ' · Mejor combo ×' + Ls.maxCombo : '') + '</p></div>';
+    '<p class="sub ih center-ih">+' + gems + ' ' + ico('croissant') + ' · Hoy: ' + day.l + '/' + S.goal + (Ls.maxCombo >= 5 ? ' · Mejor combo ×' + Ls.maxCombo : '') + '</p>' + (turbo ? '<p class="turbo">' + ico('bolt') + 'Turbo: lección perfecta, avanzas doble en el camino</p>' : '') + (reto ? '<p class="turbo">' + ico('sparkle') + 'Reto del día: XP doble y +25 croissants</p>' : '') + '</div>';
   $('#lfoot').className = 'l-foot';
   const after = [];
   if (extended) after.push(() => { grisou(S.streak === 1 ? '¡Empezaste una racha! Vuelve mañana.' : '¡Llevas ' + S.streak + ' días de racha!' + (mile ? ' Te ganaste un premio.' : '')); return '<div class="result"><div class="flame">' + ico('flame') + '</div><h1>' + S.streak + (S.streak === 1 ? ' día' : ' días') + ' de racha</h1>' + weekStrip() + (mile ? '<div class="reward">' + ico('gift') + '<div><b>Premio de racha</b><small>+' + mile * 5 + ' croissants y un protector</small></div></div>' : '') + '<p class="sub">' + (S.streak === 1 ? '¡Empezaste una racha! Vuelve mañana para que crezca.' : '¡Sigue así! Vuelve mañana.') + '</p></div>'; });
@@ -1007,6 +1048,61 @@ function finishLesson() {
   $('#lfoot').innerHTML = '<div class="f-in"><div></div><div class="f-btns">' + (ctx.type === 'node' ? '<button class="btn ghost" data-act="again">Otra lección</button>' : '') + '<button class="btn" data-act="done">Continuar</button></div></div>';
 }
 function closeLesson() { $('#lesson').hidden = true; $('#lesson').innerHTML = ''; document.body.style.overflow = ''; if (HAS_TTS) try { speechSynthesis.cancel(); } catch (e) { /* nada */ } LS = null; render(); checkAch(); }
+
+/* ---- supervivencia: resultado ---- */
+function survEnd() {
+  const sc = LS.ok, ms = Date.now() - LS.t0, rec = sc > S.st.surv; S.st.surv = Math.max(S.st.surv, sc);
+  const xp = Math.max(5, sc) * (S.boost > Date.now() ? 2 : 1), gems = Math.floor(sc / 5), t = dkey(), day = S.days[t] || (S.days[t] = { l: 0, x: 0 });
+  day.x += xp; day.ms = (day.ms || 0) + ms; S.xp += xp; S.gems += gems; S.st.ms += ms; qbump('xp', xp); save(); SFX.done(); if (rec && sc) confetti();
+  grisou(sc + (sc === 1 ? ' acierto' : ' aciertos') + ' con tres vidas. ' + (rec ? '¡Nuevo récord!' : '¡Bien jugado!'));
+  $('#lesson .l-prog i').style.width = '100%'; $('#lfoot').className = 'l-foot';
+  $('#lbody').innerHTML = '<div class="result"><div class="rm">' + mascot({ mood: 'happy', anim: 'cheer' }) + '</div><h1>' + sc + (sc === 1 ? ' acierto' : ' aciertos') + '</h1><p class="sub">' + (rec ? '¡Nuevo récord personal!' : 'Tu récord: ' + S.st.surv) + ' · +' + xp + ' XP' + (gems ? ' · +' + gems + ' croissants' : '') + '</p><p class="sub">Cada 6 aciertos la dificultad sube: de tocar, a armar frases, a escribir.</p></div>';
+  $('#lfoot').innerHTML = '<div class="f-in"><div></div><div class="f-btns"><button class="btn ghost" data-act="survagain">Otra vez</button><button class="btn" data-act="close">Listo</button></div></div>';
+}
+
+/* ---- manos libres: escucha sin tocar nada (palabras por repasar, nuevas y frases) ---- */
+function startHands() {
+  if (!HAS_TTS) { toast('mute', 'Tu navegador no tiene voz', 'Prueba en Chrome, Edge o Safari'); return; }
+  closeModal(); try { speechSynthesis.cancel(); } catch (e) { /* nada */ }
+  const U = CD().units, cu = current()[0], due = dueWords().map(id => WMAP[id]), seen = Object.keys(CS().words).filter(id => WMAP[id]).map(id => WMAP[id]);
+  const nw = U[cu].words.filter(w => !CS().words[w.id]).slice(0, 6), base = due.length ? due : shuffle(seen);
+  let list = shuffle(base.slice(0, 12)).concat(nw).concat(shuffle(U[cu].sents).slice(0, 4));
+  if (list.length < 6) list = U[cu].words.slice(0, 12).concat(U[cu].sents.slice(0, 4));
+  LS = { ctx: { type: 'hands' }, hands: true, list, i: 0, heard: 0, paused: false, t0: Date.now(), tok: 0 };
+  const el = $('#lesson'); el.hidden = false; document.body.style.overflow = 'hidden';
+  el.innerHTML = '<div class="l-top"><button class="l-x" data-act="quit" aria-label="Salir">' + ico('x') + '</button><div class="l-prog"><i></i></div><div class="l-combo"><span class="xtag">Manos libres</span></div></div><div class="l-body"><div class="l-inner" id="lbody"></div></div><div class="l-foot" id="lfoot"></div>';
+  handsStep();
+}
+function handsFoot() { $('#lfoot').innerHTML = '<div class="f-in"><div class="f-skip"><button class="btn ghost" data-act="hpause">' + (LS.paused ? 'Seguir' : 'Pausa') + '</button></div><div class="f-btns"><button class="btn" data-act="hnext">Siguiente</button></div></div>'; }
+function handsStep() {
+  if (!LS || !LS.hands) return;
+  if (LS.i >= LS.list.length) return handsEnd();
+  const it = LS.list[LS.i], es = it.alts ? it.alts.slice(0, 2).join(' · ') : it.es, tok = ++LS.tok;
+  $('#lesson .l-prog i').style.width = (LS.i / LS.list.length * 100) + '%';
+  $('#lbody').innerHTML = '<div class="l-kind">Escucha y repite en voz alta · ' + (LS.i + 1) + ' de ' + LS.list.length + '</div><div class="intro hands pop-in">' + (it.em ? '<div class="em">' + it.em + '</div>' : '<div class="intro-m">' + mascot({ mood: 'happy', anim: 'idle' }) + '</div>') + '<div class="big">' + esc(it.fr) + '</div>' + (M().cyr ? '<div class="sub mono">' + esc(translit(norm(it.fr))) + '</div>' : '') + '<div class="intro-es" id="hes" style="visibility:hidden">' + esc(es) + '</div></div>';
+  handsFoot();
+  const pv = petVoice()[0], parts = [{ text: it.fr, lang: M().voice, rate: S.set.rate }, { wait: 900 }, { show: 1 }, { text: es, lang: pv, rate: 1.02, pitch: 1.2 }, { wait: 500 }, { text: it.fr, lang: M().voice, rate: 0.7 }, { wait: 1400 }];
+  const step = i => {
+    if (!LS || !LS.hands || LS.tok !== tok || LS.paused) return;
+    if (i >= parts.length) { LS.heard++; LS.i++; return handsStep(); }
+    const p = parts[i];
+    if (p.wait) { LS.tm = setTimeout(() => step(i + 1), p.wait); return; }
+    if (p.show) { const h = $('#hes'); if (h) h.style.visibility = 'visible'; return step(i + 1); }
+    let fired = false; const go = () => { if (fired) return; fired = true; clearTimeout(wd); LS && (LS.tm = setTimeout(() => step(i + 1), 300)); };
+    const wd = setTimeout(go, 2500 + p.text.length * 120 / p.rate);
+    try { const u = utter(p.text, p.lang, p.rate, p.pitch || 1); u.onend = u.onerror = go; speechSynthesis.speak(u); } catch (e) { go(); }
+  };
+  try { speechSynthesis.cancel(); } catch (e) { /* nada */ }
+  step(0);
+}
+function handsEnd() {
+  const n = LS.heard, ms = Date.now() - LS.t0, xp = Math.max(3, Math.round(n / 2)) * (S.boost > Date.now() ? 2 : 1), t = dkey(), day = S.days[t] || (S.days[t] = { l: 0, x: 0 });
+  LS.hands = false; day.x += xp; day.ms = (day.ms || 0) + ms; S.xp += xp; S.st.ms += ms; S.st.hands++; qbump('xp', xp); qbump('listen', n); save(); SFX.done();
+  grisou('¡Muy bien! Escuchaste ' + n + ' palabras y frases.');
+  $('#lesson .l-prog i').style.width = '100%';
+  $('#lbody').innerHTML = '<div class="result"><div class="rm">' + mascot({ mood: 'happy', anim: 'cheer' }) + '</div><h1>Ronda terminada</h1><p class="sub">Escuchaste ' + n + ' palabras y frases · +' + xp + ' XP</p><p class="sub">Tu oído aprende aunque no toques la pantalla. Úsalo en el camión, en el súper o al cocinar.</p></div>';
+  $('#lfoot').innerHTML = '<div class="f-in"><div></div><div class="f-btns"><button class="btn ghost" data-act="handsagain">Otra ronda</button><button class="btn" data-act="close">Listo</button></div></div>';
+}
 
 /* ---- contrarreloj ---- */
 function startSpeed() {
@@ -1037,7 +1133,7 @@ document.addEventListener('click', e => {
   if (d.guide) { const u = CD().units[+d.guide]; modal('<div class="eyebrow">Unidad ' + (u.i + 1) + ' · ' + u.lv + '</div><h2>' + esc(u.gt) + '</h2>' + md(u.note) + '<button class="btn block" data-act="closemodal">Cerrar</button>'); return; }
   if (d.jump) { openJump(+d.jump); return; }
   if (d.cert) { modal('<div class="eyebrow">' + M().flag + ' ' + M().name + '</div><h2>Certificación ' + d.cert + '</h2><p>30 preguntas de todas las unidades de ' + d.cert + ', en modo riguroso: escritura, dictado, comprensión y gramática. Necesitas 85 %. Al aprobar ganas +50 croissants y un sello en tu placa.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Ahora no</button><button class="btn" data-act="startcert" data-lv="' + d.cert + '">Empezar</button></div>'); return; }
-  if (d.prac) { if (d.prac === 'speed') startSpeed(); else startLesson(practiceLesson(d.prac)); return; }
+  if (d.prac) { if (d.prac === 'speed') startSpeed(); else if (d.prac === 'surv') startLesson(survLesson()); else if (d.prac === 'hands') startHands(); else startLesson(practiceLesson(d.prac)); return; }
   if (d.buy) { buy(d.buy); return; }
   if (d.wear) { const id = d.wear; if (S.wear[id]) delete S.wear[id]; else { if (HATS.includes(id)) HATS.forEach(h => delete S.wear[h]); S.wear[id] = 1; } save(); render(); return; }
   if (d.logo) { const p = poseOf(d.logo); if (p.lv > lvlInfo().lv) { toast('lock', 'Se desbloquea en el nivel ' + p.lv, 'Gana XP con lecciones para subir'); grisou('Esa pose se desbloquea en el nivel ' + p.lv + '.'); return; } if (S.logo !== d.logo) { S.logo = d.logo; S.st.logo++; save(); setFavicon(); render(); SFX.boop(); toast('palette', 'Nuevo logo: ' + p.n); grisou('¡Me encanta mi nueva pose!'); checkAch(); } return; }
@@ -1063,9 +1159,14 @@ document.addEventListener('click', e => {
   else if (a === 'noaudio') { S.offL = Date.now() + 15 * 60e3; save(); toast('mute', 'Sin escucha por 15 minutos'); LS.queue = LS.queue.filter(x => !x.listen); LS.total = LS.step + LS.queue.length; next(); }
   else if (a === 'nomic') { S.offS = Date.now() + 15 * 60e3; save(); toast('micoff', 'Sin pronunciación por 15 minutos'); LS.queue = LS.queue.filter(x => x.t !== 'speak'); LS.total = LS.step + LS.queue.length; next(); }
   else if (a === 'selfok' || a === 'selfbad') { S.st.speak++; resolve(a === 'selfok', a === 'selfok' ? '' : esc(LS.cur.text)); }
-  else if (a === 'quit') { if (LS && (LS.step > 0 || LS.speed)) modal('<h2>¿Salir de la lección?</h2><p>Perderás el progreso de esta lección.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Seguir</button><button class="btn bad" data-act="forcequit">Salir</button></div>'); else closeLesson(); }
-  else if (a === 'forcequit') { closeModal(); if (LS && LS.iv) clearInterval(LS.iv); closeLesson(); }
+  else if (a === 'quit') { if (LS && LS.hands) { clearTimeout(LS.tm); closeLesson(); } else if (LS && (LS.step > 0 || LS.speed)) modal('<h2>¿Salir de la lección?</h2><p>Perderás el progreso de esta lección.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Seguir</button><button class="btn bad" data-act="forcequit">Salir</button></div>'); else closeLesson(); }
+  else if (a === 'forcequit') { closeModal(); if (LS && LS.iv) clearInterval(LS.iv); if (LS && LS.tm) clearTimeout(LS.tm); closeLesson(); }
   else if (a === 'closemodal') closeModal();
+  else if (a === 'hpause' && LS && LS.hands) { LS.paused = !LS.paused; if (LS.paused) { clearTimeout(LS.tm); try { speechSynthesis.cancel(); } catch (err) { /* nada */ } handsFoot(); } else handsStep(); }
+  else if (a === 'hnext' && LS && LS.hands) { clearTimeout(LS.tm); LS.paused = false; LS.heard++; LS.i++; handsStep(); }
+  else if (a === 'handsagain') { closeLesson(); startHands(); }
+  else if (a === 'survagain') { closeLesson(); startLesson(survLesson()); }
+  else if (a === 'onbstyle') { S.set.mono = t.dataset.v === '1'; save(); onbLevel(); }
   else if (a === 'close') closeLesson();
   else if (a === 'retry') { const c = LS.ctx; closeLesson(); startLesson(c.cert ? certLesson(c.lv) : c.type === 'jump' ? jumpLesson(c.u) : nodeLesson(c.u, c.ni)); }
   else if (a === 'done' || a === 'again') {
@@ -1085,14 +1186,14 @@ document.addEventListener('click', e => {
   else if (a === 'copybk') { const ta = $('#bk'); try { navigator.clipboard.writeText(ta.value).then(() => toast('clipboard', 'Respaldo copiado'), () => { ta.select(); toast('clipboard', 'Selecciona y copia el texto'); }); } catch (err) { ta.select(); } }
   else if (a === 'import') modal('<h2>Restaurar respaldo</h2><p>Pega aquí tu respaldo. Reemplazará el progreso de este navegador.</p><textarea class="code" id="bkin" placeholder="{&quot;v&quot;:2,…}"></textarea><p id="bkerr" class="err" hidden></p><div class="row-btn"><button class="btn" data-act="doimport">Restaurar</button><button class="btn ghost" data-act="closemodal">Cancelar</button></div>');
   else if (a === 'doimport') { try { const o = JSON.parse($('#bkin').value); if (!o || typeof o !== 'object' || !('xp' in o)) throw new Error('x'); S = migrate(o); save(); closeModal(); setFavicon(); render(); toast('checkc', 'Progreso restaurado'); } catch (err) { const p = $('#bkerr'); p.hidden = false; p.textContent = 'Ese texto no es un respaldo válido de Grey~Spell. Copia el respaldo completo, desde { hasta }.'; } }
-  else if (a === 'reset') modal('<h2>¿Borrar todo tu progreso?</h2><p>Se eliminan racha, XP, palabras, logros y accesorios de los 4 idiomas en este navegador. No se puede deshacer.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Cancelar</button><button class="btn bad" data-act="doreset">Borrar todo</button></div>');
+  else if (a === 'reset') modal('<h2>¿Borrar todo tu progreso?</h2><p>Se eliminan racha, XP, palabras, logros y accesorios de los 6 idiomas en este navegador. No se puede deshacer.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Cancelar</button><button class="btn bad" data-act="doreset">Borrar todo</button></div>');
   else if (a === 'doreset') { S = fresh(); save(); closeModal(); setFavicon(); render(); onboarding(); }
   else if (a === 'startnode') { const [u, i] = t.dataset.n.split(',').map(Number); startLesson(nodeLesson(u, i)); }
   else if (a === 'startjump') startLesson(jumpLesson(+t.dataset.u));
   else if (a === 'startcert') startLesson(certLesson(t.dataset.lv));
   else if (a === 'onbname') { S.name = (($('#nm').value || '').trim().slice(0, 24)) || 'Estudiante'; save(); grisou('¡Mucho gusto, ' + S.name + '! ¿Qué idioma quieres aprender?'); onbCourse(); }
   else if (a === 'onbcourse') { S.cur = t.dataset.c; CS(); save(); setFavicon(); applyTheme(); grisou('¡Hola! Yo soy ' + PET() + '. ¡Vamos a aprender ' + M().adj + '!', pick(M().hi)[0]); onbGoal(); }
-  else if (a === 'onbgoal') { S.goal = +t.dataset.v; save(); onbLevel(); }
+  else if (a === 'onbgoal') { S.goal = +t.dataset.v; save(); onbStyle(); }
   else if (a === 'onbzero') { S.onb = true; save(); closeModal(); render(); startLesson(nodeLesson(0, 0)); }
   else if (a === 'onbjump') { S.onb = true; save(); closeModal(); render(); startLesson(jumpLesson(+t.dataset.u)); }
   else if (a === 'savename') { const v = ($('#nm').value || '').trim().slice(0, 24); if (v) S.name = v; save(); closeModal(); render(); }
@@ -1117,7 +1218,7 @@ function pairTap(t) {
   if (P.l === P.r) { Lb.className = Rb.className = 'opt gone'; SFX.match(); P.left--; touchWord(LS.cur.pairs[P.l].id, true); }
   else { P.miss++; [Lb, Rb].forEach(b => { b.classList.remove('sel'); b.classList.add('shake'); setTimeout(() => b.classList.remove('shake'), 320); }); SFX.bad(); }
   P.l = P.r = null;
-  if (P.left === 0) { const ok = P.miss <= 2; LS.state = ok ? 'ok' : 'bad'; LS.graded++; S.st.ex++; CS().ex++; LS.step++; if (ok) { LS.ok++; S.st.ok++; CS().ok++; LS.combo++; LS.maxCombo = Math.max(LS.maxCombo, LS.combo); } else LS.combo = 0; progress(); foot(ok ? 'ok' : 'bad', { msg: ok ? '' : 'Tuviste ' + P.miss + ' confusiones.' }); save(); }
+  if (P.left === 0) { const ok = P.miss <= 2; if (!ok && LS.ctx.surv) LS.lives = Math.max(0, LS.lives - 1); LS.state = ok ? 'ok' : 'bad'; LS.graded++; S.st.ex++; CS().ex++; LS.step++; if (ok) { LS.ok++; S.st.ok++; CS().ok++; LS.combo++; LS.maxCombo = Math.max(LS.maxCombo, LS.combo); } else LS.combo = 0; progress(); foot(ok ? 'ok' : 'bad', { msg: ok ? '' : 'Tuviste ' + P.miss + ' confusiones.' }); save(); }
 }
 let recog = null;
 function micGo() {
@@ -1157,14 +1258,15 @@ function buy(id) {
 
 /* ---- bienvenida ---- */
 function askName() { modal('<h2>¿Cómo te llamas?</h2><input type="text" id="nm" maxlength="24" value="' + esc(S.name) + '" placeholder="Tu nombre"><div class="row-btn"><button class="btn" data-act="savename">Guardar</button></div>', () => setTimeout(() => $('#nm').focus(), 50)); }
-function onboarding() { modal('<div class="onb-m">' + mascot({ mood: 'happy', anim: 'wave', wear: { beret: 1 } }) + '</div><h2 class="center">¡Hola! Soy Grisou</h2><p class="center">Te llevo de cero a dominar un idioma en 4 años: 48 unidades, una por mes, ~20 lecciones al día. Francés, portugués, sueco o ruso, todo explicado desde el español de México.</p><input type="text" id="nm" maxlength="24" placeholder="¿Cómo te llamas?" aria-label="Tu nombre"><button class="btn block" data-act="onbname">Continuar</button>', () => setTimeout(() => $('#nm').focus(), 80)); }
-function onbCourse() { modal('<h2>¿Qué idioma quieres aprender?</h2><p>Puedes estudiar los cuatro; empieza con uno.</p><div class="courses">' + CIDS.map(id => '<button class="course" data-act="onbcourse" data-c="' + id + '"><span class="cpet">' + mascot({ course: id, mood: 'happy', anim: 'idle', wear: {} }) + '</span><span class="cflag">' + META[id].flag + '</span><span class="cinfo"><b>' + META[id].name + ' · con ' + THEME[id].pet + '</b><small>' + { fr: 'El idioma del arte, la diplomacia y 29 países.', pt: 'Brasil, Portugal y 260 millones de hablantes.', sv: 'Escandinavia, diseño, fika y lagom.', ru: 'Nuevo alfabeto, Tolstói y 11 husos horarios.' }[id] + '</small></span></button>').join('') + '</div>'); }
+function onboarding() { modal('<div class="onb-m">' + mascot({ mood: 'happy', anim: 'wave', wear: { beret: 1 } }) + '</div><h2 class="center">¡Hola! Soy Grisou</h2><p class="center">Te llevo de cero a dominar un idioma en 4 años: 48 unidades, una por mes, ~20 lecciones al día. Francés, portugués, sueco, ruso, alemán o inglés, todo explicado desde el español de México.</p><input type="text" id="nm" maxlength="24" placeholder="¿Cómo te llamas?" aria-label="Tu nombre"><button class="btn block" data-act="onbname">Continuar</button>', () => setTimeout(() => $('#nm').focus(), 80)); }
+function onbCourse() { modal('<h2>¿Qué idioma quieres aprender?</h2><p>Puedes estudiar los seis; empieza con uno.</p><div class="courses">' + CIDS.map(id => '<button class="course" data-act="onbcourse" data-c="' + id + '"><span class="cpet">' + mascot({ course: id, mood: 'happy', anim: 'idle', wear: {} }) + '</span><span class="cflag">' + META[id].flag + '</span><span class="cinfo"><b>' + META[id].name + ' · con ' + THEME[id].pet + '</b><small>' + { fr: 'El idioma del arte, la diplomacia y 29 países.', pt: 'Brasil, Portugal y 260 millones de hablantes.', sv: 'Escandinavia, diseño, fika y lagom.', ru: 'Nuevo alfabeto, Tolstói y 11 husos horarios.', de: 'Europa, ingeniería y 130 millones de hablantes.', en: 'El idioma del trabajo, los viajes e internet.' }[id] + '</small></span></button>').join('') + '</div>'); }
 function onbGoal() { const G = [[5, 'Casual', '≈ 10 min al día'], [10, 'Regular', '≈ 20 min al día'], [20, 'Intenso', '≈ 40 min · el plan de 4 años'], [30, 'Bestia', '≈ 1 hora al día']]; modal('<h2>Tu meta diaria</h2><p>¿Cuántas lecciones al día? La puedes cambiar cuando quieras.</p><div class="choicegrid">' + G.map(([v, n, d]) => '<button class="opt" data-act="onbgoal" data-v="' + v + '"><b>' + v + ' · ' + n + '</b><small>' + d + '</small></button>').join('') + '</div>'); }
+function onbStyle() { modal('<h2>¿Cómo quieres aprender?</h2><p>Lo puedes cambiar en Perfil cuando quieras.</p><div class="choicegrid one"><button class="opt" data-act="onbstyle" data-v="0"><b>Completo</b><small>Tocar, escribir, dictados y pronunciación. El camino más rápido a la fluidez.</small></button><button class="opt" data-act="onbstyle" data-v="1"><b>Modo Mono</b><small>Solo tocar: imágenes, audio y parejas. Cero estrés, ideal para empezar.</small></button></div>'); }
 function onbLevel() { modal('<h2>¿Cuánto ' + L() + ' sabes?</h2><p>Si ya sabes algo, haz una prueba y salta a tu nivel.</p><div class="choicegrid one"><button class="opt" data-act="onbzero"><b>Empiezo de cero</b><small>Desde la primera palabra.</small></button><button class="opt" data-act="onbjump" data-u="8"><b>Sé lo básico → prueba A2</b><small>Salta a la unidad 9</small></button><button class="opt" data-act="onbjump" data-u="16"><b>Me defiendo → prueba B1</b><small>Salta a la unidad 17</small></button><button class="opt" data-act="onbjump" data-u="24"><b>Nivel intermedio → prueba B2</b><small>Salta a la unidad 25</small></button></div>'); }
 
 /* ================= arranque ================= */
 checkStreak(); CS(); setFavicon(); render(); checkAch(true);
 if (!S.onb) onboarding();
 if ('serviceWorker' in navigator && location.protocol === 'https:') window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => { /* sin modo offline */ }));
-window.GreySpell = { THEME, lvlInfo, quests, conj, frNum, course, nodeLesson, practiceLesson, certLesson, translit, grade, META, mascot, POSES };
+window.GreySpell = { THEME, lvlInfo, quests, conj, frNum, course, nodeLesson, practiceLesson, certLesson, survBatch, translit, grade, META, mascot, POSES, state: () => S };
 })();
