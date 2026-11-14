@@ -48,17 +48,38 @@ const norm = s => String(s).toLowerCase().replace(/[’‘`´]/g, "'").replace(/
 const EN_C = [[/\bcan't\b/g, 'cannot'], [/\bcan not\b/g, 'cannot'], [/\bwon't\b/g, 'will not'], [/\bain't\b/g, 'is not'], [/n't\b/g, ' not'], [/'re\b/g, ' are'], [/'ve\b/g, ' have'], [/'ll\b/g, ' will'], [/'m\b/g, ' am'], [/'d\b/g, ' would'], [/\b(it|that|what|there|he|she|who|where|how|here)'s\b/g, '$1 is'], [/\bgonna\b/g, 'going to'], [/\bwanna\b/g, 'want to'], [/\bgotta\b/g, 'got to']];
 function expandEn(s) { EN_C.forEach(([r, v]) => { s = s.replace(r, v); }); return s.replace(/\s+/g, ' ').trim(); }
 const deacc = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').normalize('NFC');
-function lev(a, b) { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; let p = Array.from({ length: n + 1 }, (_, j) => j); for (let i = 1; i <= m; i++) { const c = [i]; for (let j = 1; j <= n; j++) c[j] = Math.min(p[j] + 1, c[j - 1] + 1, p[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); p = c; } return p[n]; }
+function lev(a, b) { const m = a.length, n = b.length; if (Math.abs(m - n) > 2) return 9; const D = Array.from({ length: m + 1 }, (_, i) => [i]); for (let j = 1; j <= n; j++) D[0][j] = j; for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) { D[i][j] = Math.min(D[i - 1][j] + 1, D[i][j - 1] + 1, D[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) D[i][j] = Math.min(D[i][j], D[i - 2][j - 2] + 1); } return D[m][n]; } /* con transposiciones: «bein» = «bien» a 1 */
 const ESART = /^(el|la|los|las|lo|un|una|unos|unas)\s+/;
+/* Calificación tolerante, al estilo Duolingo:
+   mayúsculas, puntuación, espacios y apóstrofos no cuentan; sin acentos (francaise = française), con un error de dedo
+   por palabra larga, o sin el artículo: es correcta y se muestra la forma exacta. Las palabras cortas (le/la, il/elle,
+   der/die) sí deben ser exactas, porque cambian el sentido. Con «Modo riguroso» solo vale la respuesta exacta. */
+const UML = s => s.replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue');
+const flat = s => s.replace(/['\s]/g, '');
+function typoOk(a, b) {
+  const A = a.split(' '), B = b.split(' ');
+  if (A.length !== B.length) { const L = flat(b).length; return L >= 6 && lev(flat(a), flat(b)) <= (L >= 14 ? 2 : 1); }
+  let edits = 0;
+  for (let k = 0; k < B.length; k++) {
+    if (A[k] === B[k]) continue;
+    const d = lev(A[k], B[k]), max = B[k].length >= 9 ? 2 : B[k].length >= 4 ? 1 : 0;
+    if (d > max) return false; edits += d;
+  }
+  return edits > 0 && edits <= Math.max(1, Math.ceil(flat(b).length / 8));
+}
 function grade(input, answers, strict) {
   const Mm = META[cur()], xn = Mm.ex ? s => Mm.ex(norm(s)) : norm, a = xn(input); if (!a) return { ok: false };
   const N = answers.map(xn);
   if (N.includes(a)) return { ok: true };
+  const T = Mm.cyr ? translit : (s => s);
   if (Mm.cyr) { const ta = translit(a); for (let i = 0; i < N.length; i++) if (translit(N[i]) === ta || translit(deacc(N[i])) === ta) return { ok: true, note: answers[i] }; }
+  for (let i = 0; i < N.length; i++) if (flat(a) === flat(N[i])) return { ok: true, note: 'Revisa los espacios y apóstrofos: «' + answers[i] + '»' };
   if (strict) return { ok: false };
-  for (let i = 0; i < N.length; i++) if (deacc(a) === deacc(N[i])) return { ok: true, note: 'Cuidado con los acentos: «' + answers[i] + '»' };
-  for (let i = 0; i < N.length; i++) { const st = x => x.replace(Mm.art, '').replace(ESART, ''); const a2 = st(a), b2 = st(N[i]); if (a2 && b2 && deacc(a2) === deacc(b2)) return { ok: true, note: 'Recuerda el artículo: «' + answers[i] + '»' }; }
-  for (let i = 0; i < N.length; i++) { const b = deacc(N[i]), d = lev(deacc(a), b); if ((b.length >= 5 && d <= 1) || (b.length >= 12 && d <= 2)) return { ok: true, note: 'Casi perfecto, revisa la ortografía: «' + answers[i] + '»' }; }
+  for (let i = 0; i < N.length; i++) if (deacc(a) === deacc(N[i]) || UML(a) === UML(N[i]) || flat(deacc(a)) === flat(deacc(N[i]))) return { ok: true, note: 'Cuidado con los acentos: «' + answers[i] + '»' };
+  const st = x => x.replace(Mm.art, '').replace(ESART, '');
+  for (let i = 0; i < N.length; i++) { const a2 = st(a), b2 = st(N[i]); if (a2 && b2 && a2 === a && deacc(a2) === deacc(b2)) return { ok: true, note: 'Recuerda el artículo: «' + answers[i] + '»' }; }
+  const A = T(deacc(UML(a)));
+  for (let i = 0; i < N.length; i++) if (typoOk(A, T(deacc(UML(N[i]))))) return { ok: true, note: 'Tienes un error de dedo: «' + answers[i] + '»' };
   return { ok: false };
 }
 const toks = s => s.replace(/[.,!?¿¡;:«»"“”…]/g, ' ').replace(/\s[—–-]\s/g, ' ').split(/\s+/).filter(t => t && t !== '—' && t !== '-');
@@ -836,8 +857,8 @@ function viewPerfil() {
     '<div class="set-row"><label>Meta diaria<small>Lecciones por día. El plan de 4 años es de 20.</small></label>' + goalSeg + '</div>' +
     '<div class="set-row"><label>Velocidad de voz<small>' + (HAS_TTS ? (v ? 'Voz: ' + esc(v.name) : 'Voz del sistema') : 'Tu navegador no tiene voz') + '</small></label>' + seg('rate', [[0.7, 'Lenta'], [0.9, 'Normal'], [1.05, 'Rápida']]) + '</div>' +
     '<div class="set-row"><label>Tema<small>Claro, oscuro o el de tu sistema.</small></label>' + seg('theme', [['auto', 'Auto'], ['light', 'Claro'], ['dark', 'Oscuro']]) + '</div>' +
-    sw('mono', 'Modo Mono', 'Todo se contesta tocando, sin teclado. Las certificaciones siguen siendo rigurosas.') + sw('turbo', 'Turbo de dominio', 'Una lección perfecta cuenta doble en tu camino: avanzas más rápido en lo que ya dominas.') +
-    sw('strict', 'Modo riguroso', 'Acentos, artículos y ortografía exactos en todo. Exámenes y certificaciones siempre lo son.') +
+    sw('mono', 'Modo Mono', 'Todo se contesta tocando, sin teclado. Las certificaciones sí piden escribir.') + sw('turbo', 'Turbo de dominio', 'Una lección perfecta cuenta doble en tu camino: avanzas más rápido en lo que ya dominas.') +
+    sw('strict', 'Modo riguroso', 'Solo vale la respuesta exacta: acentos, artículos y ortografía. Sin él, se aceptan acentos faltantes y errores de dedo (te mostramos la forma correcta).') +
     sw('mvoice', 'Voz de la mascota', PET() + ' te habla en español: te felicita, te corrige y te lee las guías.') + sw('sound', 'Efectos de sonido', 'Ding al acertar, buzz al fallar.') + sw('haptic', 'Vibración', 'En celulares compatibles.') + sw('auto', 'Audio automático', 'Pronuncia al aparecer cada palabra.') + sw('listen', 'Ejercicios de escucha', 'Dictados y comprensión auditiva.') + sw('speak', 'Ejercicios de pronunciación', 'Usan el micrófono si tu navegador lo permite.') +
     '</div>' + (installEvt ? '<div class="sec-h"><div><h2>Instalar</h2></div></div><div class="card"><div class="set-row"><label>Grey~Spell como app<small>Ícono en tu pantalla de inicio y funciona sin internet.</small></label><button class="btn sm" data-act="install">Instalar</button></div></div>' : '') +
     '<div class="sec-h"><div><h2>Tus datos</h2><p>Todo vive en este navegador. Haz respaldos.</p></div></div><div class="card"><div class="row-btn"><button class="btn ghost sm" data-act="export">Copiar respaldo</button><button class="btn ghost sm" data-act="import">Restaurar respaldo</button><button class="btn ghost sm danger" data-act="reset">Borrar progreso</button></div></div>';
@@ -910,7 +931,7 @@ let LS = null;
 function startLesson(pack) {
   if (!pack.items.length) { toast('alert', 'No hay ejercicios disponibles', 'Activa audio o pronunciación en Perfil'); return; }
   closeModal(); if (HAS_TTS) try { speechSynthesis.cancel(); } catch (e) { /* nada */ }
-  LS = { ctx: pack.ctx, queue: pack.items.slice(), total: pack.items.length, step: 0, graded: 0, ok: 0, combo: 0, maxCombo: 0, t0: Date.now(), retry: !pack.ctx.exam && !pack.ctx.surv, strict: !!pack.ctx.exam || S.set.strict, cur: null, state: 'ask', sel: null, again: new Set(), lives: 3 };
+  LS = { ctx: pack.ctx, queue: pack.items.slice(), total: pack.items.length, step: 0, graded: 0, ok: 0, combo: 0, maxCombo: 0, t0: Date.now(), retry: !pack.ctx.exam && !pack.ctx.surv, strict: S.set.strict, cur: null, state: 'ask', sel: null, again: new Set(), lives: 3 };
   const el = $('#lesson'); el.hidden = false; document.body.style.overflow = 'hidden';
   const label = pack.ctx.surv ? '' : pack.ctx.cert ? 'Certificación ' + pack.ctx.lv : pack.ctx.type === 'jump' ? 'Prueba de salto' : pack.ctx.exam ? 'Examen' : '';
   el.innerHTML = '<div class="l-top"><button class="l-x" data-act="quit" aria-label="Salir de la lección">' + ico('x') + '</button><div class="l-prog" role="progressbar" aria-label="Progreso"><i></i></div><div class="l-combo" id="lcombo">' + (label ? '<span class="xtag">' + label + '</span>' : '') + '</div></div><div class="l-body"><div class="l-inner" id="lbody"></div></div><div class="l-foot" id="lfoot"></div>';
@@ -1132,7 +1153,7 @@ document.addEventListener('click', e => {
   if (d.node) { const [u, i] = d.node.split(',').map(Number); openNode(u, i); return; }
   if (d.guide) { const u = CD().units[+d.guide]; modal('<div class="eyebrow">Unidad ' + (u.i + 1) + ' · ' + u.lv + '</div><h2>' + esc(u.gt) + '</h2>' + md(u.note) + '<button class="btn block" data-act="closemodal">Cerrar</button>'); return; }
   if (d.jump) { openJump(+d.jump); return; }
-  if (d.cert) { modal('<div class="eyebrow">' + M().flag + ' ' + M().name + '</div><h2>Certificación ' + d.cert + '</h2><p>30 preguntas de todas las unidades de ' + d.cert + ', en modo riguroso: escritura, dictado, comprensión y gramática. Necesitas 85 %. Al aprobar ganas +50 croissants y un sello en tu placa.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Ahora no</button><button class="btn" data-act="startcert" data-lv="' + d.cert + '">Empezar</button></div>'); return; }
+  if (d.cert) { modal('<div class="eyebrow">' + M().flag + ' ' + M().name + '</div><h2>Certificación ' + d.cert + '</h2><p>30 preguntas de todas las unidades de ' + d.cert + ': escritura, dictado, comprensión y gramática. Necesitas 85 %. Al aprobar ganas +50 croissants y un sello en tu placa.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Ahora no</button><button class="btn" data-act="startcert" data-lv="' + d.cert + '">Empezar</button></div>'); return; }
   if (d.prac) { if (d.prac === 'speed') startSpeed(); else if (d.prac === 'surv') startLesson(survLesson()); else if (d.prac === 'hands') startHands(); else startLesson(practiceLesson(d.prac)); return; }
   if (d.buy) { buy(d.buy); return; }
   if (d.wear) { const id = d.wear; if (S.wear[id]) delete S.wear[id]; else { if (HATS.includes(id)) HATS.forEach(h => delete S.wear[h]); S.wear[id] = 1; } save(); render(); return; }
@@ -1240,10 +1261,10 @@ function openNode(u, i) {
   const node = NODES[i], unit = CD().units[u], done = nd(u, i), ok = nodeAvail(u, i), lvl = Math.floor(done / PER_LEVEL);
   if (!ok) { modal('<div class="eyebrow">Unidad ' + (u + 1) + '</div><h2>Bloqueado</h2><p>Completa el nivel 1 del paso anterior para abrir «' + esc(node.n) + '».</p>' + (!unitAvail(u) ? '<button class="btn block" data-jump="' + u + '">Hacer prueba para saltar aquí</button><div class="gap10"></div>' : '') + '<button class="btn ghost block" data-act="closemodal">Entendido</button>'); return; }
   const full = done >= PER_NODE;
-  const desc = { vocab: 'Palabras nuevas con imágenes, audio, parejas y escritura.', frases: 'Construye y traduce frases reales.', gram: unit.gt + '. Empieza con una guía breve.', escucha: 'Dictados, comprensión auditiva y fonética.', habla: 'Lee en voz alta; Grisou te escucha.', lectura: 'Lee textos breves y demuestra que entiendes.', cultura: 'Trampas para hispanohablantes, costumbres y expresiones.', repaso: 'Toda la unidad más repaso espaciado.', examen: '16 preguntas sin pistas y en modo riguroso. Necesitas 85 % para abrir la siguiente unidad.' }[node.k];
+  const desc = { vocab: 'Palabras nuevas con imágenes, audio, parejas y escritura.', frases: 'Construye y traduce frases reales.', gram: unit.gt + '. Empieza con una guía breve.', escucha: 'Dictados, comprensión auditiva y fonética.', habla: 'Lee en voz alta; Grisou te escucha.', lectura: 'Lee textos breves y demuestra que entiendes.', cultura: 'Trampas para hispanohablantes, costumbres y expresiones.', repaso: 'Toda la unidad más repaso espaciado.', examen: '16 preguntas sin pistas. Necesitas 85 % para abrir la siguiente unidad.' }[node.k];
   modal('<div class="eyebrow">Unidad ' + (u + 1) + ' · ' + unit.lv + ' · ' + esc(unit.t) + '</div><h2>' + esc(node.k === 'gram' ? unit.gt : node.n) + '</h2><p>' + esc(desc) + '</p><div class="crowns left">' + Array.from({ length: LEVELS }, (_, k) => '<i class="' + (k < lvl ? 'on' : '') + '"></i>').join('') + '</div><p class="mono small">' + (full ? 'Nivel leyenda · ' + PER_NODE + '/' + PER_NODE : 'Nivel ' + Math.min(LEVELS, lvl + 1) + ' de ' + LEVELS + ' · Lección ' + (done + 1) + ' de ' + PER_NODE) + '</p><div class="row-btn">' + (node.k === 'gram' ? '<button class="btn ghost" data-guide="' + u + '">Ver guía</button>' : '') + '<button class="btn" data-act="startnode" data-n="' + u + ',' + i + '">' + (full ? 'Practicar' : done ? 'Continuar · +10 XP' : 'Empezar · +10 XP') + '</button></div>');
 }
-function openJump(u) { modal('<div class="eyebrow">Prueba de salto · ' + M().flag + '</div><h2>Saltar a la unidad ' + (u + 1) + '</h2><p>16 preguntas rigurosas de las unidades anteriores. Con 85 % desbloqueas «' + esc(CD().units[u].t) + '» y todo lo anterior.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Ahora no</button><button class="btn" data-act="startjump" data-u="' + u + '">Empezar prueba</button></div>'); }
+function openJump(u) { modal('<div class="eyebrow">Prueba de salto · ' + M().flag + '</div><h2>Saltar a la unidad ' + (u + 1) + '</h2><p>16 preguntas de las unidades anteriores. Con 85 % desbloqueas «' + esc(CD().units[u].t) + '» y todo lo anterior.</p><div class="row-btn"><button class="btn ghost" data-act="closemodal">Ahora no</button><button class="btn" data-act="startjump" data-u="' + u + '">Empezar prueba</button></div>'); }
 function openCourses() {
   modal('<h2>Tus idiomas</h2><p>Cada idioma tiene su propio camino de 48 unidades. La racha, el XP y los logros son compartidos.</p><div class="courses">' + CIDS.map(id => { const m = META[id], c = S.C[id], n = unitsDoneOf(id); return '<button class="course' + (S.cur === id ? ' on' : '') + '" data-course="' + id + '"><span class="cpet">' + mascot({ course: id, mood: 'happy', anim: S.cur === id ? 'hop' : 'idle', wear: {} }) + '</span><span class="cflag">' + m.flag + '</span><span class="cinfo"><b>' + m.name + '</b><small>' + (c && c.les ? levelOf(id) + ' · ' + n + '/48 unidades · ' + learned(id) + ' palabras' : 'Empieza desde cero') + '</small></span>' + (S.cur === id ? '<span class="ctag">Actual</span>' : '') + '</button>'; }).join('') + '</div>');
 }
