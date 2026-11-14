@@ -38,11 +38,14 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 
 ## Grey~Spell
 
-`grey-spell/index.html`: curso de francés para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
+`grey-spell/`: cursos de **francés, portugués (Brasil), sueco y ruso** para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
 **https://lukoffmon.github.io/CuauhtemocUca/grey-spell/**
 
-- 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones, pensadas para unas 20 al día.
-- Contenido en `data1.js`–`data3.js`: ~1,450 palabras, ~480 frases, 48 guías de gramática con consejos para mexicanos, falsos amigos y cultura.
-- `app.js`: conjugador (13 tiempos), números en francés, repetición espaciada, más de 20 tipos de ejercicio, voz francesa del navegador y micrófono si está disponible.
-- Racha con protectores, meta diaria, ligas semanales, 46 logros, tienda de croissants y accesorios para Grisou.
+- Cada idioma: 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones. Certificación por nivel (30 preguntas, 85 %).
+- Contenido en `data1.js`–`data3.js` (francés), `data-pt.js`, `data-sv.js`, `data-ru.js`: vocabulario, frases, guías de gramática, fonética, trampas y cultura.
+- `app.js`: conjugador francés (13 tiempos y tablas completas), modo riguroso, repetición espaciada, teclado cirílico y transliteración, voz y micrófono del navegador.
+- Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco) y Misha (ruso). La app toma los colores del curso.
+- Recompensas: nivel de jugador, misiones diarias con cofres, postales por unidad (álbum), premios de racha y poses que se desbloquean por nivel.
+- Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
+- Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js`.
 - Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.

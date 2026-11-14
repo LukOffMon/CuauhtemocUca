@@ -905,3 +905,21 @@ GS.CULT = `¿Cómo se saludan los amigos en Francia?|Con «la bise» (besos en l
 ¿Qué tienen en común Senegal, Haití y Bélgica?|El francés es lengua oficial|Están en América|Son monarquías
 ¿Cómo se llama el himno de Francia?|La Marseillaise|La Parisienne|Ode à la joie
 ¿Qué significa «ça marche»?|Va, de acuerdo, funciona|Está caminando|Es marzo`;
+
+/* ---------- Fonética: sonido | explicación para hispanohablantes | ejemplos ---------- */
+GS.FPHON = `u|Labios de «u», lengua de «i». No existe en español: di «i» y redondea los labios.|tu · rue · vu
+ou|Es nuestra «u» de siempre.|vous · tout · rouge
+eu / œu|Labios redondos y lengua de «e»: entre «e» y «o».|deux · peu · cœur
+e muda|Al final de palabra casi nunca suena.|table · rouge · France
+an / en|Vocal nasal: di «a» dejando salir aire por la nariz, sin la «n».|enfant · dans · temps
+on|Nasal de «o», con los labios redondos.|bon · maison · nom
+in / ain|Nasal de «e» abierta.|vin · pain · matin
+r|Se pronuncia en la garganta, casi como una «j» suave.|rouge · Paris · merci
+j / g + e, i|Como la «ll» argentina («zh»).|je · jour · manger
+ch|Como la «sh» en inglés.|chat · chose · chercher
+oi|Suena «ua».|moi · trois · voiture
+eau / au|Suenan «o».|eau · beau · chaud
+consonante final|Casi nunca se pronuncia (salvo c, r, f, l: «careful»).|petit · nous · grand
+liaison|Una consonante muda suena si la siguiente palabra empieza con vocal.|les amis · vous avez · ils ont
+h|Nunca suena.|homme · hôtel · heure
+gn|Como nuestra «ñ».|montagne · Espagne · gagner`;
