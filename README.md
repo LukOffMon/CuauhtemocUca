@@ -35,3 +35,14 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Animación de entrada (nebulosa) solo al abrir la app.
 - Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js`.
 - `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (MIT). `fonts/` son Big Shoulders Display, Archivo y JetBrains Mono (OFL), guardadas localmente.
+
+## Grey~Spell
+
+`grey-spell/index.html`: curso de francés para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
+**https://lukoffmon.github.io/CuauhtemocUca/grey-spell/**
+
+- 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones, pensadas para unas 20 al día.
+- Contenido en `data1.js`–`data3.js`: ~1,450 palabras, ~480 frases, 48 guías de gramática con consejos para mexicanos, falsos amigos y cultura.
+- `app.js`: conjugador (13 tiempos), números en francés, repetición espaciada, más de 20 tipos de ejercicio, voz francesa del navegador y micrófono si está disponible.
+- Racha con protectores, meta diaria, ligas semanales, 46 logros, tienda de croissants y accesorios para Grisou.
+- Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.
