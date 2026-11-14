@@ -38,13 +38,16 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 
 ## Grey~Spell
 
-`grey-spell/`: cursos de **francés, portugués (Brasil), sueco y ruso** para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
+`grey-spell/`: cursos de **francés, portugués (Brasil), sueco, ruso, alemán e inglés (EE. UU.)** para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
 **https://lukoffmon.github.io/CuauhtemocUca/grey-spell/**
 
 - Cada idioma: 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones. Certificación por nivel (30 preguntas, 85 %).
-- Contenido en `data1.js`–`data3.js` (francés), `data-pt.js`, `data-sv.js`, `data-ru.js`: vocabulario, frases, guías de gramática, fonética, trampas y cultura.
+- Contenido en `data1.js`–`data3.js` (francés), `data-pt.js`, `data-sv.js`, `data-ru.js`, `data-de.js`, `data-en.js`: vocabulario, frases, guías de gramática, fonética, trampas y cultura.
+- Alemán con los tres géneros (der/die/das) y su propio ejercicio; inglés que acepta contracciones en las dos formas (*I'm* = *I am*).
 - `app.js`: conjugador francés (13 tiempos y tablas completas), modo riguroso, repetición espaciada, teclado cirílico y transliteración, voz y micrófono del navegador.
-- Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco) y Misha (ruso). La app toma los colores del curso.
+- Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco), Misha (ruso), Brezel (alemán, sombrero alpino) y Sunny (inglés, audífonos). La app toma los colores del curso.
+- Modos de juego: **Modo Mono** (todo se contesta tocando; la certificación sigue rigurosa), **Supervivencia** (3 vidas, la dificultad sube cada 6 aciertos), **Reto del día** (XP doble la primera vez), **Manos libres** (escucha y repite sin tocar), **Turbo de dominio** (una lección perfecta cuenta doble) y Contrarreloj.
+- Estrategia de producto y negocio: [`grey-spell/ESTRATEGIA.md`](grey-spell/ESTRATEGIA.md).
 - Recompensas: nivel de jugador, misiones diarias con cofres, postales por unidad (álbum), premios de racha y poses que se desbloquean por nivel.
 - Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
 - Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).

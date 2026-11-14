@@ -92,7 +92,9 @@
     fr: '<rect width="10" height="20" fill="#2A49C8"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#E0393E"/>',
     pt: '<rect width="30" height="20" fill="#1F9A50"/><path d="M15 2.6 27 10 15 17.4 3 10z" fill="#F7D21E"/><circle cx="15" cy="10" r="4.3" fill="#203F9E"/><path d="M10.9 9.4c2.6-.7 5.6-.2 8.2 1.3" stroke="#fff" stroke-width=".9" fill="none"/>',
     sv: '<rect width="30" height="20" fill="#1F64B4"/><rect x="9" width="4" height="20" fill="#F9CF2E"/><rect y="8" width="30" height="4" fill="#F9CF2E"/>',
-    ru: '<rect width="30" height="7" fill="#fff"/><rect y="6.6" width="30" height="6.8" fill="#2649B8"/><rect y="13.3" width="30" height="6.7" fill="#D7302C"/>'
+    ru: '<rect width="30" height="7" fill="#fff"/><rect y="6.6" width="30" height="6.8" fill="#2649B8"/><rect y="13.3" width="30" height="6.7" fill="#D7302C"/>',
+    de: '<rect width="30" height="7" fill="#1A1A1A"/><rect y="6.6" width="30" height="6.8" fill="#D7302C"/><rect y="13.3" width="30" height="6.7" fill="#F5C518"/>',
+    en: '<rect width="30" height="20" fill="#fff"/>' + [0, 3.08, 6.16, 9.24, 12.32, 15.4, 18.48].map(y => '<rect y="' + y + '" width="30" height="1.54" fill="#C8313E"/>').join('') + '<rect width="13" height="10.78" fill="#2B3A8C"/>' + [[2.2, 2], [5.4, 2], [8.6, 2], [3.8, 4.4], [7, 4.4], [2.2, 6.8], [5.4, 6.8], [8.6, 6.8], [10.8, 4.4], [11.2, 2], [11.2, 6.8]].map(([x, y]) => '<circle cx="' + x + '" cy="' + y + '" r=".6" fill="#fff"/>').join('')
   };
   window.GSF = id => '<svg class="flag" viewBox="0 0 30 20" aria-hidden="true">' + (FL[id] || '') + '<rect x=".5" y=".5" width="29" height="19" rx="2" fill="none" stroke="rgba(0,0,0,.18)"/></svg>';
   /* Ícono por unidad (mismo orden temático en los cuatro cursos) */
