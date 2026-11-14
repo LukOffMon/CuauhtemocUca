@@ -1,6 +1,6 @@
 /* Grey~Spell: copia local para usar sin internet. Sube VERSION al publicar cambios. */
-const VERSION = 'gs-v2.0.0';
-const FILES = ['./', 'index.html', 'app.js', 'data1.js', 'data2.js', 'data3.js', 'data-pt.js', 'data-sv.js', 'data-ru.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const VERSION = 'gs-v3.0.0';
+const FILES = ['./', 'index.html', 'app.js', 'data1.js', 'data2.js', 'data3.js', 'data-pt.js', 'data-sv.js', 'data-ru.js', 'icons.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

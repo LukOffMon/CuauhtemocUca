@@ -24,7 +24,7 @@
   --acc:#3046E8; --acc-2:#1F31B8; --acc-soft:#E2E6FF; --on-acc:#FFFFFF;
   --ok:#1B9350; --ok-2:#137140; --ok-soft:#DCF4E6; --bad:#D2363E; --bad-2:#A4232A; --bad-soft:#FBE2E3;
   --gold:#E3A00F; --flame:#EE5A24; --gem:#C27A22;
-  --mascot:#9CA2AD; --mascot-d:#737A86; --pix:#151820; --beret:#1D2236; --tan:#D8A35A; --white:#FFFFFF; --navy:#2A3FBF; --red:#D33A3A; --tear:#58A6F0; --pink:#F27BB0; --book:#B5452F; --paper:#F4F1E8; --glass:#7FD3F7;
+  --mascot:#9CA2AD; --mascot-d:#737A86; --pix:#151820; --beret:#1D2236; --tan:#D8A35A; --white:#FFFFFF; --navy:#2A3FBF; --red:#D33A3A; --tear:#58A6F0; --pink:#F27BB0; --book:#B5452F; --paper:#F4F1E8; --glass:#7FD3F7; --blond:#F2C94C; --steel:#8E99A8; --fur:#6B4A35; --green2:#1E8E4E;
   --A1:#0F9C86; --A2:#4A9A2B; --B1:#2C78D8; --B2:#4A4FD3; --C1:#8740CC; --C2:#C3336B; --lock:#C4C9D3;
   --f-d:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif; --f-b:'Nunito','Segoe UI',system-ui,-apple-system,sans-serif; --f-m:'JetBrains Mono',ui-monospace,Menlo,monospace;
   --r:18px; --sh:0 1px 0 rgba(20,24,34,.04),0 12px 30px -18px rgba(20,24,34,.35); --tab:72px;
@@ -435,6 +435,73 @@ table.gt tr:last-child td{border-bottom:0}
 .confetti{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
 .confetti i{position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;animation:fall linear forwards}
 @keyframes fall{to{transform:translateY(110vh) rotate(720deg)}}
+
+/* ---------- íconos propios ---------- */
+.ic svg{width:21px;height:21px;display:block}
+svg.flag{width:1.5em;height:1em;border-radius:3px;vertical-align:-.15em;flex:none}
+.chip.flag svg.flag{width:24px;height:16px}
+.pcard .pi svg{width:28px;height:28px;color:var(--acc)}
+.ab .md svg{width:34px;height:34px;color:var(--mute)} .ab.got .md svg{color:var(--gem)}
+.stat small{display:flex;align-items:center;gap:5px} .stat small svg{width:15px;height:15px;color:var(--acc)}
+.ti svg{width:28px;height:28px;color:var(--bg)}
+.ih{display:flex;align-items:center;gap:6px} .ih svg{width:22px;height:22px;flex:none} .center-ih{justify-content:center} p.ih{flex-wrap:wrap}
+.combo svg{width:16px;height:16px;vertical-align:-3px}
+.week i svg{width:14px;height:14px;vertical-align:-2px;color:#fff}
+.okc{display:inline-flex;align-items:center;gap:4px} .okc svg{width:14px;height:14px}
+.btn .chest-b,.btn .chest-l{transform:none}
+.flame svg{width:110px;height:110px}
+.band-i{position:relative;z-index:1;width:52px;height:52px;flex:none;border-radius:16px;background:rgba(255,255,255,.18);display:grid;place-items:center;color:#fff}
+.band-i svg{width:30px;height:30px}
+.dci{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.18);display:grid;place-items:center;flex:none} .dci svg{width:26px;height:26px}
+.certrow .ci svg{width:28px;height:28px}
+.lrow .btn svg,.tile svg{width:20px}
+.say svg,.chipb svg{flex:none}
+/* ---------- mascota que habla ---------- */
+body.talking .masc .m-stache{animation:talk .22s steps(2) infinite}
+@keyframes talk{0%{transform:translateY(0) scaleY(1)}50%{transform:translateY(.5px) scaleY(1.25)}}
+/* ---------- recompensas ---------- */
+.quests{display:flex;flex-direction:column;gap:10px}
+.q-h{display:flex;align-items:center;justify-content:space-between;gap:10px} .q-h h3{margin:2px 0 0;font-size:17px}
+.q-ch svg{width:38px;height:38px;opacity:.55} .q-ch.open svg{opacity:1}
+.q-row{display:flex;align-items:center;gap:10px}
+.q-i{width:38px;height:38px;border-radius:12px;background:var(--acc-soft);color:var(--acc);display:grid;place-items:center;flex:none} .q-i svg{width:22px;height:22px}
+.q-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px} .q-t b{font-size:14px;line-height:1.25}
+.q-n{font-size:12px;color:var(--mute);min-width:42px;text-align:right} .q-ok svg{width:28px;height:28px}
+.q-btn{min-height:38px;padding:6px 12px;animation:wiggle 1.4s ease-in-out infinite}
+@keyframes wiggle{0%,80%,100%{transform:none}85%{transform:rotate(-6deg)}90%{transform:rotate(6deg)}95%{transform:rotate(-3deg)}}
+.btn svg.i,.btn svg{flex:none}
+.lvcard{display:flex;gap:12px;align-items:center} .lvcard>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.lv-b{position:relative;width:52px;height:52px;flex:none;color:var(--acc)} .lv-b svg{width:52px;height:52px} .lv-b b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:800 16px var(--f-m);padding-top:3px}
+.lv-b svg path:last-child{display:none}
+.lvbig{position:relative;width:130px;height:130px;color:var(--acc);animation:popin .5s cubic-bezier(.3,1.6,.5,1)} .lvbig svg{width:130px;height:130px} .lvbig svg path:last-child{display:none} .lvbig b{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:800 44px var(--f-d);padding-top:6px}
+.reward{display:flex;align-items:center;gap:12px;text-align:left;padding:12px 14px;border-radius:16px;border:2px solid var(--gold);background:color-mix(in srgb,var(--gold) 12%,var(--card));max-width:420px;width:100%;animation:popin .4s .2s both}
+.reward>svg{width:40px;height:40px;color:var(--gold);flex:none} .reward b{display:block;font-family:var(--f-d)} .reward small{color:var(--mute);font-weight:700} .rw-m{width:64px;flex:none}
+.chestbox{position:relative;height:150px;display:grid;place-items:center;margin-bottom:6px}
+.bigchest svg{width:120px;height:120px;overflow:visible}
+.bigchest .chest-l{transform-box:fill-box;transform-origin:10% 100%;animation:lid .7s .25s cubic-bezier(.3,1.6,.5,1) forwards}
+.bigchest{animation:shake2 .4s 2}
+@keyframes shake2{25%{transform:rotate(-6deg)}75%{transform:rotate(6deg)}}
+@keyframes lid{to{transform:rotate(-28deg) translateY(-3px)}}
+.burst{position:absolute;inset:0;pointer-events:none}
+.burst i{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px;animation:burst 1s .7s cubic-bezier(.2,.8,.3,1) both}
+.burst i svg{width:26px;height:26px}
+@keyframes burst{0%{transform:rotate(var(--a)) translateY(0) scale(.3);opacity:0}30%{opacity:1}100%{transform:rotate(var(--a)) translateY(-78px) scale(1);opacity:0}}
+.big-gain{font:800 26px var(--f-d)!important;color:var(--gem)!important}
+.album{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (min-width:560px){.album{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.pc{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 10px 10px;border-radius:14px;background:var(--lv);color:#fff;text-align:left;min-height:120px;box-shadow:0 4px 0 color-mix(in srgb,var(--lv) 65%,#000);overflow:hidden}
+.pc::after{content:"";position:absolute;inset:6px;border:2px dashed rgba(255,255,255,.35);border-radius:10px;pointer-events:none}
+.pc-i{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.2);display:grid;place-items:center} .pc-i svg{width:24px;height:24px}
+.pc b{font-family:var(--f-d);font-size:14px;line-height:1.15;margin-top:auto} .pc small{font-size:11px;font-weight:800;opacity:.85}
+.pc-st{position:absolute;top:10px;right:10px;padding:3px;background:#fff;border-radius:4px;transform:rotate(6deg);box-shadow:0 1px 3px rgba(0,0,0,.25)} .pc-st svg.flag{width:28px;height:19px;display:block;border-radius:2px}
+.pc.big{width:100%;max-width:300px;min-height:200px;padding:20px;margin:0 auto;animation:popin .5s cubic-bezier(.3,1.5,.5,1)} .pc.big .pc-i{width:64px;height:64px} .pc.big .pc-i svg{width:38px;height:38px} .pc.big b{font-size:22px}
+.pc.lockd{background:var(--bg2);color:var(--mute);box-shadow:none;align-items:center;justify-content:center;border:2px dashed var(--line);min-height:120px;border-radius:14px;display:flex;flex-direction:column;gap:6px}
+.pc.lockd::after{display:none} .pc.lockd svg{width:20px;height:20px} .pcn{font:800 18px var(--f-m)}
+.tipp{margin:14px 0!important;padding:12px;border-radius:12px;background:var(--acc-soft);color:var(--ink)!important;font-weight:700}
+.pose.lk{opacity:.6} .pose.lk .masc{filter:grayscale(1)} .pose span{display:flex;align-items:center;gap:4px} .pose span svg{width:13px;height:13px}
+.cpet{width:58px;flex:none}
+.small-b{font-size:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.toast .ti{display:grid;place-items:center}
 @media (prefers-reduced-motion: reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -460,6 +527,7 @@ table.gt tr:last-child td{border-bottom:0}
 <script src="data-pt.js"></script>
 <script src="data-sv.js"></script>
 <script src="data-ru.js"></script>
+<script src="icons.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -44,6 +44,8 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Cada idioma: 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones. Certificación por nivel (30 preguntas, 85 %).
 - Contenido en `data1.js`–`data3.js` (francés), `data-pt.js`, `data-sv.js`, `data-ru.js`: vocabulario, frases, guías de gramática, fonética, trampas y cultura.
 - `app.js`: conjugador francés (13 tiempos y tablas completas), modo riguroso, repetición espaciada, teclado cirílico y transliteración, voz y micrófono del navegador.
-- Stats con gráficas y una placa compartible (PNG). Grisou animado con 9 poses para el logo. Racha, metas, logros y tienda.
+- Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco) y Misha (ruso). La app toma los colores del curso.
+- Recompensas: nivel de jugador, misiones diarias con cofres, postales por unidad (álbum), premios de racha y poses que se desbloquean por nivel.
+- Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
 - Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js`.
 - Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.
