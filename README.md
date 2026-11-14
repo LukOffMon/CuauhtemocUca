@@ -33,7 +33,7 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Récords personales en la retro y en el PDF; pestaña *Progreso* con la evolución de cada ejercicio.
 - En el celular, el PDF y los `.hiks` se abren en *Compartir* (Archivos, WhatsApp, Drive…). Borrar se puede deshacer.
 - Animación de entrada (nebulosa) solo al abrir la app.
-- Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js`.
+- Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).
 - `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (MIT). `fonts/` son Big Shoulders Display, Archivo y JetBrains Mono (OFL), guardadas localmente.
 
 ## Grey~Spell
@@ -47,5 +47,5 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco) y Misha (ruso). La app toma los colores del curso.
 - Recompensas: nivel de jugador, misiones diarias con cofres, postales por unidad (álbum), premios de racha y poses que se desbloquean por nivel.
 - Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
-- Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js`.
+- Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).
 - Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.
