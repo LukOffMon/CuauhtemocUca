@@ -15,3 +15,36 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 ## Playlist → MP3
 
 `playlist-mp3/`: página para convertir una playlist de YouTube a MP3 en un ZIP. Corre en tu computadora (`python3 server.py`); ver `playlist-mp3/README.md`.
+
+## Astra Hik's
+
+`astra-hiks/index.html`: bitácora de entrenamiento (ejercicios, series, peso en kg, lb, placas o indf). Sin cuentas: todo se guarda en el dispositivo.
+**https://lukoffmon.github.io/CuauhtemocUca/astra-hiks/**
+
+- Rutinas base: viene con **full Body x3**; al empezarla carga tus últimos números de cada ejercicio. Se pueden crear, editar, exportar y pegar rutinas.
+- Notas por ejercicio (UNI, altura H12, agarre…), siempre visibles y copiadas a cada sesión.
+- Retro al terminar cada sesión (mejoró / igual / bajó) y resumen de la semana contra la anterior.
+- PDF detallado por sesión con retro y calendario del mes (asistencia y duración).
+- Archivo `.hiks` (texto simple) para exportar, editar fuera y volver a importar; también acepta pegar listas tipo "• Ejercicio / 143Lb x 8".
+- Récords personales en la retro y en el PDF; pestaña *Progreso* con la evolución de cada ejercicio.
+- En el celular, el PDF y los `.hiks` se abren en *Compartir* (Archivos, WhatsApp, Drive…). Borrar se puede deshacer.
+- Animación de entrada (nebulosa) solo al abrir la app.
+- Funciona sin internet: abre desde la copia guardada y se actualiza sola cuando hay conexión. Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).
+- `vendor/jspdf.umd.min.js` es jsPDF 2.5.1 (MIT). `fonts/` son Big Shoulders Display, Archivo y JetBrains Mono (OFL), guardadas localmente.
+
+## Grey~Spell
+
+`grey-spell/`: cursos de **francés, portugués (Brasil), sueco, ruso, alemán e inglés (EE. UU.)** para quien habla español de México, del cero a C2 en 4 años. La mascota es Grisou.
+**https://lukoffmon.github.io/CuauhtemocUca/grey-spell/**
+
+- Cada idioma: 48 unidades (una por mes, A1→C2) × 12 pasos × 50 lecciones = 28,800 lecciones. Certificación por nivel (30 preguntas, 85 %).
+- Contenido en `data1.js`–`data3.js` (francés), `data-pt.js`, `data-sv.js`, `data-ru.js`, `data-de.js`, `data-en.js`: vocabulario, frases, guías de gramática, fonética, trampas y cultura.
+- Alemán con los tres géneros (der/die/das) y su propio ejercicio; inglés que acepta contracciones en las dos formas (*I'm* = *I am*).
+- `app.js`: conjugador francés (13 tiempos y tablas completas), modo riguroso, repetición espaciada, teclado cirílico y transliteración, voz y micrófono del navegador.
+- Una mascota por curso con voz propia en español: Grisou (francés, gris con bigote), Verdinho (portugués), Blåbär (sueco), Misha (ruso), Brezel (alemán, sombrero alpino) y Sunny (inglés, audífonos). La app toma los colores del curso.
+- Modos de juego: **Modo Mono** (todo se contesta tocando; la certificación sigue rigurosa), **Supervivencia** (3 vidas, la dificultad sube cada 6 aciertos), **Reto del día** (XP doble la primera vez), **Manos libres** (escucha y repite sin tocar), **Turbo de dominio** (una lección perfecta cuenta doble) y Contrarreloj.
+- Estrategia de producto y negocio: [`grey-spell/ESTRATEGIA.md`](grey-spell/ESTRATEGIA.md).
+- Recompensas: nivel de jugador, misiones diarias con cofres, postales por unidad (álbum), premios de racha y poses que se desbloquean por nivel.
+- Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
+- Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).
+- Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.
