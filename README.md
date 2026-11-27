@@ -48,8 +48,3 @@ Para actualizar el horario, edita los bloques `SEED_CLASSES`, `SEED_EXAMS`, `SEE
 - Stats con gráficas y una placa compartible (PNG). Íconos y banderas propios en SVG (`icons.js`).
 - Instalable y sin conexión (`sw.js`, `manifest.webmanifest`, `icons/`). Al publicar cambios, sube `VERSION` en `sw.js` y el `?v=` de los scripts en `index.html` (evita que el navegador mezcle archivos viejos y nuevos).
 - Todo se guarda en el navegador. Perfil → *Copiar respaldo* para pasarlo a otro dispositivo.
-
-## Misión Red
-
-`mision-red/index.html`: juego de estudio de redes (capa física, cableado estructurado, switches/VLAN, protocolos, TCP/UDP). 5 mundos × 15 retos, briefing, ronda de rescate y jefe final. El progreso se guarda en el navegador.
-**https://lukoffmon.github.io/CuauhtemocUca/mision-red/**
