@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Misión Red · Juego de estudio</title>
+<style>
+:root{--bg:#f5f3ee;--fg:#1e1d1a;--mut:#6d6a63;--line:#e2ded5;--card:#fff;--soft:#efece5;--ok:#2b9348;--okb:#e3f4e8;--bad:#d6336c;--badb:#fde7ee;--gold:#f5a524;
+--w1:#e8590c;--w2:#7b3fe4;--w3:#2b9348;--w4:#1c7ed6;--w5:#d6336c;--w6:#0c8599;--w7:#343a40}
+@media (prefers-color-scheme:dark){:root{--bg:#131312;--fg:#eeece6;--mut:#9c998f;--line:#2d2c29;--card:#1c1c1a;--soft:#262522;--okb:#14301e;--badb:#3a1622;--w7:#868e96}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.hud{max-width:960px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px}
+.logo{font-weight:800;letter-spacing:-.02em;font-size:18px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.logo i{font-style:normal;background:var(--fg);color:var(--bg);border-radius:8px;padding:2px 7px}
+.hud .sp{flex:1}
+.pill{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:14px;white-space:nowrap}
+.pill b{color:var(--gold)}
+.icon-btn{background:var(--card);border:1px solid var(--line);border-radius:999px;width:34px;height:34px;cursor:pointer}
+main{max-width:960px;margin:0 auto;padding:22px 16px 80px}
+h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:6px 0 6px}
+h2{font-size:21px;margin:34px 0 10px}
+h3{margin:0 0 6px;font-size:17px}
+.lead{color:var(--mut);margin:0 0 18px}
+.mut{color:var(--mut)}
+/* MAP */
+.rank{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin:14px 0 20px}
+.rank .bar{flex:1;height:10px;background:var(--soft);border-radius:99px;overflow:hidden}
+.rank .bar div{height:100%;background:var(--gold);transition:width .6s}
+.worlds{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(270px,1fr))}
+.world{position:relative;border-radius:18px;padding:18px;color:#fff;background:var(--c);overflow:hidden;min-height:190px;display:flex;flex-direction:column;box-shadow:0 2px 0 rgba(0,0,0,.08)}
+.world:before{content:attr(data-n);position:absolute;right:-6px;bottom:-34px;font-size:150px;font-weight:900;opacity:.14;line-height:1}
+.world .ic{font-size:30px}
+.world h3{font-size:20px;margin:6px 0 2px;color:#fff}
+.world p{margin:0 0 12px;font-size:14px;opacity:.92}
+.world .stars{font-size:20px;letter-spacing:2px;margin-top:auto}
+.world .btns{display:flex;gap:8px;margin-top:10px}
+.wbtn{border:0;border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer;background:#fff;color:#1e1d1a}
+.wbtn.ghost{background:rgba(255,255,255,.2);color:#fff}
+.keyideas{columns:2;column-gap:24px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 20px;margin-top:20px}
+.keyideas li{break-inside:avoid;margin:4px 0}
+@media (max-width:640px){.keyideas{columns:1}}
+/* BRIEF */
+.brief-head{border-radius:18px;padding:20px 22px;color:#fff;background:var(--c);margin-bottom:16px}
+.brief-head h1{color:#fff}
+.ideas{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(260px,1fr))}
+.idea{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.idea .e{font-size:24px}
+.idea b{color:var(--c)}
+.analogy{border-left:4px solid var(--gold);background:color-mix(in srgb,var(--gold) 14%,var(--card));border-radius:0 14px 14px 0;padding:12px 16px;margin:14px 0}
+.must{border-left:4px solid var(--c);background:var(--card);border-radius:0 14px 14px 0;padding:12px 16px;margin:14px 0}
+.vis{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}
+svg{max-width:100%;height:auto;display:block}
+svg text{fill:var(--fg);font:13px system-ui,sans-serif}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:22px 0}
+.btn{border:0;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;background:var(--c,var(--fg));color:#fff;font-size:16px}
+.btn.sec{background:var(--card);color:var(--fg);border:1px solid var(--line)}
+.btn:disabled{opacity:.4;cursor:default}
+/* PLAY */
+.playtop{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.prog{flex:1;height:12px;background:var(--soft);border-radius:99px;overflow:hidden}
+.prog div{height:100%;background:var(--c);transition:width .35s}
+.combo{font-weight:800;color:var(--gold);min-width:64px;text-align:right}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 6px 24px rgba(0,0,0,.05)}
+.qtype{display:inline-block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--c);background:color-mix(in srgb,var(--c) 12%,transparent);border-radius:999px;padding:3px 10px;margin-bottom:10px}
+.qtext{font-size:21px;font-weight:650;line-height:1.35;margin-bottom:18px}
+.opts{display:grid;gap:10px}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;border:2px solid var(--line);background:var(--bg);border-radius:14px;padding:12px 14px;cursor:pointer;font-size:16px;transition:transform .08s,border-color .15s}
+.opt:hover:not(:disabled){border-color:var(--c);transform:translateY(-1px)}
+.opt .k{flex:none;width:30px;height:30px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.opt.right{border-color:var(--ok);background:var(--okb)}.opt.right .k{background:var(--ok);color:#fff}
+.opt.wrong{border-color:var(--bad);background:var(--badb)}.opt.wrong .k{background:var(--bad);color:#fff}
+.opt:disabled{cursor:default}
+.tf{grid-template-columns:1fr 1fr}
+.tf .opt{justify-content:center;font-weight:700;font-size:18px;padding:18px}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.pairs .col{display:grid;gap:8px;align-content:start}
+.tile{border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:10px 12px;cursor:pointer;text-align:left;font-size:15px;min-height:46px}
+.tile.sel{border-color:var(--c);box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 25%,transparent)}
+.tile.used{opacity:.35}
+.tile small{display:block;color:var(--c);font-weight:700;margin-top:2px}
+.tile.right{border-color:var(--ok);background:var(--okb)}.tile.wrong{border-color:var(--bad);background:var(--badb)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 12px}
+.chip{border:2px solid var(--line);background:var(--bg);border-radius:999px;padding:7px 14px;cursor:pointer;font-weight:600}
+.chip:disabled{opacity:.25;cursor:default}
+.seq{min-height:52px;border:2px dashed var(--line);border-radius:14px;padding:8px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seq span{background:color-mix(in srgb,var(--c) 16%,var(--card));border-radius:9px;padding:5px 10px;font-weight:600}
+.seq.right{border-color:var(--ok);background:var(--okb)}.seq.wrong{border-color:var(--bad);background:var(--badb)}
+.srow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding:8px 0}
+.srow .it{flex:1;min-width:150px;font-weight:600}
+.seg{display:flex;border:2px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:var(--bg);padding:7px 12px;cursor:pointer;font-weight:600;font-size:14px}
+.seg button+button{border-left:2px solid var(--line)}
+.seg button.on{background:var(--c);color:#fff}
+.srow.right .seg{border-color:var(--ok)}.srow.wrong .seg{border-color:var(--bad)}
+.srow .fix{font-size:13px;color:var(--bad);font-weight:700}
+.check{margin-top:14px}
+.fb{margin-top:16px;border-radius:14px;padding:14px 16px;display:none;animation:pop .25s}
+.fb.show{display:block}.fb.ok{background:var(--okb)}.fb.no{background:var(--badb)}
+.fb .t{font-weight:800;font-size:17px;margin-bottom:4px}
+.fb .why{margin-top:6px}
+.fb .tip{margin-top:8px;font-size:14.5px;color:var(--mut)}
+.rescue{background:color-mix(in srgb,var(--gold) 18%,var(--card));border:1px solid var(--gold);border-radius:14px;padding:10px 14px;margin-bottom:12px;font-weight:600}
+@keyframes pop{from{transform:scale(.97);opacity:0}to{transform:none;opacity:1}}
+@keyframes shake{0%,100%{transform:none}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.shake{animation:shake .3s}
+.xpfloat{position:fixed;pointer-events:none;font-weight:900;color:var(--gold);font-size:22px;animation:up 0.9s forwards;z-index:50}
+@keyframes up{to{transform:translateY(-60px);opacity:0}}
+.hint{font-size:13.5px;color:var(--mut);margin-top:10px}
+/* END */
+.endcard{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px}
+.bigstars{font-size:54px;letter-spacing:6px}
+.bigstars span{display:inline-block;animation:pop .4s backwards}
+.grade{font-size:54px;font-weight:900;letter-spacing:-.03em}
+.review{text-align:left;margin-top:18px}
+.review .r{border:1px solid var(--line);border-radius:12px;padding:10px 14px;margin:8px 0;background:var(--bg)}
+/* BONUS */
+.journey{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px}
+.jnodes{position:relative}
+.jstep{margin-top:10px;min-height:120px}
+.jstep .lay{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#fff;background:var(--w6);border-radius:999px;padding:2px 10px}
+.env{display:flex;align-items:stretch;margin:10px 0;font-size:13px;font-weight:700;color:#fff;border-radius:10px;overflow:hidden;min-height:38px}
+.env div{display:flex;align-items:center;justify-content:center;padding:6px 10px}
+.e-eth{background:var(--w2)}.e-ip{background:var(--w4)}.e-tcp{background:var(--w1)}.e-dat{background:var(--w3);flex:1}.e-fcs{background:var(--w2)}
+table{border-collapse:collapse;width:100%;background:var(--card);border-radius:14px;overflow:hidden;font-size:15px}
+th,td{border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
+th{background:var(--soft)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+.layers{display:grid;gap:8px}
+.layer{display:grid;grid-template-columns:150px 1fr 150px;align-items:center;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:var(--card)}
+.layer b{color:#fff;padding:12px;height:100%;display:flex;align-items:center}
+.layer span{padding:10px 14px}
+.layer em{font-style:normal;padding:10px 14px;color:var(--mut);font-size:14px;border-left:1px solid var(--line)}
+@media (max-width:640px){.layer{grid-template-columns:110px 1fr}.layer em{display:none}.pairs{grid-template-columns:1fr}}
+.topos{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.topo{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.topo svg{height:90px;margin:0 auto 6px}
+kbd{font:12px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--card)}
+</style>
+</head>
+<body>
+<header><div class="hud">
+  <div class="logo" onclick="showMap()"><i>⌁</i> Misión Red</div>
+  <div class="sp"></div>
+  <span class="pill" id="hud-rank"></span>
+  <span class="pill">⭐ <b id="hud-xp">0</b> XP</span>
+  <button class="icon-btn" id="snd" title="Sonido">🔊</button>
+</div></header>
+<main id="app"></main>
+
+<script>
+/* =====================================================================
+   CONTENIDO · 5 mundos × 15 retos · nivel básico–medio, conceptual
+   mc: o[0] es la correcta (se baraja) · tf · match · order · sort
+   ===================================================================== */
+const WORLDS=[
+{id:"w1",n:1,icon:"〰️",c:"var(--w1)",name:"El idioma de los bits",sub:"Capa física, señales y medios",
+brief:`
+<div class="ideas">
+ <div class="idea"><div class="e">🔌</div><h3>¿Qué hace la capa física?</h3>Convierte los <b>bits (0 y 1)</b> en señales que viajan: <b>electricidad</b> en el cobre, <b>luz</b> en la fibra y <b>ondas de radio</b> en el aire.</div>
+ <div class="idea"><div class="e">🌊</div><h3>Modulación</h3>“Montar” los bits en una onda cambiando algo de ella: <b>ASK</b> la amplitud, <b>FSK</b> la frecuencia, <b>PSK</b> la fase y <b>QAM</b> amplitud y fase a la vez (más bits por símbolo).</div>
+ <div class="idea"><div class="e">↔️</div><h3>Banda base vs pasante</h3><b>Banda base:</b> la señal va directa al cable, sin portadora (Ethernet). <b>Banda pasante:</b> los bits viajan sobre una onda portadora (Wi-Fi, celular, cable módem).</div>
+ <div class="idea"><div class="e">🛣️</div><h3>Multiplexación y ancho de banda</h3>Multiplexar es <b>compartir un canal</b> entre muchos: por tiempo (TDM), frecuencia (FDM) o colores de luz (WDM). El <b>ancho de banda</b> es la capacidad máxima del canal.</div>
+ <div class="idea"><div class="e">📉</div><h3>Enemigos de la señal <small class="mut">(extra)</small></h3><b>Atenuación:</b> se debilita con la distancia. <b>Ruido / EMI:</b> interferencia externa. <b>Diafonía:</b> un cable “se cuela” en el vecino. Por eso existen límites de distancia.</div>
+ <div class="idea"><div class="e">📻</div><h3>Guiados vs no guiados</h3><b>Guiados:</b> cobre, coaxial, fibra. <b>No guiados:</b> Wi-Fi, Bluetooth, microondas (requiere línea de vista), satélite (latencia alta), infrarrojo.</div>
+</div>
+<div class="vis"><svg id="v-mod" viewBox="0 0 680 270"></svg></div>
+<div class="analogy">💡 <b>Analogía:</b> la capa física es la <b>carretera y los vehículos</b>. No le importa qué llevas ni a quién; solo que llegue la señal. Simplex = calle de un sentido (radio FM), half-duplex = puente de un carril (walkie-talkie), full-duplex = autopista de dos sentidos (llamada telefónica).</div>
+<div class="must"><b>Lo que seguro preguntan:</b> qué cambia en ASK/FSK/PSK/QAM, diferencia banda base vs pasante, qué es multiplexar, guiado vs no guiado.</div>`,
+qs:[
+ {t:"mc",q:"¿Cuál es la función principal de la capa física?",o:["Convertir los bits en señales que viajan por un medio","Asignar direcciones IP a los equipos","Elegir la mejor ruta entre redes","Cifrar la información"],e:"La capa 1 solo se ocupa de transmitir señales: voltaje, luz u ondas de radio.",tip:"Las IP son de capa 3; las rutas, también."},
+ {t:"match",q:"Relaciona cada modulación con lo que cambia de la onda.",p:[["ASK","Amplitud (altura)"],["FSK","Frecuencia"],["PSK","Fase (orientación)"],["QAM","Amplitud y fase"]],e:"La letra lo dice: A = amplitud, F = frecuencia, P = phase (fase). QAM combina dos."},
+ {t:"mc",q:"¿Por qué QAM se usa en Wi-Fi rápido, 4G/5G y TV digital?",o:["Porque envía varios bits en cada símbolo","Porque no necesita antena","Porque solo funciona con fibra","Porque elimina el ruido por completo"],e:"Al combinar amplitud y fase, cada cambio de la onda lleva más información."},
+ {t:"tf",q:"En banda base la señal se envía directamente por el medio, sin onda portadora.",a:true,e:"Por eso es simple y barata. Es la que usa Ethernet en una LAN."},
+ {t:"mc",q:"¿Qué tipo de transmisión usa el Wi-Fi?",o:["Banda pasante: los bits modulan una onda portadora","Banda base: pulsos directos de voltaje","Ninguna, usa luz","Multiplexación por código únicamente"],e:"En el aire no puedes mandar pulsos de voltaje; necesitas una portadora de radio."},
+ {t:"mc",q:"¿Qué es la multiplexación?",o:["Hacer que varias señales compartan un mismo canal","Amplificar una señal débil","Convertir luz en electricidad","Dividir una red en VLANs"],e:"Se puede repartir el canal por tiempo, frecuencia, longitud de onda o código."},
+ {t:"mc",q:"Un solo hilo de fibra lleva internet, TV y teléfono, cada uno en un “color” de luz distinto. ¿Qué técnica es?",o:["WDM (por longitud de onda)","TDM (por tiempo)","CSMA/CD","Modulación ASK"],e:"WDM = Wavelength Division Multiplexing: cada servicio viaja en una longitud de onda."},
+ {t:"mc",q:"El ancho de banda de un canal es…",o:["Su capacidad máxima de transferencia de datos","La distancia máxima del cable","El tiempo que tarda un dato en llegar","El número de equipos conectados"],e:"Piensa en el ancho de la carretera: cuántos autos pueden pasar a la vez.",tip:"El tiempo que tarda en llegar se llama latencia."},
+ {t:"sort",q:"Clasifica cada medio.",b:["Guiado","No guiado"],items:[["Fibra óptica","Guiado"],["Cable UTP","Guiado"],["Coaxial","Guiado"],["Wi-Fi","No guiado"],["Satélite","No guiado"],["Bluetooth","No guiado"]],e:"Guiado = la señal va dentro de un cable. No guiado = viaja por el aire o el espacio."},
+ {t:"mc",q:"La señal pierde fuerza mientras más largo es el cable. ¿Cómo se llama esto?",o:["Atenuación","Multiplexación","Modulación","Encapsulación"],e:"La atenuación es la razón principal de los límites de distancia (como los 100 m del UTP)."},
+ {t:"match",q:"Relaciona el modo de comunicación con su ejemplo.",p:[["Simplex","Radio FM (solo un sentido)"],["Half-duplex","Walkie-talkie (uno a la vez)"],["Full-duplex","Llamada telefónica (ambos a la vez)"]],e:"Full-duplex es lo que usan los switches modernos: enviar y recibir al mismo tiempo."},
+ {t:"tf",q:"El ruido electromagnético (EMI) puede dañar las señales en los cables de cobre.",a:true,e:"Motores, líneas eléctricas y fluorescentes generan EMI. El trenzado y el blindaje ayudan a combatirlo."},
+ {t:"mc",q:"¿Cuál es la desventaja típica de la comunicación por satélite?",o:["Latencia alta (tarda en llegar)","No cubre zonas remotas","Solo funciona dentro de un edificio","Necesita cable de cobre"],e:"La señal recorre miles de kilómetros hasta el satélite y de regreso."},
+ {t:"mc",q:"¿Qué requiere un enlace de microondas terrestres?",o:["Línea de vista entre las antenas","Un cable de fibra entre las antenas","Estar a menos de 10 m","Un switch en cada extremo"],e:"Si hay un edificio o montaña en medio, el enlace se corta."},
+ {t:"order",q:"Ordena cómo viaja un dato desde la computadora.",o:["Datos digitales (bits)","Se convierten en señal (modulación o pulsos)","Viajan por el medio","El receptor recupera los bits"],e:"La capa física siempre hace este ciclo: bits → señal → medio → bits."}
+]},
+{id:"w2",n:2,icon:"🧵",c:"var(--w2)",name:"Cables y luz",sub:"Cobre, RJ45 y fibra óptica",
+brief:`
+<div class="ideas">
+ <div class="idea"><div class="e">🌀</div><h3>Par trenzado</h3>4 pares de cobre <b>trenzados</b> para cancelar interferencias y diafonía. <b>UTP</b> = sin blindaje (barato, común). <b>STP/FTP</b> = con malla o lámina (para ambientes con mucho ruido, y necesita tierra).</div>
+ <div class="idea"><div class="e">📶</div><h3>Categorías</h3>Más alta la categoría → más MHz → más velocidad. <b>5e</b> 1 Gbps · <b>6</b> 1 Gbps (10 G corto) · <b>6A</b> 10 Gbps a 100 m · <b>8</b> muy rápida pero solo 30 m.</div>
+ <div class="idea"><div class="e">🔌</div><h3>RJ45: directo o cruzado</h3><b>MDI:</b> PC, router, AP. <b>MDI-X:</b> switch, hub, bridge. Grupos distintos → <b>directo</b>. Mismo grupo → <b>cruzado</b>. “Iguales se cruzan”.</div>
+ <div class="idea"><div class="e">🤖</div><h3>Auto-MDIX <small class="mut">(extra)</small></h3>Hoy casi todos los equipos detectan el cable y se ajustan solos. Aun así, la regla directo/cruzado se pregunta porque demuestra que entiendes Tx y Rx.</div>
+ <div class="idea"><div class="e">💡</div><h3>Fibra óptica</h3>Transmite <b>luz</b> por un núcleo de vidrio y la mantiene dentro por <b>reflexión interna total</b>. No le afecta la EMI y llega mucho más lejos que el cobre.</div>
+ <div class="idea"><div class="e">🔦</div><h3>Multimodo vs monomodo</h3><b>Multimodo:</b> núcleo grande, LED/VCSEL, muchos haces rebotando, distancias cortas, más barata. <b>Monomodo:</b> núcleo delgadísimo, láser, un haz recto, decenas de km, más cara.</div>
+</div>
+<div class="vis"><svg id="v-rj" viewBox="0 0 640 230"></svg></div>
+<div class="analogy">💡 <b>Analogía:</b> el cable directo es una conversación donde <b>tu boca (Tx) va al oído (Rx)</b> del otro. Si ambos tienen la boca en el mismo pin (mismo grupo), hay que cruzar el cable para que boca llegue a oído.</div>
+<div class="must"><b>Lo que seguro preguntan:</b> para qué sirve el trenzado, UTP vs blindado, cuándo directo o cruzado, multimodo vs monomodo, por qué la fibra llega más lejos.</div>`,
+qs:[
+ {t:"mc",q:"¿Por qué los pares de cobre van trenzados?",o:["Para cancelar interferencias y diafonía","Para que el cable sea más flexible","Para ahorrar cobre","Para distinguir los colores"],e:"El trenzado hace que el ruido afecte por igual a los dos hilos del par y se cancele."},
+ {t:"mc",q:"¿Cuál es la diferencia principal entre UTP y STP?",o:["El STP tiene blindaje metálico; el UTP no","El UTP es de fibra óptica","El STP no usa conector RJ45","El UTP solo sirve para teléfono"],e:"El blindaje (malla o lámina) da protección extra contra interferencias."},
+ {t:"mc",q:"¿En qué lugar conviene usar cable blindado?",o:["Una fábrica con motores y mucha interferencia","Una oficina pequeña normal","Una casa con una sola computadora","En ningún caso, siempre es peor"],e:"El blindaje vale la pena donde hay mucha EMI, y debe aterrizarse para funcionar bien."},
+ {t:"tf",q:"A mayor categoría de cable, mayor ancho de banda y velocidad.",a:true,e:"La escalera va de 100 MHz (Cat 5e) a 2000 MHz (Cat 8)."},
+ {t:"mc",q:"Quieres 10 Gbps por cobre a 100 metros. ¿Qué categoría eliges?",o:["Cat 6A","Cat 5e","Cat 3","Coaxial RG-58"],e:"Cat 6 da 10 Gbps solo en tramos cortos; Cat 6A los da a los 100 m completos."},
+ {t:"mc",q:"¿Qué conector se usa en Ethernet de cobre?",o:["RJ45","RJ11","BNC","USB-C"],e:"RJ45 = 8 posiciones, 8 contactos. El RJ11 es el del teléfono."},
+ {t:"sort",q:"Clasifica cada equipo según su grupo de pines.",b:["MDI","MDI-X"],items:[["Computadora","MDI"],["Router","MDI"],["Access point","MDI"],["Switch","MDI-X"],["Hub","MDI-X"],["Bridge","MDI-X"]],e:"MDI = equipos “finales” y routers. MDI-X = equipos que concentran conexiones."},
+ {t:"sort",q:"¿Qué cable usarías? (sin Auto-MDIX)",b:["Directo","Cruzado"],items:[["PC → Switch","Directo"],["Router → Switch","Directo"],["PC → PC","Cruzado"],["Switch → Switch","Cruzado"],["Router → PC","Cruzado"]],e:"Grupos distintos → directo. Mismo grupo → cruzado. Ojo: router y PC son ambos MDI, por eso van con cruzado."},
+ {t:"mc",q:"Hoy muchos equipos funcionan con cualquier cable porque detectan Tx/Rx solos. ¿Cómo se llama esa función?",o:["Auto-MDIX","DHCP","VLAN","Full-duplex"],e:"Auto-MDIX cruza internamente los pines si hace falta."},
+ {t:"mc",q:"¿Dónde se usa hoy el cable coaxial?",o:["TV por cable, internet por cable módem y cámaras de seguridad","Redes de oficina modernas","Enlaces entre ciudades","Bluetooth"],e:"Fue el cable de las primeras redes Ethernet, pero hoy se usa sobre todo en TV y CCTV."},
+ {t:"mc",q:"¿Qué fenómeno mantiene la luz dentro del núcleo de la fibra?",o:["Reflexión interna total","Inducción magnética","Atenuación","Modulación de fase"],e:"El revestimiento (cladding) refleja la luz hacia el centro una y otra vez."},
+ {t:"sort",q:"¿Multimodo o monomodo?",b:["Multimodo","Monomodo"],items:[["Núcleo grande","Multimodo"],["Usa LED o VCSEL","Multimodo"],["Distancias cortas (edificio)","Multimodo"],["Núcleo muy delgado","Monomodo"],["Usa láser","Monomodo"],["Decenas de kilómetros","Monomodo"]],e:"Mono = un solo haz de luz recto → menos dispersión → mucho más lejos."},
+ {t:"tf",q:"La fibra óptica no se ve afectada por la interferencia electromagnética.",a:true,e:"Transporta luz, no electricidad. Por eso es ideal cerca de motores o líneas eléctricas."},
+ {t:"mc",q:"Debes unir dos ciudades a 40 km. ¿Qué medio usas?",o:["Fibra monomodo","Fibra multimodo","UTP Cat 6A","Coaxial"],e:"El cobre no pasa de unos 100 m y la multimodo es para distancias cortas."},
+ {t:"mc",q:"¿Por qué la multimodo llega menos lejos que la monomodo?",o:["Sus muchos haces rebotan por caminos distintos y la señal se dispersa","Porque usa electricidad","Porque su cubierta es naranja","Porque no tiene revestimiento"],e:"Cada haz llega en un momento un poco distinto; con la distancia los pulsos se “embarran”."}
+]},
+{id:"w3",n:3,icon:"🏢",c:"var(--w3)",name:"El edificio conectado",sub:"Cableado estructurado, normas y subsistemas",
+brief:`
+<div class="ideas">
+ <div class="idea"><div class="e">🧩</div><h3>¿Qué es?</h3>Un sistema de cableado <b>ordenado, estándar, modular y escalable</b> que soporta datos, voz, video y seguridad sin rehacer la instalación. Elimina el “espagueti” de cables.</div>
+ <div class="idea"><div class="e">📜</div><h3>Normas</h3><b>TIA-568</b> cableado · <b>569</b> espacios y rutas · <b>606</b> etiquetado y documentación · <b>607</b> puesta a tierra · <b>ISO/IEC 11801</b> la versión internacional.</div>
+ <div class="idea"><div class="e">⭐</div><h3>Topología en estrella jerárquica</h3>Todo converge en un punto central. Si falla un cable, <b>solo cae ese equipo</b>; es fácil de administrar y crecer. Máximo 2 niveles de distribuidores.</div>
+ <div class="idea"><div class="e">📏</div><h3>La regla de los 90 / 100 m</h3>Del patch panel a la toma: <b>90 m</b> (enlace permanente). Con los cordones de ambos lados: <b>100 m</b> (canal).</div>
+ <div class="idea"><div class="e">🗄️</div><h3>Hardware</h3><b>Rack</b> de 19″, <b>patch panel</b> donde terminan los cables, <b>jack/keystone</b> en la toma, <b>charolas</b> llenas máximo al 50 % para ventilar y crecer.</div>
+ <div class="idea"><div class="e">⚡</div><h3>Puesta a tierra</h3>Protege <b>equipos y personas</b> de sobrevoltajes y rayos, y drena el ruido del blindaje. Todo lo metálico se conecta a la barra de tierra.</div>
+</div>
+<h2>Los 6 subsistemas, de la calle al escritorio</h2>
+<div class="vis"><svg id="v-sub" viewBox="0 0 900 150"></svg></div>
+<div class="analogy">💡 <b>Analogía del cuerpo humano:</b> la <b>entrada (EF)</b> es la boca, el <b>cuarto de equipos (ER)</b> es el corazón, el <b>backbone</b> son las arterias principales, cada <b>cuarto de piso (TR)</b> es un órgano, el <b>horizontal</b> son los vasos pequeños, y el <b>área de trabajo (WA)</b> son las células (los usuarios).</div>
+<div class="must"><b>Lo que seguro preguntan:</b> para qué sirve el cableado estructurado, el orden y función de los 6 subsistemas, qué regula cada norma, 90 / 100 m, por qué estrella.</div>`,
+qs:[
+ {t:"mc",q:"¿Cuál es el objetivo principal del cableado estructurado?",o:["Tener una infraestructura ordenada y estándar que soporte varios servicios y pueda crecer","Usar solo cables de fibra","Conectar equipos sin necesidad de switches","Eliminar el uso de racks"],e:"Un solo sistema para datos, voz, video y seguridad, que se mantiene y amplía fácilmente."},
+ {t:"mc",q:"¿Qué ventaja tiene frente a un cableado improvisado?",o:["Facilita el mantenimiento, el crecimiento y la detección de fallas","Es siempre más barato al inicio","No necesita documentación","Funciona sin electricidad"],e:"Al estar estandarizado y etiquetado, cualquier técnico entiende y repara la red."},
+ {t:"match",q:"Relaciona cada norma con su tema.",p:[["TIA-568","El cableado y sus componentes"],["TIA-569","Espacios y rutas (cuartos, charolas)"],["TIA-606","Etiquetado y documentación"],["TIA-607","Puesta a tierra"]],e:"Truco: 568 cables · 569 caminos · 606 papeles · 607 tierra."},
+ {t:"order",q:"Ordena los subsistemas de la calle al escritorio.",o:["Instalaciones de entrada (EF)","Cuarto de equipos (ER)","Backbone (vertical)","Cuarto de telecom (TR)","Cableado horizontal","Área de trabajo (WA)"],e:"El cable entra al edificio, llega al corazón, sube por el backbone, llega al piso y sale hasta tu escritorio."},
+ {t:"match",q:"Relaciona el subsistema con lo que hace.",p:[["Entrada (EF)","Donde llega el proveedor de internet"],["Cuarto de equipos (ER)","Corazón: servidores y switches principales"],["Cuarto de piso (TR)","Concentra el cableado de cada piso"],["Área de trabajo (WA)","De la toma de pared al equipo del usuario"]],e:"El backbone une ER y TR; el horizontal une TR con cada toma."},
+ {t:"mc",q:"¿Qué topología física exige el cableado estructurado?",o:["Estrella jerárquica","Bus","Anillo","Malla completa"],e:"Todo converge en distribuidores centrales organizados por niveles."},
+ {t:"mc",q:"¿Por qué se prefiere la topología en estrella?",o:["Si falla un cable, solo se afecta ese equipo","Porque usa menos cable que cualquier otra","Porque no necesita switches","Porque todos comparten el mismo cable"],e:"En un bus, un cable roto tumba a todos. En estrella la falla queda aislada."},
+ {t:"mc",q:"¿Cuál es la distancia máxima del enlace permanente horizontal?",o:["90 m","100 m","300 m","1 km"],e:"90 m del patch panel a la toma; con cordones, el canal llega a 100 m."},
+ {t:"tf",q:"Sumando los cordones de ambos extremos, el canal completo puede llegar a 100 m.",a:true,e:"90 m fijos + hasta 10 m de cordones."},
+ {t:"mc",q:"¿Qué es un patch panel?",o:["Un panel donde terminan los cables horizontales para organizarlos y conectarlos","Un switch con muchos puertos","Una barra de tierra","Un tipo de fibra"],e:"Es pasivo: no procesa datos, solo organiza las conexiones dentro del rack."},
+ {t:"mc",q:"¿Por qué las charolas no deben llenarse más del 50 %?",o:["Para ventilar, no aplastar cables y dejar espacio para crecer","Porque la norma prohíbe el cobre","Para que pese menos el techo","Para que se vean los colores"],e:"Cables apretados se calientan, se dañan y generan más diafonía."},
+ {t:"mc",q:"¿Para qué sirve la puesta a tierra (TIA-607)?",o:["Proteger equipos y personas de sobrevoltajes y drenar el ruido","Aumentar la velocidad de la red","Asignar direcciones IP","Unir dos edificios"],e:"Racks, charolas y equipos metálicos se conectan a la barra de tierra del cuarto."},
+ {t:"tf",q:"Etiquetar ambos extremos de cada cable es parte de la administración del cableado (TIA-606).",a:true,e:"Sin etiquetas, encontrar un cable en un rack lleno es casi imposible."},
+ {t:"mc",q:"Una oficina abierta cambia sus escritorios cada pocos meses. ¿Qué conviene?",o:["Cableado por zonas con un punto de consolidación (CP/MUTOA)","Recablear todo cada vez","Usar topología en bus","Quitar el patch panel"],e:"Solo se mueve el tramo corto del punto de consolidación al escritorio."},
+ {t:"mc",q:"¿Qué une el backbone (cableado vertical)?",o:["La entrada y el cuarto de equipos con los cuartos de cada piso","La toma de pared con la PC","Dos puertos del mismo switch","El router con Internet"],e:"Es la “columna vertebral” del edificio."}
+]},
+{id:"w4",n:4,icon:"🔀",c:"var(--w4)",name:"El barrio de las tramas",sub:"Ethernet, MAC, switches y dominios",
+brief:`
+<div class="ideas">
+ <div class="idea"><div class="e">🏷️</div><h3>Dirección MAC</h3>Identificador <b>físico</b> grabado en la tarjeta de red (48 bits). Sirve para entregar datos <b>dentro de la misma red local</b>.</div>
+ <div class="idea"><div class="e">📦</div><h3>La trama</h3>La unidad de la capa 2. Lleva <b>MAC destino, MAC origen, los datos y el FCS</b>, que sirve para detectar errores (si no cuadra, se descarta).</div>
+ <div class="idea"><div class="e">🧠</div><h3>LLC y MAC</h3>Dos subcapas: <b>LLC</b> (software, habla con la capa de red) y <b>MAC</b> (hardware en la tarjeta, controla el acceso al medio).</div>
+ <div class="idea"><div class="e">📣</div><h3>Hub vs switch</h3>El <b>hub</b> repite todo a todos (capa 1). El <b>switch</b> aprende qué MAC hay en cada puerto (tabla MAC) y manda la trama <b>solo a quien va</b> (capa 2).</div>
+ <div class="idea"><div class="e">💥</div><h3>Dominios</h3><b>Colisión:</b> donde dos que hablan a la vez chocan; el switch crea uno por puerto. <b>Broadcast:</b> a donde llega un mensaje “para todos”; solo lo cortan las <b>VLAN</b> y el <b>router</b>.</div>
+ <div class="idea"><div class="e">🚦</div><h3>Acceso al medio</h3><b>CSMA/CD</b> (Ethernet half-duplex): escucha, y si choca, espera un tiempo al azar. <b>CSMA/CA</b> (Wi-Fi): evita choques pidiendo turno.</div>
+</div>
+<div class="vis"><svg id="v-dom" viewBox="0 0 660 230"></svg></div>
+<div class="analogy">💡 <b>Analogía:</b> el <b>hub</b> es un megáfono: todos escuchan todo. El <b>switch</b> es un portero que sabe en qué oficina está cada persona y le lleva el sobre directo. Un <b>broadcast</b> es un aviso por el altavoz del edificio: lo oyen todos, a menos que dividas el edificio con <b>VLANs</b> o salgas por el <b>router</b>.</div>
+<div class="must"><b>Lo que seguro preguntan:</b> qué es una MAC, hub vs switch, dominio de colisión vs broadcast, para qué sirven las VLAN, CSMA/CD vs CSMA/CA.</div>`,
+qs:[
+ {t:"mc",q:"¿Qué dirección usa la capa 2 para entregar datos dentro de la red local?",o:["La dirección MAC","La dirección IP","El número de puerto","El nombre de dominio"],e:"La MAC identifica a la tarjeta de red dentro de la LAN."},
+ {t:"mc",q:"¿Cuál describe mejor a una dirección MAC?",o:["Identificador físico de 48 bits grabado en la tarjeta de red","Dirección lógica que asigna el router","Número de la aplicación","Dirección que cambia en cada red"],e:"La MAC acompaña a la tarjeta; la IP depende de la red donde estés."},
+ {t:"mc",q:"¿Cómo se llama la unidad de datos de la capa de enlace?",o:["Trama","Paquete","Segmento","Bit"],e:"Capa 4: segmento · Capa 3: paquete · Capa 2: trama · Capa 1: bits."},
+ {t:"order",q:"Ordena las partes principales de una trama Ethernet.",o:["Preámbulo","MAC destino","MAC origen","Datos","FCS"],e:"El destino va antes que el origen, y el FCS (control de errores) va al final."},
+ {t:"mc",q:"¿Para qué sirve el campo FCS?",o:["Para detectar si la trama llegó con errores","Para cifrar los datos","Para indicar la IP destino","Para numerar los paquetes"],e:"Contiene un código CRC: si el receptor no obtiene el mismo valor, descarta la trama."},
+ {t:"mc",q:"¿Cuál es la diferencia principal entre un hub y un switch?",o:["El hub repite a todos; el switch envía solo al puerto del destino","El hub es más rápido","El switch trabaja en capa 3","No hay diferencia"],e:"Por eso el switch reduce el tráfico y elimina las colisiones."},
+ {t:"mc",q:"¿Cómo sabe el switch por qué puerto mandar una trama?",o:["Aprende las MAC de origen y las guarda en su tabla MAC","Le pregunta al servidor DNS","Revisa la dirección IP","La envía siempre a todos"],e:"Cada trama que entra le enseña “esta MAC vive en este puerto”. Si aún no conoce el destino, la envía a todos esa vez."},
+ {t:"tf",q:"Un switch, sin configurar nada, separa los dominios de broadcast.",a:false,e:"Separa colisiones (uno por puerto), pero el broadcast lo reenvía a todos. Para cortarlo: VLAN o router."},
+ {t:"sort",q:"¿En qué capa OSI trabaja cada uno?",b:["Capa 1","Capa 2","Capa 3"],items:[["Hub","Capa 1"],["Repetidor","Capa 1"],["Switch","Capa 2"],["Bridge","Capa 2"],["Router","Capa 3"]],e:"Capa 1 repite señales, capa 2 usa MAC, capa 3 usa IP."},
+ {t:"mc",q:"Una red con muchos equipos sufre demasiado tráfico de broadcast. ¿Qué haces?",o:["Dividirla con VLANs y unirlas con un router","Cambiar los switches por hubs","Usar cables más largos","Desactivar el FCS"],e:"Cada VLAN es un dominio de broadcast distinto: menos ruido y más seguridad."},
+ {t:"match",q:"Relaciona el tipo de envío con su destino.",p:[["Unicast","Un solo equipo"],["Broadcast","Todos los equipos de la red"],["Multicast","Un grupo de equipos interesados"]],e:"La MAC de broadcast es FF-FF-FF-FF-FF-FF."},
+ {t:"mc",q:"¿Cómo funciona CSMA/CD?",o:["Escucha el medio; si detecta una colisión, espera un tiempo aleatorio y reintenta","Pide turno con RTS/CTS antes de hablar","Asigna un horario fijo a cada equipo","Cifra la información para que no choque"],e:"Es el método de Ethernet en half-duplex (con hubs)."},
+ {t:"mc",q:"¿Qué método de acceso usa el Wi-Fi?",o:["CSMA/CA: evita colisiones pidiendo turno","CSMA/CD: detecta colisiones","Paso de testigo","Ninguno"],e:"En radio no puedes escuchar mientras transmites, así que se previenen los choques."},
+ {t:"tf",q:"Con switches en full-duplex prácticamente no hay colisiones.",a:true,e:"Cada puerto tiene su propio canal para enviar y recibir a la vez."},
+ {t:"mc",q:"Cuatro PCs están en un hub y dos transmiten al mismo tiempo. ¿Qué pasa?",o:["Sus señales chocan, porque comparten el mismo dominio de colisión","El hub ordena los mensajes","El router lo impide","Nada, cada una tiene su canal"],e:"Todo lo conectado a un hub comparte un solo dominio de colisión."}
+]},
+{id:"w5",n:5,icon:"🌐",c:"var(--w5)",name:"El viaje por Internet",sub:"IP, router, DHCP, DNS, TCP y UDP",
+brief:`
+<div class="ideas">
+ <div class="idea"><div class="e">📮</div><h3>IP y router (capa 3)</h3>La <b>IP</b> es una dirección <b>lógica</b> para llegar a otras redes (IPv4 32 bits, IPv6 128 bits). El <b>router</b> conecta redes distintas y elige la ruta.</div>
+ <div class="idea"><div class="e">🚪</div><h3>Gateway y máscara</h3>El <b>gateway</b> es la puerta de salida de tu red (normalmente el router). La <b>máscara</b> (/24 = 255.255.255.0) indica qué parte de la IP es la red y cuál el equipo.</div>
+ <div class="idea"><div class="e">🧰</div><h3>Los ayudantes</h3><b>DHCP</b> te da IP automáticamente (DORA). <b>DNS</b> traduce nombres a IP. <b>ARP</b> traduce IP a MAC. <b>NAT</b> hace que muchas IP privadas salgan con una pública.</div>
+ <div class="idea"><div class="e">🏠</div><h3>IP privada vs pública <small class="mut">(extra)</small></h3>Privadas (192.168.x.x, 10.x.x.x) se usan dentro de casa u oficina y no salen a Internet. La pública es la que ve el mundo; NAT hace la traducción.</div>
+ <div class="idea"><div class="e">🚚</div><h3>TCP vs UDP (capa 4)</h3><b>TCP:</b> confiable, conecta con 3 vías (SYN, SYN-ACK, ACK), confirma y reenvía. <b>UDP:</b> rápido, sin garantías; ideal para tiempo real.</div>
+ <div class="idea"><div class="e">🚪</div><h3>Puertos</h3>Indican <b>qué aplicación</b> recibe los datos dentro del equipo: 80 HTTP, 443 HTTPS, 22 SSH, 20/21 FTP.</div>
+</div>
+<div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
+ <div class="vis"><svg id="v-dora" viewBox="0 0 300 230"></svg></div>
+ <div class="vis"><svg id="v-hs" viewBox="0 0 300 230"></svg></div>
+</div>
+<div class="analogy">💡 <b>Analogía postal:</b> la <b>IP</b> es la dirección de la casa, el <b>puerto</b> es el número de departamento, el <b>router</b> es la oficina de correos, el <b>DNS</b> es la agenda que convierte “Juan” en su dirección, y el <b>DHCP</b> es el recepcionista del hotel que te asigna habitación al llegar. <b>TCP</b> es paquetería con acuse de recibo; <b>UDP</b> es una transmisión en vivo: si algo se pierde, sigue adelante.</div>
+<div class="must"><b>Lo que seguro preguntan:</b> MAC vs IP, qué hace el router, DHCP/DNS/ARP/NAT, DORA, TCP vs UDP y ejemplos, saludo de 3 vías.</div>`,
+qs:[
+ {t:"mc",q:"¿Cuál es la función principal de un router?",o:["Conectar redes distintas y elegir la ruta de los paquetes","Repetir la señal a todos los puertos","Asignar la MAC a las tarjetas","Convertir luz en electricidad"],e:"Trabaja en capa 3 mirando la IP destino y su tabla de rutas."},
+ {t:"mc",q:"¿Cuál es la diferencia entre MAC e IP?",o:["La MAC es física y sirve en la red local; la IP es lógica y permite llegar a otras redes","Son lo mismo con otro nombre","La IP está grabada en la tarjeta y la MAC la da el router","La MAC es para Wi-Fi y la IP para cable"],e:"Analogía: la MAC es tu nombre; la IP, tu dirección actual (cambia si te mudas de red)."},
+ {t:"tf",q:"IPv6 se creó principalmente porque se estaban agotando las direcciones IPv4.",a:true,e:"IPv4 tiene 32 bits (~4 mil millones); IPv6 tiene 128 bits, prácticamente infinitas."},
+ {t:"mc",q:"¿Qué es el gateway (puerta de enlace) predeterminado?",o:["La salida de tu red local hacia otras redes, normalmente el router","El servidor que traduce nombres","El cable que llega del proveedor","La primera PC de la red"],e:"Todo lo que no está en tu red se envía al gateway."},
+ {t:"match",q:"Relaciona cada protocolo con lo que hace.",p:[["DNS","Traduce un nombre (google.com) a IP"],["ARP","Averigua la MAC a partir de una IP"],["DHCP","Asigna IP automáticamente"],["NAT","Traduce IPs privadas a una pública"]],e:"DNS y ARP traducen, pero cosas distintas: nombre → IP y IP → MAC."},
+ {t:"order",q:"Ordena las fases de DHCP.",o:["Discover","Offer","Request","ACK"],e:"DORA: descubro, ofrezco, ruego, acepto."},
+ {t:"mc",q:"Llegas a una cafetería, te conectas al Wi-Fi y tu laptop obtiene IP sin que hagas nada. ¿Quién te la dio?",o:["Un servidor DHCP","El DNS","ARP","El protocolo UDP"],e:"DHCP entrega IP, máscara, gateway y DNS automáticamente."},
+ {t:"mc",q:"La dirección 192.168.1.20 es…",o:["Una IP privada, de uso interno en la red local","Una IP pública de Internet","Una dirección MAC","Una dirección IPv6"],e:"192.168.x.x y 10.x.x.x son rangos privados; salen a Internet gracias a NAT."},
+ {t:"mc",q:"¿Para qué sirven los números de puerto?",o:["Para saber qué aplicación del equipo recibe los datos","Para identificar el cable del rack","Para saber la distancia del enlace","Para numerar los pisos del edificio"],e:"Una misma PC puede usar navegador, correo y juegos a la vez gracias a los puertos."},
+ {t:"sort",q:"¿Qué protocolo de transporte conviene?",b:["TCP","UDP"],items:[["Página web","TCP"],["Correo electrónico","TCP"],["Descargar un archivo","TCP"],["Videollamada","UDP"],["Juego en línea","UDP"],["Streaming en vivo","UDP"]],e:"Si no puede llegar nada mal → TCP. Si importa más la velocidad que un dato perdido → UDP."},
+ {t:"order",q:"Ordena el saludo de 3 vías de TCP.",o:["SYN","SYN-ACK","ACK"],e:"Cliente pide → servidor acepta y sincroniza → cliente confirma."},
+ {t:"mc",q:"¿Cuál es la diferencia principal entre TCP y UDP?",o:["TCP garantiza la entrega con confirmaciones; UDP es más rápido pero sin garantía","UDP es más confiable","TCP no usa puertos","UDP solo funciona con fibra"],e:"TCP retransmite y ordena; UDP envía y sigue."},
+ {t:"match",q:"Relaciona el puerto con su servicio.",p:[["80","HTTP (web)"],["443","HTTPS (web segura)"],["22","SSH (acceso remoto seguro)"],["21","FTP (archivos)"]],e:"Los más comunes en examen: 80 y 443."},
+ {t:"mc",q:"Antes de conectarse a www.ejemplo.com, tu navegador necesita su IP. ¿Quién se la da?",o:["El DNS","El switch","ARP","El patch panel"],e:"El DNS es la “agenda de contactos” de Internet."},
+ {t:"mc",q:"¿Qué hace el router cuando un paquete es más grande que lo que permite el siguiente enlace (MTU)?",o:["Lo fragmenta en partes más pequeñas","Lo convierte en UDP","Lo envía por broadcast","Lo manda al DNS"],e:"La MTU típica de Ethernet es 1500 bytes."}
+]}
+];
+
+/* ============ ESTADO ============ */
+const RANKS=[[0,"Novato del cable"],[300,"Técnico de red"],[700,"Instalador certificado"],[1100,"Ingeniero de red"],[1500,"Arquitecto de red"]];
+let G=JSON.parse(localStorage.getItem("mision-red")||"{}");G.xp=G.xp||0;G.best=G.best||{};
+let SOUND=localStorage.getItem("mision-red-snd")!=="0";
+const save=()=>localStorage.setItem("mision-red",JSON.stringify(G));
+const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+const $=s=>document.querySelector(s);
+const app=$("#app");
+function rank(){let r=RANKS[0],nx=null;for(let i=0;i<RANKS.length;i++){if(G.xp>=RANKS[i][0]){r=RANKS[i];nx=RANKS[i+1]||null}}return{r,nx}}
+function hud(){$("#hud-xp").textContent=G.xp;$("#hud-rank").textContent="🎖️ "+rank().r[1];$("#snd").textContent=SOUND?"🔊":"🔇"}
+$("#snd").onclick=()=>{SOUND=!SOUND;localStorage.setItem("mision-red-snd",SOUND?"1":"0");hud()};
+let AC;function tone(fs,d=.09,type="sine"){if(!SOUND)return;try{AC=AC||new AudioContext();fs.forEach((f,i)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(.0001,AC.currentTime+i*d);g.gain.exponentialRampToValueAtTime(.18,AC.currentTime+i*d+.01);g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+i*d+d*1.6);o.connect(g).connect(AC.destination);o.start(AC.currentTime+i*d);o.stop(AC.currentTime+i*d+d*1.8)})}catch(e){}}
+const sOK=()=>tone([660,880]),sBAD=()=>tone([200,150],.12,"triangle"),sWIN=()=>tone([523,659,784,1046],.11);
+const stars=n=>"★".repeat(n)+"☆".repeat(3-n);
+const starsFor=g=>g>=9.5?3:g>=8?2:g>=6?1:0;
+
+/* ============ MAPA ============ */
+function showMap(){
+  P=null;hud();window.scrollTo(0,0);
+  const {r,nx}=rank();const pct=nx?Math.round((G.xp-r[0])/(nx[0]-r[0])*100):100;
+  let h=`<h1>Elige tu mundo</h1><p class="lead">5 mundos × 15 retos de nivel básico a medio, enfocados en <b>entender</b>, no en memorizar números raros. Primero lee el briefing (2–3 min) y luego juega. Lo que falles regresa al final en la <b>ronda de rescate</b>, hasta que lo domines.</p>
+  <div class="rank"><span style="font-size:28px">🎖️</span><div style="min-width:160px"><b>${r[1]}</b><div class="mut" style="font-size:13px">${nx?`${nx[0]-G.xp} XP para “${nx[1]}”`:"Rango máximo alcanzado"}</div></div><div class="bar"><div style="width:${pct}%"></div></div></div>
+  <div class="worlds">`;
+  WORLDS.forEach(w=>{const b=G.best[w.id];h+=`<div class="world" style="--c:${w.c}" data-n="${w.n}"><div class="ic">${w.icon}</div><h3>${w.name}</h3><p>${w.sub}</p><div class="stars">${b!=null?stars(starsFor(b))+` <span style="font-size:13px;opacity:.9">mejor: ${b.toFixed(1)}</span>`:'<span style="font-size:13px;opacity:.85">Sin jugar</span>'}</div><div class="btns"><button class="wbtn" onclick="showBrief('${w.id}')">📖 Briefing</button><button class="wbtn ghost" onclick="play('${w.id}')">▶ Jugar</button></div></div>`});
+  const bb=G.best.boss;
+  h+=`<div class="world" style="--c:var(--w6)" data-n="+"><div class="ic">🧠</div><h3>Mapa mental</h3><p>Cómo fluye todo: el viaje de un paquete, encapsulación, OSI vs TCP/IP, analogías y topologías.</p><div class="btns" style="margin-top:auto"><button class="wbtn" onclick="showBonus()">Explorar</button></div></div>
+  <div class="world" style="--c:var(--w7)" data-n="★"><div class="ic">👑</div><h3>Jefe final</h3><p>15 retos al azar de los 5 mundos, como un examen real de tu profe.</p><div class="stars">${bb!=null?stars(starsFor(bb))+` <span style="font-size:13px;opacity:.9">mejor: ${bb.toFixed(1)}</span>`:'<span style="font-size:13px;opacity:.85">Sin jugar</span>'}</div><div class="btns"><button class="wbtn" onclick="play('boss')">▶ Enfrentar</button></div></div></div>
+  <h2>Las 12 ideas que casi seguro te preguntan</h2>
+  <ul class="keyideas">
+   <li>La capa física convierte bits en señales (eléctricas, luz, radio).</li>
+   <li>ASK amplitud · FSK frecuencia · PSK fase · QAM ambas.</li>
+   <li>El trenzado cancela ruido; el blindaje protege más (y necesita tierra).</li>
+   <li>Grupos distintos → cable directo; mismo grupo → cruzado.</li>
+   <li>Multimodo: corta y barata. Monomodo: muy lejos, láser.</li>
+   <li>Cableado estructurado = orden, estándar, crecimiento; topología en estrella.</li>
+   <li>6 subsistemas: EF → ER → Backbone → TR → Horizontal → WA.</li>
+   <li>Horizontal: 90 m enlace, 100 m canal.</li>
+   <li>Switch: 1 dominio de colisión por puerto, 1 solo broadcast.</li>
+   <li>VLAN y router dividen el broadcast.</li>
+   <li>DHCP da IP · DNS nombre→IP · ARP IP→MAC · NAT privada→pública.</li>
+   <li>TCP confiable (3 vías) · UDP rápido (tiempo real).</li>
+  </ul>
+  <p class="hint">Atajos en el juego: <kbd>1</kbd>–<kbd>4</kbd> para responder, <kbd>Enter</kbd> para continuar.</p>`;
+  app.innerHTML=h;
+}
+
+/* ============ BRIEFING ============ */
+function showBrief(id){
+  const w=WORLDS.find(x=>x.id===id);P=null;window.scrollTo(0,0);
+  app.innerHTML=`<div style="--c:${w.c}"><div class="brief-head"><div style="font-size:13px;font-weight:700;opacity:.85">MUNDO ${w.n} · BRIEFING</div><h1>${w.icon} ${w.name}</h1><div>${w.sub}</div></div>${w.brief}
+  <div class="cta"><button class="btn" onclick="play('${w.id}')">▶ Jugar los 15 retos</button><button class="btn sec" onclick="showMap()">← Mapa</button></div></div>`;
+  drawVisuals();
+}
+
+/* ============ MOTOR DE JUEGO ============ */
+let P=null;
+function play(id){
+  let qs,w;
+  if(id==="boss"){w={id:"boss",n:"★",icon:"👑",name:"Jefe final",c:"var(--w7)"};qs=[];WORLDS.forEach(x=>shuf(x.qs).slice(0,3).forEach(q=>qs.push({...q,_w:x})));qs=shuf(qs)}
+  else{w=WORLDS.find(x=>x.id===id);qs=shuf(w.qs).map(q=>({...q,_w:w}))}
+  P={w,queue:qs,i:0,total:qs.length,first:0,firstDone:new Set(),missed:[],retry:[],rescue:false,combo:0,best:0,gain:0,answered:false};
+  renderQ();
+}
+function renderQ(){
+  const q=P.queue[P.i];P.answered=false;P.cur={};window.scrollTo(0,0);
+  const c=P.w.c;const done=P.rescue?P.total:P.i;
+  const TYPE={mc:"Opción múltiple",tf:"Verdadero o falso",match:"Conecta las parejas",order:"Ordena la secuencia",sort:"Clasifica"};
+  let body="";
+  if(q.t==="mc"){P.cur.opts=shuf(q.o.map((o,j)=>({o,ok:j===0})));body=`<div class="opts">${P.cur.opts.map((x,j)=>`<button class="opt" data-j="${j}"><span class="k">${j+1}</span><span>${esc(x.o)}</span></button>`).join("")}</div>`}
+  else if(q.t==="tf"){body=`<div class="opts tf"><button class="opt" data-v="1"><span>✔ Verdadero</span></button><button class="opt" data-v="0"><span>✘ Falso</span></button></div>`}
+  else if(q.t==="match"){P.cur.rights=shuf(q.p.map(p=>p[1]));P.cur.map={};P.cur.sel=null;body=`<div class="pairs"><div class="col" id="L">${q.p.map((p,i)=>`<button class="tile" data-l="${i}">${esc(p[0])}<small></small></button>`).join("")}</div><div class="col" id="R">${P.cur.rights.map((r,i)=>`<button class="tile" data-r="${i}">${esc(r)}</button>`).join("")}</div></div><div class="hint">Toca un elemento de la izquierda y luego su pareja. Toca de nuevo para deshacer.</div><button class="btn check" id="chk" disabled>Comprobar</button>`}
+  else if(q.t==="order"){P.cur.seq=[];body=`<div class="chips">${shuf(q.o).map(o=>`<button class="chip" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div><div class="seq" id="seq"><span class="mut" style="background:none">Toca en orden…</span></div><div class="cta" style="margin:12px 0 0"><button class="btn" id="chk" disabled>Comprobar</button><button class="btn sec" id="rst">Reiniciar</button></div>`}
+  else if(q.t==="sort"){P.cur.ch={};P.cur.items=shuf(q.items);body=P.cur.items.map((it,i)=>`<div class="srow" data-i="${i}"><span class="it">${esc(it[0])}</span><div class="seg">${q.b.map(b=>`<button data-b="${esc(b)}">${esc(b)}</button>`).join("")}</div><span class="fix"></span></div>`).join("")+`<button class="btn check" id="chk" disabled>Comprobar</button>`}
+  app.innerHTML=`<div style="--c:${c}">
+   <div class="playtop"><button class="btn sec" style="padding:6px 12px" onclick="if(confirm('¿Salir del mundo? Perderás el progreso de esta partida.'))showMap()">✕</button><div class="prog"><div style="width:${done/P.total*100}%"></div></div><span class="mut" style="font-size:14px">${P.rescue?"Rescate":`${P.i+1}/${P.total}`}</span><span class="combo">${P.combo>1?"🔥×"+P.combo:""}</span></div>
+   ${P.rescue?`<div class="rescue">🛟 Ronda de rescate: quedan ${P.queue.length-P.i} reto(s) que fallaste. Contestalos bien para dominar el mundo.</div>`:""}
+   <div class="qcard" id="qc"><span class="qtype">${P.w.id==="boss"?q._w.icon+" "+q._w.name+" · ":""}${TYPE[q.t]}</span><div class="qtext">${esc(q.q)}</div>${body}<div class="fb" id="fb"></div></div></div>`;
+  bind(q);
+}
+function bind(q){
+  const qc=$("#qc");
+  if(q.t==="mc")qc.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(P.answered)return;const j=+b.dataset.j;const ok=P.cur.opts[j].ok;qc.querySelectorAll(".opt").forEach((x,k)=>{x.disabled=true;if(P.cur.opts[k].ok)x.classList.add("right")});if(!ok)b.classList.add("wrong");result(ok,q,ok?"":`Correcta: <b>${esc(q.o[0])}</b>`)});
+  if(q.t==="tf")qc.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{if(P.answered)return;const v=b.dataset.v==="1";const ok=v===q.a;qc.querySelectorAll(".opt").forEach(x=>{x.disabled=true;if((x.dataset.v==="1")===q.a)x.classList.add("right")});if(!ok)b.classList.add("wrong");result(ok,q,ok?"":`Era <b>${q.a?"Verdadero":"Falso"}</b>`)});
+  if(q.t==="match"){
+    const L=[...qc.querySelectorAll("[data-l]")],R=[...qc.querySelectorAll("[data-r]")],chk=$("#chk");
+    const draw=()=>{const used=Object.values(P.cur.map);L.forEach((t,i)=>{t.classList.toggle("sel",P.cur.sel===i);t.querySelector("small").textContent=P.cur.map[i]!=null?"→ "+P.cur.rights[P.cur.map[i]]:""});R.forEach((t,i)=>t.classList.toggle("used",used.includes(i)));chk.disabled=Object.keys(P.cur.map).length<q.p.length};
+    L.forEach((t,i)=>t.onclick=()=>{if(P.answered)return;if(P.cur.map[i]!=null){delete P.cur.map[i]}P.cur.sel=i;draw()});
+    R.forEach((t,ri)=>t.onclick=()=>{if(P.answered||P.cur.sel==null)return;for(const k in P.cur.map)if(P.cur.map[k]===ri)delete P.cur.map[k];P.cur.map[P.cur.sel]=ri;const nx=L.findIndex((_,i)=>P.cur.map[i]==null);P.cur.sel=nx>=0?nx:null;draw()});
+    P.cur.sel=0;draw();
+    chk.onclick=()=>{let bad=[];L.forEach((t,i)=>{const ok=P.cur.rights[P.cur.map[i]]===q.p[i][1];t.classList.add(ok?"right":"wrong");if(!ok)bad.push(`${esc(q.p[i][0])} → <b>${esc(q.p[i][1])}</b>`);t.disabled=true});R.forEach(t=>t.disabled=true);chk.style.display="none";result(!bad.length,q,bad.length?"Corrige: "+bad.join(" · "):"")};
+  }
+  if(q.t==="order"){
+    const seq=$("#seq"),chk=$("#chk"),chips=[...qc.querySelectorAll(".chip")];
+    const draw=()=>{seq.innerHTML=P.cur.seq.length?P.cur.seq.map((v,k)=>`<span>${k+1}. ${esc(v)}</span>`).join(""):`<span class="mut" style="background:none">Toca en orden…</span>`;chk.disabled=P.cur.seq.length<q.o.length};
+    chips.forEach(c=>c.onclick=()=>{if(P.answered)return;P.cur.seq.push(c.dataset.v);c.disabled=true;draw()});
+    $("#rst").onclick=()=>{if(P.answered)return;P.cur.seq=[];chips.forEach(c=>c.disabled=false);draw()};
+    chk.onclick=()=>{const ok=P.cur.seq.join("|")===q.o.join("|");seq.classList.add(ok?"right":"wrong");chk.style.display="none";$("#rst").style.display="none";result(ok,q,ok?"":"Orden correcto: <b>"+q.o.map(esc).join(" → ")+"</b>")};
+  }
+  if(q.t==="sort"){
+    const rows=[...qc.querySelectorAll(".srow")],chk=$("#chk");
+    rows.forEach(r=>r.querySelectorAll("button").forEach(b=>b.onclick=()=>{if(P.answered)return;P.cur.ch[r.dataset.i]=b.dataset.b;r.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));chk.disabled=Object.keys(P.cur.ch).length<rows.length}));
+    chk.onclick=()=>{let bad=0;rows.forEach(r=>{const it=P.cur.items[r.dataset.i];const ok=P.cur.ch[r.dataset.i]===it[1];r.classList.add(ok?"right":"wrong");if(!ok){bad++;r.querySelector(".fix").textContent="→ "+it[1]}r.querySelectorAll("button").forEach(x=>x.disabled=true)});chk.style.display="none";result(!bad,q,bad?`${bad} mal clasificado(s), corregidos en rojo.`:"")};
+  }
+}
+function result(ok,q,extra){
+  P.answered=true;
+  const key=q.q;
+  if(!P.rescue&&!P.firstDone.has(key)){P.firstDone.add(key);if(ok)P.first++;else P.missed.push(q)}
+  if(!ok)P.retry.push(q);
+  if(ok){P.combo++;const g=10+Math.min(P.combo-1,5)*2;P.gain+=g;G.xp+=g;save();hud();sOK();floatXP("+"+g)}else{P.combo=0;sBAD();$("#qc").classList.add("shake")}
+  const fb=$("#fb");
+  fb.className="fb show "+(ok?"ok":"no");
+  fb.innerHTML=`<div class="t">${ok?["¡Correcto!","¡Exacto!","¡Bien jugado!","¡Así se hace!"][Math.floor(Math.random()*4)]:"Casi… ¡a la próxima!"}</div>${extra?`<div>${extra}</div>`:""}<div class="why">💡 ${esc(q.e)}</div>${q.tip?`<div class="tip">📌 ${esc(q.tip)}</div>`:""}<div class="cta" style="margin:12px 0 0"><button class="btn" id="nx">Continuar ↵</button></div>`;
+  $("#nx").onclick=next;$("#nx").focus({preventScroll:true});
+  fb.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function floatXP(t){const r=$("#hud-xp").getBoundingClientRect();const d=document.createElement("div");d.className="xpfloat";d.textContent=t;d.style.left=r.left+"px";d.style.top=(r.bottom+6)+"px";document.body.appendChild(d);setTimeout(()=>d.remove(),900)}
+function next(){
+  P.i++;
+  if(P.i<P.queue.length)return renderQ();
+  if(P.retry.length){P.queue=shuf(P.retry);P.retry=[];P.i=0;P.rescue=true;return renderQ()}
+  endLevel();
+}
+function endLevel(){
+  const grade=Math.round(P.first/P.total*100)/10;const st=starsFor(grade);
+  const prev=G.best[P.w.id];if(prev==null||grade>prev)G.best[P.w.id]=grade;
+  const bonus=st*20;G.xp+=bonus;save();hud();sWIN();window.scrollTo(0,0);
+  const msg=st===3?"¡Dominado! Esto ya lo sabes para el examen.":st===2?"Muy bien. Repasa lo de abajo y vuelve por las 3 estrellas.":st===1?"Vas bien. Lee el briefing otra vez y repite.":"Lee el briefing con calma y vuelve a intentarlo: ahora ya conoces las respuestas.";
+  const idx=WORLDS.findIndex(x=>x.id===P.w.id);const nextW=WORLDS[idx+1];
+  app.innerHTML=`<div style="--c:${P.w.c}"><div class="endcard">
+   <div class="mut" style="font-weight:700;letter-spacing:.06em">${P.w.icon} ${P.w.name.toUpperCase()} · COMPLETADO</div>
+   <div class="bigstars">${[0,1,2].map(i=>`<span style="animation-delay:${i*.15}s;color:${i<st?"var(--gold)":"var(--line)"}">★</span>`).join("")}</div>
+   <div class="grade">${grade.toFixed(1)}<span class="mut" style="font-size:22px"> / 10</span></div>
+   <p>${P.first} de ${P.total} a la primera · +${P.gain+bonus} XP ${bonus?`(incluye +${bonus} por estrellas)`:""}</p>
+   <p><b>${msg}</b></p>
+   ${P.missed.length?`<div class="review"><h3>Lo que fallaste (ya lo rescataste, pero repásalo):</h3>${P.missed.map(q=>`<div class="r"><b>${esc(q.q)}</b><br><span class="mut">💡 ${esc(q.e)}</span></div>`).join("")}</div>`:""}
+   <div class="cta" style="justify-content:center"><button class="btn" onclick="play('${P.w.id}')">↻ Repetir</button>${P.w.id!=="boss"?`<button class="btn sec" onclick="showBrief('${P.w.id}')">📖 Briefing</button>`:""}${nextW?`<button class="btn sec" onclick="showBrief('${nextW.id}')">Siguiente: ${nextW.icon} ${nextW.name} →</button>`:P.w.id!=="boss"?`<button class="btn sec" onclick="play('boss')">👑 Jefe final →</button>`:""}<button class="btn sec" onclick="showMap()">Mapa</button></div>
+  </div></div>`;
+  P=null;
+}
+document.addEventListener("keydown",e=>{
+  if(!P)return;
+  if(e.key==="Enter"&&P.answered){const n=$("#nx");if(n){e.preventDefault();n.click()}return}
+  if(P.answered)return;
+  const q=P.queue[P.i];
+  if(q.t==="mc"&&/^[1-4]$/.test(e.key)){const b=document.querySelector(`.opt[data-j="${+e.key-1}"]`);if(b)b.click()}
+  if(q.t==="tf"&&(e.key==="1"||e.key==="2")){const b=document.querySelector(`.opt[data-v="${e.key==="1"?1:0}"]`);if(b)b.click()}
+});
+
+/* ============ MAPA MENTAL (BONUS) ============ */
+const JOURNEY=[
+ {n:0,lay:"Capa 7 · Aplicación",env:["dat"],t:"Escribes www.ejemplo.com",d:"El navegador prepara una petición: “dame la página”. Todavía son solo datos."},
+ {n:0,lay:"Capa 7 · DNS",env:["dat"],t:"DNS: ¿cuál es la IP?",d:"Un nombre no sirve para viajar. Tu PC le pregunta al servidor DNS y recibe la IP del servidor web."},
+ {n:0,lay:"Capa 4 · Transporte",env:["tcp","dat"],t:"TCP prepara la conexión",d:"Hace el saludo de 3 vías (SYN, SYN-ACK, ACK), divide los datos en segmentos y les pone el puerto destino 443 (HTTPS)."},
+ {n:0,lay:"Capa 3 · Red",env:["ip","tcp","dat"],t:"Se mete en un paquete IP",d:"Cada segmento recibe IP origen (tu PC, privada) e IP destino (el servidor). Como el servidor está en otra red, el paquete irá al gateway, que es el router."},
+ {n:0,lay:"Capa 2/3 · ARP",env:["ip","tcp","dat"],t:"ARP: ¿cuál es la MAC del router?",d:"Para entregar algo dentro de la LAN hace falta una MAC. ARP pregunta por broadcast “¿quién tiene la IP del gateway?” y el router responde con su MAC."},
+ {n:0,lay:"Capa 2 · Enlace",env:["eth","ip","tcp","dat","fcs"],t:"Se arma la trama Ethernet",d:"MAC destino = router, MAC origen = tu PC, y al final el FCS para detectar errores. Así queda el “sobre dentro de otro sobre”."},
+ {n:1,lay:"Capa 1 · Física",env:["bits"],t:"Bits por el cableado estructurado",d:"La tarjeta convierte la trama en señales eléctricas: patch cord → toma de pared → cableado horizontal (≤ 90 m) → patch panel del cuarto de piso → switch."},
+ {n:1,lay:"Capa 2 · Switch",env:["eth","ip","tcp","dat","fcs"],t:"El switch lee la MAC",d:"Busca la MAC destino en su tabla y envía la trama solo por el puerto del router. El switch no mira la IP."},
+ {n:2,lay:"Capa 3 · Router + NAT",env:["ip","tcp","dat"],t:"El router decide la ruta",d:"Quita la trama, lee la IP destino y consulta su tabla de rutas. NAT cambia tu IP privada por la pública. Luego vuelve a encapsular con una trama nueva para el siguiente enlace."},
+ {n:3,lay:"Capas 1–3 · Internet",env:["eth","ip","tcp","dat","fcs"],t:"Salto a salto por Internet",d:"El paquete pasa de router en router, normalmente por fibra monomodo en los tramos largos. En cada salto cambia la trama (las MAC), pero las IP se mantienen."},
+ {n:4,lay:"Capas 1 → 7",env:["dat"],t:"Llega al servidor",d:"El servidor desencapsula: bits → trama → paquete → segmento → datos. El puerto 443 le indica que es para su servidor web."},
+ {n:0,lay:"De regreso",env:["dat"],t:"La página vuelve a ti",d:"La respuesta hace el mismo viaje al revés. TCP confirma cada parte (ACK) y la reordena. ¡Ves la página en tu pantalla!"}
+];
+let JI=0,JT=null;
+function showBonus(){
+  P=null;window.scrollTo(0,0);
+  app.innerHTML=`<div style="--c:var(--w6)">
+  <div class="brief-head"><div style="font-size:13px;font-weight:700;opacity:.85">BONUS</div><h1>🧠 Mapa mental: cómo fluye todo</h1><div>Lo que no siempre está en los apuntes, pero hace que todo tenga sentido.</div></div>
+  <h2>1. La pregunta que responde cada capa</h2>
+  <div class="layers">
+   <div class="layer"><b style="background:var(--w5)">Capa 7 · Aplicación</b><span><b>¿Qué quiere el usuario?</b> Navegador, correo, DNS, proxy.</span><em>Datos</em></div>
+   <div class="layer"><b style="background:var(--w1)">Capa 4 · Transporte</b><span><b>¿A qué aplicación y con qué garantía?</b> Puertos, TCP o UDP.</span><em>Segmento</em></div>
+   <div class="layer"><b style="background:var(--w4)">Capa 3 · Red</b><span><b>¿A qué red y por dónde?</b> IP, router, gateway.</span><em>Paquete</em></div>
+   <div class="layer"><b style="background:var(--w2)">Capa 2 · Enlace</b><span><b>¿A qué equipo de mi red local?</b> MAC, switch, VLAN.</span><em>Trama</em></div>
+   <div class="layer"><b style="background:var(--w3)">Capa 1 · Física</b><span><b>¿Cómo viaja la señal?</b> Cobre, fibra, aire, cableado estructurado.</span><em>Bits</em></div>
+  </div>
+  <div class="analogy">💡 Si recuerdas estas 5 preguntas, puedes razonar casi cualquier pregunta del examen: “¿esto decide la ruta? → capa 3”, “¿esto usa MAC? → capa 2”.</div>
+
+  <h2>2. El viaje de un paquete (paso a paso)</h2>
+  <div class="journey"><svg id="jsvg" viewBox="0 0 760 120"></svg>
+   <div class="jstep" id="jstep"></div>
+   <div class="cta" style="margin:10px 0 0"><button class="btn sec" id="jprev">← Anterior</button><button class="btn" id="jnext">Siguiente →</button><button class="btn sec" id="jauto">▶ Auto</button></div></div>
+
+  <h2>3. Encapsulación: sobres dentro de sobres</h2>
+  <div class="vis">
+   <div class="env"><div class="e-dat">Datos</div></div>
+   <div class="env"><div class="e-tcp">TCP: puertos</div><div class="e-dat">Datos</div></div>
+   <div class="env"><div class="e-ip">IP: origen / destino</div><div class="e-tcp">TCP</div><div class="e-dat">Datos</div></div>
+   <div class="env"><div class="e-eth">Ethernet: MAC</div><div class="e-ip">IP</div><div class="e-tcp">TCP</div><div class="e-dat">Datos</div><div class="e-fcs">FCS</div></div>
+   <div class="env"><div class="e-dat" style="background:var(--w7);font-family:ui-monospace,monospace">0101101001110100101101…</div></div>
+   <p class="mut" style="margin:6px 0 0">Al enviar se agregan cabeceras de arriba hacia abajo; al recibir se quitan de abajo hacia arriba (desencapsulación).</p>
+  </div>
+
+  <h2>4. Modelo OSI vs TCP/IP</h2>
+  <div class="tbl"><table><tr><th>OSI (7 capas, teórico)</th><th>TCP/IP (4 capas, el que usa Internet)</th><th>Ejemplos</th></tr>
+  <tr><td>7 Aplicación · 6 Presentación · 5 Sesión</td><td>Aplicación</td><td>HTTP, DNS, FTP, SSH</td></tr>
+  <tr><td>4 Transporte</td><td>Transporte</td><td>TCP, UDP</td></tr>
+  <tr><td>3 Red</td><td>Internet</td><td>IP, router</td></tr>
+  <tr><td>2 Enlace · 1 Física</td><td>Acceso a la red</td><td>Ethernet, Wi-Fi, cables, switch</td></tr></table></div>
+
+  <h2>5. Si la red fuera una ciudad</h2>
+  <div class="tbl"><table><tr><th>Concepto</th><th>En la ciudad</th></tr>
+  <tr><td>Cableado estructurado</td><td>Calles y avenidas bien planeadas, con señalización (etiquetas)</td></tr>
+  <tr><td>Bits / señales</td><td>Los vehículos que circulan</td></tr>
+  <tr><td>MAC</td><td>Tu nombre en el gafete: te identifica en el edificio</td></tr>
+  <tr><td>IP</td><td>Tu dirección postal: permite que te encuentren desde otra ciudad</td></tr>
+  <tr><td>Máscara</td><td>Qué parte de la dirección es la colonia y cuál la casa</td></tr>
+  <tr><td>Puerto</td><td>El número de departamento dentro del edificio</td></tr>
+  <tr><td>Hub</td><td>Un megáfono: todos oyen todo</td></tr>
+  <tr><td>Switch</td><td>El portero que sabe en qué oficina está cada quien</td></tr>
+  <tr><td>Router / gateway</td><td>La oficina de correos y la caseta de salida del fraccionamiento</td></tr>
+  <tr><td>VLAN</td><td>Dividir el edificio en pisos con acceso separado</td></tr>
+  <tr><td>DHCP</td><td>El recepcionista del hotel que te asigna habitación</td></tr>
+  <tr><td>DNS</td><td>La agenda de contactos: nombre → número</td></tr>
+  <tr><td>ARP</td><td>Gritar en la sala: “¿quién es Juan?”, y Juan levanta la mano</td></tr>
+  <tr><td>NAT</td><td>El conmutador de la empresa: todos llaman afuera con el mismo número</td></tr>
+  <tr><td>TCP / UDP</td><td>Paquetería con firma de recibido / transmisión en vivo por radio</td></tr></table></div>
+
+  <h2>6. Tipos de red y topologías</h2>
+  <div class="tbl"><table><tr><th>Tipo</th><th>Alcance</th><th>Ejemplo</th></tr>
+  <tr><td><b>PAN</b></td><td>Personal, pocos metros</td><td>Audífonos Bluetooth (piconet)</td></tr>
+  <tr><td><b>LAN</b></td><td>Casa, oficina, edificio</td><td>Ethernet y Wi-Fi de tu escuela</td></tr>
+  <tr><td><b>MAN</b></td><td>Una ciudad</td><td>Red de fibra de un municipio</td></tr>
+  <tr><td><b>WAN</b></td><td>Países, continentes</td><td>Internet</td></tr></table></div>
+  <div class="topos" style="margin-top:12px" id="topos"></div>
+
+  <h2>7. Cómo encaja todo en una frase</h2>
+  <div class="must" style="font-size:17px">El <b>cableado estructurado</b> y los <b>medios</b> (capa 1) llevan las señales; <b>Ethernet y el switch</b> (capa 2) entregan dentro del edificio por MAC; la <b>IP y el router</b> (capa 3) llevan el paquete entre redes hasta el destino; y <b>TCP/UDP</b> (capa 4) lo entregan a la aplicación correcta, con o sin garantía.</div>
+  <div class="cta"><button class="btn" onclick="play('boss')">👑 Enfrentar al jefe final</button><button class="btn sec" onclick="showMap()">← Mapa</button></div></div>`;
+  JI=0;drawJourney();
+  $("#jprev").onclick=()=>{stopAuto();JI=Math.max(0,JI-1);drawJourney()};
+  $("#jnext").onclick=()=>{stopAuto();JI=Math.min(JOURNEY.length-1,JI+1);drawJourney()};
+  $("#jauto").onclick=()=>{if(JT){stopAuto();return}$("#jauto").textContent="⏸ Pausa";JT=setInterval(()=>{if(JI>=JOURNEY.length-1){stopAuto();return}JI++;drawJourney()},4500)};
+  drawTopos();
+}
+function stopAuto(){clearInterval(JT);JT=null;const b=$("#jauto");if(b)b.textContent="▶ Auto"}
+function drawJourney(){
+  const nodes=[["💻","Tu PC"],["🔀","Switch"],["📮","Router"],["☁️","Internet"],["🖥️","Servidor"]];
+  const X=i=>70+i*155;const s=JOURNEY[JI];
+  let g=`<line x1="${X(0)}" y1="50" x2="${X(4)}" y2="50" stroke="var(--line)" stroke-width="4"/>`;
+  nodes.forEach(([ic,l],i)=>{const on=i===s.n;g+=`<circle cx="${X(i)}" cy="50" r="30" fill="${on?"var(--w6)":"var(--card)"}" stroke="${on?"var(--w6)":"var(--line)"}" stroke-width="3"/><text x="${X(i)}" y="58" text-anchor="middle" style="font-size:24px">${ic}</text><text x="${X(i)}" y="105" text-anchor="middle" style="font-weight:${on?700:400}">${l}</text>`});
+  g+=`<g style="transition:transform .6s;transform:translate(${X(s.n)}px,12px)"><rect x="-22" y="-10" width="44" height="18" rx="5" fill="var(--gold)"/><text x="0" y="3" text-anchor="middle" style="font-size:11px;font-weight:800;fill:#1e1d1a">${JI+1}/${JOURNEY.length}</text></g>`;
+  $("#jsvg").innerHTML=g;
+  const lab={eth:"Ethernet (MAC)",ip:"IP",tcp:"TCP :443",dat:"Datos",fcs:"FCS",bits:"0101101001110100…"};
+  $("#jstep").innerHTML=`<span class="lay">${s.lay}</span><h3 style="margin-top:8px">${JI+1}. ${s.t}</h3><div class="env">${s.env.map(k=>`<div class="e-${k==="bits"?"dat":k}" ${k==="bits"?'style="background:var(--w7);font-family:ui-monospace,monospace"':""}>${lab[k]}</div>`).join("")}</div><p style="margin:6px 0 0">${s.d}</p>`;
+  $("#jprev").disabled=JI===0;$("#jnext").disabled=JI===JOURNEY.length-1;
+}
+function drawTopos(){
+  const T=[
+   ["Bus","Un cable común. Si se rompe, cae todo.",`<line x1="10" y1="45" x2="190" y2="45" stroke="var(--mut)" stroke-width="3"/>${[30,75,120,165].map((x,i)=>`<line x1="${x}" y1="45" x2="${x}" y2="${i%2?70:20}" stroke="var(--mut)" stroke-width="2"/><circle cx="${x}" cy="${i%2?75:15}" r="8" fill="var(--w4)"/>`).join("")}`],
+   ["Anillo","Cada equipo pasa los datos al siguiente.",`<circle cx="100" cy="45" r="32" fill="none" stroke="var(--mut)" stroke-width="3"/>${[0,1,2,3,4].map(i=>{const a=i/5*Math.PI*2-Math.PI/2;return`<circle cx="${100+32*Math.cos(a)}" cy="${45+32*Math.sin(a)}" r="8" fill="var(--w4)"/>`}).join("")}`],
+   ["Estrella ⭐","Todos al centro (switch). La del cableado estructurado.",`${[0,1,2,3,4,5].map(i=>{const a=i/6*Math.PI*2;const x=100+38*Math.cos(a),y=45+34*Math.sin(a);return`<line x1="100" y1="45" x2="${x}" y2="${y}" stroke="var(--mut)" stroke-width="2"/><circle cx="${x}" cy="${y}" r="8" fill="var(--w4)"/>`}).join("")}<rect x="88" y="35" width="24" height="20" rx="4" fill="var(--w3)"/>`],
+   ["Malla","Varios caminos posibles. Así es Internet: redundante.",(()=>{const p=[[50,20],[150,20],[30,70],[100,50],[170,70]];let s="";p.forEach((a,i)=>p.slice(i+1).forEach(b=>s+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--mut)" stroke-width="1.5"/>`));p.forEach(a=>s+=`<circle cx="${a[0]}" cy="${a[1]}" r="8" fill="var(--w4)"/>`);return s})()]
+  ];
+  $("#topos").innerHTML=T.map(([n,d,s])=>`<div class="topo"><svg viewBox="0 0 200 90">${s}</svg><b>${n}</b><div class="mut" style="font-size:14px">${d}</div></div>`).join("");
+}
+
+/* ============ DIAGRAMAS DE LOS BRIEFINGS ============ */
+function drawVisuals(){
+  const m=$("#v-mod");if(m){const bits=[1,0,1,1,0],X0=70,W=600,bw=W/bits.length,rows=["Datos","ASK","FSK","PSK"],rh=60;let s="";
+    bits.forEach((b,j)=>{s+=`<text x="${X0+j*bw+bw/2}" y="14" text-anchor="middle" font-weight="700">${b}</text>`;if(j)s+=`<line x1="${X0+j*bw}" y1="20" x2="${X0+j*bw}" y2="265" stroke="var(--line)" stroke-dasharray="3 3"/>`});
+    rows.forEach((r,i)=>{const y0=i*rh+50;let pts=[];s+=`<text x="0" y="${y0+4}" font-weight="600">${r}</text>`;
+      if(r==="Datos")bits.forEach((b,j)=>{const y=b?y0-18:y0+18;pts.push(`${X0+j*bw},${y}`,`${X0+(j+1)*bw},${y}`)});
+      else for(let x=0;x<=W;x+=1.5){const j=Math.min(bits.length-1,Math.floor(x/bw)),b=bits[j],t=(x-j*bw)/bw;let A=20,cyc=3,ph=0;if(r==="ASK")A=b?22:6;if(r==="FSK")cyc=b?5:2;if(r==="PSK")ph=b?0:Math.PI;pts.push(`${X0+x},${(y0-A*Math.sin(2*Math.PI*cyc*t+ph)).toFixed(1)}`)}
+      s+=`<polyline fill="none" stroke="${["var(--fg)","var(--w4)","var(--w3)","var(--w1)"][i]}" stroke-width="2" points="${pts.join(" ")}"/>`});m.innerHTML=s}
+  const rj=$("#v-rj");if(rj){let s="";const panel=(ox,title,map)=>{s+=`<text x="${ox+130}" y="16" text-anchor="middle" font-weight="700">${title}</text>`;
+    [1,2,3,4,5,6,7,8].forEach((p,i)=>{const y=34+i*24;s+=`<rect x="${ox}" y="${y-9}" width="34" height="18" rx="4" fill="var(--soft)" stroke="var(--line)"/><text x="${ox+17}" y="${y+4}" text-anchor="middle">${p}</text><rect x="${ox+226}" y="${y-9}" width="34" height="18" rx="4" fill="var(--soft)" stroke="var(--line)"/><text x="${ox+243}" y="${y+4}" text-anchor="middle">${p}</text>`});
+    Object.entries(map).forEach(([a,b])=>{const tx=+a<3;s+=`<line x1="${ox+34}" y1="${34+(a-1)*24}" x2="${ox+226}" y2="${34+(b-1)*24}" stroke="${tx?"var(--w2)":"var(--w3)"}" stroke-width="2.5"/>`});
+    s+=`<text x="${ox+17}" y="228" text-anchor="middle" style="font-size:11px;fill:var(--mut)">Extremo A</text><text x="${ox+243}" y="228" text-anchor="middle" style="font-size:11px;fill:var(--mut)">Extremo B</text>`};
+    panel(10,"Directo (grupos distintos)",{1:1,2:2,3:3,6:6});panel(360,"Cruzado (mismo grupo)",{1:3,2:6,3:1,6:2});rj.innerHTML=s}
+  const sb=$("#v-sub");if(sb){const n=[["EF","Entrada","ISP llega"],["ER","Cuarto de equipos","el corazón"],["Backbone","Vertical","une pisos"],["TR","Cuarto de piso","1 por piso"],["Horizontal","≤ 90 m","a cada toma"],["WA","Área de trabajo","tu escritorio"]];let s="";
+    n.forEach(([a,b,c],i)=>{const x=8+i*148;s+=`<rect x="${x}" y="20" width="130" height="100" rx="14" fill="var(--card)" stroke="var(--w3)" stroke-width="2"/><text x="${x+65}" y="55" text-anchor="middle" style="font-size:20px;font-weight:800;fill:var(--w3)">${a}</text><text x="${x+65}" y="80" text-anchor="middle" style="font-weight:600">${b}</text><text x="${x+65}" y="100" text-anchor="middle" style="font-size:12px;fill:var(--mut)">${c}</text>`;if(i<5)s+=`<text x="${x+139}" y="76" text-anchor="middle" style="font-size:18px;fill:var(--mut)">→</text>`});sb.innerHTML=s}
+  const dm=$("#v-dom");if(dm){let s="";const pc=(x,y)=>`<rect x="${x-14}" y="${y-10}" width="28" height="20" rx="3" fill="var(--card)" stroke="var(--mut)"/>`;const dev=(x,y,t,f)=>`<rect x="${x-34}" y="${y-14}" width="68" height="28" rx="6" fill="${f}"/><text x="${x}" y="${y+5}" text-anchor="middle" style="fill:#fff;font-weight:600">${t}</text>`;
+    s+=`<text x="105" y="16" text-anchor="middle" font-weight="700">Hub</text><ellipse cx="105" cy="115" rx="95" ry="80" fill="var(--badb)" stroke="var(--bad)" stroke-dasharray="5 4"/>`;[[45,65],[165,65],[45,165],[165,165]].forEach(([x,y])=>s+=`<line x1="105" y1="115" x2="${x}" y2="${y}" stroke="var(--mut)"/>`+pc(x,y));s+=dev(105,115,"HUB","var(--mut)")+`<text x="105" y="218" text-anchor="middle" style="font-size:12px">1 colisión · 1 broadcast</text>`;
+    s+=`<text x="330" y="16" text-anchor="middle" font-weight="700">Switch</text><rect x="228" y="28" width="204" height="172" rx="16" fill="color-mix(in srgb,var(--w4) 14%,transparent)" stroke="var(--w4)" stroke-dasharray="5 4"/>`;[[268,65],[392,65],[268,165],[392,165]].forEach(([x,y])=>{s+=`<circle cx="${(x+330)/2}" cy="${(y+115)/2}" r="34" fill="var(--badb)" stroke="var(--bad)" stroke-dasharray="4 3"/><line x1="330" y1="115" x2="${x}" y2="${y}" stroke="var(--mut)"/>`+pc(x,y)});s+=dev(330,115,"SWITCH","var(--w4)")+`<text x="330" y="218" text-anchor="middle" style="font-size:12px">4 colisión · 1 broadcast</text>`;
+    s+=`<text x="555" y="16" text-anchor="middle" font-weight="700">Router</text><rect x="460" y="30" width="190" height="62" rx="12" fill="color-mix(in srgb,var(--w4) 14%,transparent)" stroke="var(--w4)" stroke-dasharray="5 4"/><rect x="460" y="138" width="190" height="62" rx="12" fill="color-mix(in srgb,var(--w4) 14%,transparent)" stroke="var(--w4)" stroke-dasharray="5 4"/><line x1="555" y1="115" x2="555" y2="61" stroke="var(--mut)"/><line x1="555" y1="115" x2="555" y2="169" stroke="var(--mut)"/><text x="490" y="66" style="font-size:12px">Red A</text><text x="490" y="174" style="font-size:12px">Red B</text>`+dev(555,115,"ROUTER","var(--w3)")+pc(610,61)+pc(610,169)+`<text x="555" y="218" text-anchor="middle" style="font-size:12px">1 broadcast por interfaz</text>`;dm.innerHTML=s}
+  const seq=(id,a,b,msgs,title)=>{const el=$("#"+id);if(!el)return;let s=`<defs><marker id="ar-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="var(--w5)"/></marker></defs><text x="150" y="14" text-anchor="middle" font-weight="700">${title}</text><text x="50" y="38" text-anchor="middle" font-weight="600">${a}</text><text x="250" y="38" text-anchor="middle" font-weight="600">${b}</text><line x1="50" y1="46" x2="50" y2="225" stroke="var(--line)" stroke-width="2"/><line x1="250" y1="46" x2="250" y2="225" stroke="var(--line)" stroke-width="2"/>`;
+    msgs.forEach(([d,l,sub],i)=>{const y=70+i*(150/msgs.length+8);s+=`<line x1="${d?52:248}" y1="${y}" x2="${d?246:54}" y2="${y}" stroke="var(--w5)" stroke-width="2" marker-end="url(#ar-${id})"/><text x="150" y="${y-7}" text-anchor="middle" font-weight="600">${l}</text><text x="150" y="${y+15}" text-anchor="middle" style="font-size:11px;fill:var(--mut)">${sub}</text>`});el.innerHTML=s};
+  seq("v-dora","Cliente","Servidor DHCP",[[1,"Discover","¿hay algún servidor? (broadcast)"],[0,"Offer","te ofrezco esta IP"],[1,"Request","la quiero"],[0,"ACK","es tuya"]],"DHCP · DORA");
+  seq("v-hs","Cliente","Servidor",[[1,"SYN","¿nos conectamos?"],[0,"SYN-ACK","sí, listo"],[1,"ACK","perfecto"]],"TCP · saludo de 3 vías");
+}
+
+hud();showMap();
+</script>
+</body>
+</html>
